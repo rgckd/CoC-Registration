@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CoC Participant Registration</title>
+
+  <!-- Google reCAPTCHA v3 -->
+  <script src="https://www.google.com/recaptcha/api.js?render=6LcNKjosAAAAAD5Q2rkWA0vWwoGBBuoFlmbxR_Cq"></script>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 640px;
+      margin: auto;
+      padding: 20px;
+      line-height: 1.5;
+    }
+    h2 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: 600;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+    textarea {
+      min-height: 80px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .hidden {
+      display: none;
+    }
+    #msg {
+      margin-top: 15px;
+      text-align: center;
+      font-weight: 600;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>CoC Participant Registration</h2>
+
+<form id="regForm">
+
+  <!-- Honeypot (bots only) -->
+  <input type="text" name="honey" class="hidden" autocomplete="off">
+
+  <label>Email *</label>
+  <input type="email" name="Email" required>
+
+  <label>Your Name / உங்கள் பெயர் *</label>
+  <input type="text" name="Name" required>
+
+  <label>WhatsApp Number / உங்கள் வாட்ஸாப்ப் எண் *</label>
+  <input type="tel" name="WhatsApp" required>
+
+  <label>Your Heartfulness Center *</label>
+  <input type="text" name="Center" required>
+
+  <label>Do you know English? *</label>
+  <select name="English" required>
+    <option value="">Select</option>
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
+  </select>
+
+  <label>Preferred days & times for group meetings</label>
+  <textarea
+    name="PreferredTimes"
+    placeholder="Example: Mon Morning, Wed Evening, Sat Afternoon"></textarea>
+
+  <label>Willing to be a coordinator? *</label>
+  <select name="Coordinator" required>
+    <option value="">Select</option>
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
+  </select>
+
+  <button type="submit">Submit Registration</button>
+</form>
+
+<p id="msg"></p>
+
+<script>
+  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxPw3PzC2RVFoo1cmxknCiwZeUr_wtECxDrI-2wzfTP3LK0rttnt2EzAuPuJU-M6WniCw/exec";
+  const SITE_KEY = "6LcNKjosAAAAAD5Q2rkWA0vWwoGBBuoFlmbxR_Cq";
+
+  document.getElementById("regForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const form = e.target;
+    const msg = document.getElementById("msg");
+    msg.innerText = "Submitting… please wait";
+
+    grecaptcha.ready(function () {
+      grecaptcha.execute(SITE_KEY, { action: "submit" })
+        .then(function (token) {
+          const fd = new FormData(form);
+          fd.append("recaptcha", token);
+
+          fetch(WEBAPP_URL, {
+            method: "POST",
+            body: fd
+          })
+          .then(res => res.json())
+          .then(res => {
+            if (res.result === "success") {
+              msg.innerText = "Thank you! Your registration is complete.";
+              form.reset();
+            } else {
+              msg.innerText = res.error || "Submission blocked. Please try again later.";
+            }
+          })
+          .catch(() => {
+            msg.innerText = "Network error. Please try again later.";
+          });
+        });
+    });
+  });
+</script>
+
+</body>
+</html>
