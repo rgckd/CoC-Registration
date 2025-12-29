@@ -10,117 +10,149 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    body { font-family: Arial, sans-serif; max-width: 700px; margin: auto; padding: 20px; }
+    body { font-family: Arial, sans-serif; max-width: 720px; margin: auto; padding: 20px; }
     h2 { text-align: center; }
-    label { display:block; margin-top: 14px; font-weight: 600; }
-    small { font-weight: normal; display:block; color:#555; }
+    label { display:block; margin-top:14px; font-weight:600; }
+    small { font-weight:normal; color:#555; }
     input, select { width:100%; padding:10px; margin-top:6px; }
-    table { width:100%; margin-top:10px; border-collapse: collapse; }
+    table { width:100%; border-collapse:collapse; margin-top:10px; }
     th, td { border:1px solid #ccc; padding:8px; text-align:center; }
     button { margin-top:20px; padding:12px; width:100%; font-size:16px; }
     .hidden { display:none; }
+
+    .collapse {
+      overflow:hidden;
+      max-height:500px;
+      transition:max-height 0.4s ease, opacity 0.3s ease;
+      opacity:1;
+    }
+    .collapse.hidden {
+      max-height:0;
+      opacity:0;
+    }
   </style>
 </head>
 
 <body>
 
-<h2>CoC Participant Registration<br>
-<small>CoC பங்கேற்பாளர் பதிவு</small></h2>
+<h2 data-i18n="title">CoC Participant Registration</h2>
+
+<label>
+  Language / மொழி / भाषा / ಭಾಷೆ / భాష
+</label>
+<select id="langSelect">
+  <option value="en">English</option>
+  <option value="ta">தமிழ்</option>
+  <option value="hi">हिन्दी</option>
+  <option value="kn">ಕನ್ನಡ</option>
+  <option value="te">తెలుగు</option>
+</select>
 
 <form id="regForm">
 
-  <!-- Honeypot -->
+  <input type="hidden" name="Language" id="Language" value="en">
   <input type="text" name="honey" class="hidden">
 
-  <label>Email *
-    <small>மின்னஞ்சல்</small>
-  </label>
+  <label data-i18n="email_label">Email *</label>
   <input type="email" name="Email" required>
 
-  <label>Your Name *
-    <small>உங்கள் பெயர்</small>
-  </label>
+  <label data-i18n="name_label">Your Name *</label>
   <input type="text" name="Name" required>
 
-  <label>WhatsApp Number *
-    <small>வாட்ஸாப்ப் எண் (+91)</small>
-  </label>
+  <label data-i18n="phone_label">WhatsApp Number *</label>
   <input type="tel" name="WhatsApp" pattern="^[6-9]\d{9}$"
          placeholder="10-digit Indian mobile number" required>
 
-  <label>Your Heartfulness Center *
-    <small>உங்களுடைய ஹார்ட்ஃபுல்னெஸ் சென்டர்</small>
-  </label>
+  <label data-i18n="center_label">Your Heartfulness Center *</label>
   <input type="text" name="Center" required>
 
-  <label>Do you know English? *
-    <small>உங்களுக்கு ஆங்கிலம் தெரியுமா?</small>
-  </label>
-  <select name="English" required>
-    <option value="">Select</option>
-    <option value="Yes">Yes / ஆம்</option>
-    <option value="No">No / இல்லை</option>
-  </select>
+  <div id="englishQuestion" class="collapse">
+    <label data-i18n="english_label">Do you know English?</label>
+    <select name="English">
+      <option value="">Select</option>
+      <option value="Yes">Yes</option>
+      <option value="No">No</option>
+    </select>
+  </div>
 
-  <label>Preferred days & times
-    <small>விருப்பமான நாட்கள் & நேரங்கள்</small>
-  </label>
+  <label data-i18n="preferred_times">Preferred days & times</label>
 
-  <!-- Structured grid -->
   <table>
-    <tr>
-      <th>Day</th>
-      <th>Morning</th>
-      <th>Evening</th>
-    </tr>
-    <tr>
-      <td>Mon</td>
-      <td><input type="checkbox" name="Times" value="Mon Morning"></td>
-      <td><input type="checkbox" name="Times" value="Mon Evening"></td>
-    </tr>
-    <tr>
-      <td>Wed</td>
-      <td><input type="checkbox" name="Times" value="Wed Morning"></td>
-      <td><input type="checkbox" name="Times" value="Wed Evening"></td>
-    </tr>
-    <tr>
-      <td>Sat</td>
-      <td><input type="checkbox" name="Times" value="Sat Morning"></td>
-      <td><input type="checkbox" name="Times" value="Sat Evening"></td>
-    </tr>
+    <tr><th>Day</th><th>Morning</th><th>Evening</th></tr>
+    <tr><td>Mon</td><td><input type="checkbox" name="Times" value="Mon Morning"></td><td><input type="checkbox" name="Times" value="Mon Evening"></td></tr>
+    <tr><td>Tue</td><td><input type="checkbox" name="Times" value="Tue Morning"></td><td><input type="checkbox" name="Times" value="Tue Evening"></td></tr>
+    <tr><td>Wed</td><td><input type="checkbox" name="Times" value="Wed Morning"></td><td><input type="checkbox" name="Times" value="Wed Evening"></td></tr>
+    <tr><td>Thu</td><td><input type="checkbox" name="Times" value="Thu Morning"></td><td><input type="checkbox" name="Times" value="Thu Evening"></td></tr>
+    <tr><td>Fri</td><td><input type="checkbox" name="Times" value="Fri Morning"></td><td><input type="checkbox" name="Times" value="Fri Evening"></td></tr>
+    <tr><td>Sat</td><td><input type="checkbox" name="Times" value="Sat Morning"></td><td><input type="checkbox" name="Times" value="Sat Evening"></td></tr>
+    <tr><td>Sun</td><td><input type="checkbox" name="Times" value="Sun Morning"></td><td><input type="checkbox" name="Times" value="Sun Evening"></td></tr>
   </table>
 
-  <label>Willing to be a coordinator? *
-    <small>ஒருங்கிணைப்பாளராக இருக்க தயாரா?</small>
-  </label>
+  <label data-i18n="coordinator_label">Willing to be a coordinator?</label>
   <select name="Coordinator" required>
     <option value="">Select</option>
-    <option value="Yes">Yes / ஆம்</option>
-    <option value="No">No / இல்லை</option>
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
   </select>
 
-  <button type="submit">Submit / சமர்ப்பிக்கவும்</button>
+  <button type="submit" data-i18n="submit">Submit Registration</button>
 </form>
 
 <script>
 const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxPw3PzC2RVFoo1cmxknCiwZeUr_wtECxDrI-2wzfTP3LK0rttnt2EzAuPuJU-M6WniCw/exec";
 const SITE_KEY = "6LcNKjosAAAAAD5Q2rkWA0vWwoGBBuoFlmbxR_Cq";
 
-document.getElementById("regForm").addEventListener("submit", function(e) {
+const translations = {
+  en:{title:"CoC Participant Registration",email_label:"Email *",name_label:"Your Name *",phone_label:"WhatsApp Number *",center_label:"Your Heartfulness Center *",english_label:"Do you know English?",preferred_times:"Preferred days & times",coordinator_label:"Willing to be a coordinator?",submit:"Submit Registration"},
+  ta:{title:"CoC பங்கேற்பாளர் பதிவு",email_label:"மின்னஞ்சல் *",name_label:"உங்கள் பெயர் *",phone_label:"வாட்ஸாப்ப் எண் *",center_label:"ஹார்ட்ஃபுல்னெஸ் சென்டர் *",english_label:"உங்களுக்கு ஆங்கிலம் தெரியுமா?",preferred_times:"விருப்பமான நாட்கள் & நேரங்கள்",coordinator_label:"ஒருங்கிணைப்பாளராக இருக்க தயாரா?",submit:"சமர்ப்பிக்கவும்"},
+  hi:{title:"CoC प्रतिभागी पंजीकरण",email_label:"ईमेल *",name_label:"आपका नाम *",phone_label:"व्हाट्सएप नंबर *",center_label:"हार्टफुलनेस केंद्र *",english_label:"क्या आपको अंग्रेज़ी आती है?",preferred_times:"पसंदीदा दिन और समय",coordinator_label:"क्या आप समन्वयक बनना चाहेंगे?",submit:"जमा करें"},
+  kn:{title:"CoC ನೋಂದಣಿ",email_label:"ಇಮೇಲ್ *",name_label:"ನಿಮ್ಮ ಹೆಸರು *",phone_label:"ವಾಟ್ಸಾಪ್ ಸಂಖ್ಯೆ *",center_label:"ಹಾರ್ಟ್‌ಫುಲ್‌ನೆಸ್ ಕೇಂದ್ರ *",english_label:"ನೀವು ಇಂಗ್ಲಿಷ್ ತಿಳಿದಿದ್ದೀರಾ?",preferred_times:"ಆದ್ಯತೆಯ ದಿನಗಳು ಮತ್ತು ಸಮಯಗಳು",coordinator_label:"ನೀವು ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛಿಸುತ್ತೀರಾ?",submit:"ಸಲ್ಲಿಸು"},
+  te:{title:"CoC నమోదు",email_label:"ఇమెయిల్ *",name_label:"మీ పేరు *",phone_label:"వాట్సాప్ నంబర్ *",center_label:"హార్ట్‌ఫుల్‌నెస్ కేంద్రం *",english_label:"మీకు ఆంగ్లం తెలుసా?",preferred_times:"ఇష్టమైన రోజులు & సమయాలు",coordinator_label:"సమన్వయకర్తగా ఉండాలా?",submit:"సమర్పించండి"}
+};
+
+const langSelect = document.getElementById("langSelect");
+const englishBlock = document.getElementById("englishQuestion");
+
+function applyLanguage(lang){
+  document.querySelectorAll("[data-i18n]").forEach(el=>{
+    el.innerText = translations[lang][el.dataset.i18n];
+  });
+}
+
+function toggleEnglishQuestion(lang){
+  const sel = englishBlock.querySelector("select");
+  if(lang==="en"){
+    englishBlock.classList.add("hidden");
+    sel.value="Yes";
+  }else{
+    englishBlock.classList.remove("hidden");
+    sel.value="";
+  }
+}
+
+applyLanguage("en");
+toggleEnglishQuestion("en");
+
+langSelect.addEventListener("change",()=>{
+  const lang = langSelect.value;
+  document.getElementById("Language").value = lang;
+  applyLanguage(lang);
+  toggleEnglishQuestion(lang);
+});
+
+document.getElementById("regForm").addEventListener("submit",e=>{
   e.preventDefault();
-
-  grecaptcha.ready(function() {
-    grecaptcha.execute(SITE_KEY, {action: "submit"}).then(function(token) {
-      const fd = new FormData(e.target);
-      fd.append("recaptcha", token);
-
-      fetch(WEBAPP_URL, { method: "POST", body: fd })
-        .then(r => r.json())
-        .then(res => {
-          if (res.result === "success") {
-            window.location.href = "success.html";
-          } else {
-            alert(res.error || "Submission blocked");
+  grecaptcha.ready(()=>{
+    grecaptcha.execute(SITE_KEY,{action:"submit"}).then(token=>{
+      const fd=new FormData(e.target);
+      fd.append("recaptcha",token);
+      fetch(WEBAPP_URL,{method:"POST",body:fd})
+        .then(r=>r.json())
+        .then(res=>{
+          if(res.result==="success"){
+            window.location.href="success.html";
+          }else{
+            alert(res.error||"Submission blocked");
           }
         });
     });
