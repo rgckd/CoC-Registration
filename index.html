@@ -4,136 +4,128 @@
   <meta charset="UTF-8" />
   <title>CoC Participant Registration</title>
 
-  <!-- Google reCAPTCHA v3 -->
-  <script src="https://www.google.com/recaptcha/api.js?render=6LcNKjosAAAAAD5Q2rkWA0vWwoGBBuoFlmbxR_Cq"></script>
+  <!-- reCAPTCHA v3 -->
+  <script src="https://www.google.com/recaptcha/api.js?render=YOUR_SITE_KEY"></script>
 
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 640px;
-      margin: auto;
-      padding: 20px;
-      line-height: 1.5;
-    }
-    h2 {
-      text-align: center;
-    }
-    label {
-      display: block;
-      margin-top: 14px;
-      font-weight: 600;
-    }
-    input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      box-sizing: border-box;
-      font-size: 14px;
-    }
-    textarea {
-      min-height: 80px;
-    }
-    button {
-      margin-top: 20px;
-      padding: 12px;
-      width: 100%;
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .hidden {
-      display: none;
-    }
-    #msg {
-      margin-top: 15px;
-      text-align: center;
-      font-weight: 600;
-    }
+    body { font-family: Arial, sans-serif; max-width: 700px; margin: auto; padding: 20px; }
+    h2 { text-align: center; }
+    label { display:block; margin-top: 14px; font-weight: 600; }
+    small { font-weight: normal; display:block; color:#555; }
+    input, select { width:100%; padding:10px; margin-top:6px; }
+    table { width:100%; margin-top:10px; border-collapse: collapse; }
+    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
+    button { margin-top:20px; padding:12px; width:100%; font-size:16px; }
+    .hidden { display:none; }
   </style>
 </head>
 
 <body>
 
-<h2>CoC Participant Registration</h2>
+<h2>CoC Participant Registration<br>
+<small>CoC பங்கேற்பாளர் பதிவு</small></h2>
 
 <form id="regForm">
 
-  <!-- Honeypot (bots only) -->
-  <input type="text" name="honey" class="hidden" autocomplete="off">
+  <!-- Honeypot -->
+  <input type="text" name="honey" class="hidden">
 
-  <label>Email *</label>
+  <label>Email *
+    <small>மின்னஞ்சல்</small>
+  </label>
   <input type="email" name="Email" required>
 
-  <label>Your Name / உங்கள் பெயர் *</label>
+  <label>Your Name *
+    <small>உங்கள் பெயர்</small>
+  </label>
   <input type="text" name="Name" required>
 
-  <label>WhatsApp Number / உங்கள் வாட்ஸாப்ப் எண் *</label>
-  <input type="tel" name="WhatsApp" required>
+  <label>WhatsApp Number *
+    <small>வாட்ஸாப்ப் எண் (+91)</small>
+  </label>
+  <input type="tel" name="WhatsApp" pattern="^[6-9]\d{9}$"
+         placeholder="10-digit Indian mobile number" required>
 
-  <label>Your Heartfulness Center *</label>
+  <label>Your Heartfulness Center *
+    <small>உங்களுடைய ஹார்ட்ஃபுல்னெஸ் சென்டர்</small>
+  </label>
   <input type="text" name="Center" required>
 
-  <label>Do you know English? *</label>
+  <label>Do you know English? *
+    <small>உங்களுக்கு ஆங்கிலம் தெரியுமா?</small>
+  </label>
   <select name="English" required>
     <option value="">Select</option>
-    <option value="Yes">Yes</option>
-    <option value="No">No</option>
+    <option value="Yes">Yes / ஆம்</option>
+    <option value="No">No / இல்லை</option>
   </select>
 
-  <label>Preferred days & times for group meetings</label>
-  <textarea
-    name="PreferredTimes"
-    placeholder="Example: Mon Morning, Wed Evening, Sat Afternoon"></textarea>
+  <label>Preferred days & times
+    <small>விருப்பமான நாட்கள் & நேரங்கள்</small>
+  </label>
 
-  <label>Willing to be a coordinator? *</label>
+  <!-- Structured grid -->
+  <table>
+    <tr>
+      <th>Day</th>
+      <th>Morning</th>
+      <th>Evening</th>
+    </tr>
+    <tr>
+      <td>Mon</td>
+      <td><input type="checkbox" name="Times" value="Mon Morning"></td>
+      <td><input type="checkbox" name="Times" value="Mon Evening"></td>
+    </tr>
+    <tr>
+      <td>Wed</td>
+      <td><input type="checkbox" name="Times" value="Wed Morning"></td>
+      <td><input type="checkbox" name="Times" value="Wed Evening"></td>
+    </tr>
+    <tr>
+      <td>Sat</td>
+      <td><input type="checkbox" name="Times" value="Sat Morning"></td>
+      <td><input type="checkbox" name="Times" value="Sat Evening"></td>
+    </tr>
+  </table>
+
+  <label>Willing to be a coordinator? *
+    <small>ஒருங்கிணைப்பாளராக இருக்க தயாரா?</small>
+  </label>
   <select name="Coordinator" required>
     <option value="">Select</option>
-    <option value="Yes">Yes</option>
-    <option value="No">No</option>
+    <option value="Yes">Yes / ஆம்</option>
+    <option value="No">No / இல்லை</option>
   </select>
 
-  <button type="submit">Submit Registration</button>
+  <button type="submit">Submit / சமர்ப்பிக்கவும்</button>
 </form>
 
-<p id="msg"></p>
-
 <script>
-  const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxPw3PzC2RVFoo1cmxknCiwZeUr_wtECxDrI-2wzfTP3LK0rttnt2EzAuPuJU-M6WniCw/exec";
-  const SITE_KEY = "6LcNKjosAAAAAD5Q2rkWA0vWwoGBBuoFlmbxR_Cq";
+const WEBAPP_URL = "YOUR_APPS_SCRIPT_WEBAPP_URL";
+const SITE_KEY = "YOUR_SITE_KEY";
 
-  document.getElementById("regForm").addEventListener("submit", function (e) {
-    e.preventDefault();
+document.getElementById("regForm").addEventListener("submit", function(e) {
+  e.preventDefault();
 
-    const form = e.target;
-    const msg = document.getElementById("msg");
-    msg.innerText = "Submitting… please wait";
+  grecaptcha.ready(function() {
+    grecaptcha.execute(SITE_KEY, {action: "submit"}).then(function(token) {
+      const fd = new FormData(e.target);
+      fd.append("recaptcha", token);
 
-    grecaptcha.ready(function () {
-      grecaptcha.execute(SITE_KEY, { action: "submit" })
-        .then(function (token) {
-          const fd = new FormData(form);
-          fd.append("recaptcha", token);
-
-          fetch(WEBAPP_URL, {
-            method: "POST",
-            body: fd
-          })
-          .then(res => res.json())
-          .then(res => {
-            if (res.result === "success") {
-              msg.innerText = "Thank you! Your registration is complete.";
-              form.reset();
-            } else {
-              msg.innerText = res.error || "Submission blocked. Please try again later.";
-            }
-          })
-          .catch(() => {
-            msg.innerText = "Network error. Please try again later.";
-          });
+      fetch(WEBAPP_URL, { method: "POST", body: fd })
+        .then(r => r.json())
+        .then(res => {
+          if (res.result === "success") {
+            window.location.href = "success.html";
+          } else {
+            alert(res.error || "Submission blocked");
+          }
         });
     });
   });
+});
 </script>
 
 </body>
