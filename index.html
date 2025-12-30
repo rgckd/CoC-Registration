@@ -10,14 +10,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <style>
-    body { font-family: Arial, sans-serif; max-width: 720px; margin: auto; padding: 20px; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 720px;
+      margin: auto;
+      padding: 20px;
+    }
+
     h2 { text-align: center; }
     label { display:block; margin-top:14px; font-weight:600; }
-    small { font-weight:normal; color:#555; }
     input, select { width:100%; padding:10px; margin-top:6px; }
-    table { width:100%; border-collapse:collapse; margin-top:10px; }
-    th, td { border:1px solid #ccc; padding:8px; text-align:center; }
-    button { margin-top:20px; padding:12px; width:100%; font-size:16px; }
+
+    button {
+      margin-top:20px;
+      padding:12px;
+      width:100%;
+      font-size:16px;
+      cursor:pointer;
+    }
+
+    button:disabled {
+      background:#ccc;
+      cursor:not-allowed;
+    }
+
+    table {
+      width:100%;
+      border-collapse:collapse;
+      margin-top:10px;
+    }
+
+    th, td {
+      border:1px solid #ccc;
+      padding:8px;
+      text-align:center;
+      vertical-align: middle;
+    }
+
     .hidden { display:none; }
 
     .collapse {
@@ -26,9 +55,60 @@
       transition:max-height 0.4s ease, opacity 0.3s ease;
       opacity:1;
     }
+
     .collapse.hidden {
       max-height:0;
       opacity:0;
+    }
+
+    #formError {
+      color:#d93025;
+      font-weight:600;
+      margin-top:15px;
+      display:none;
+    }
+
+    .invalid-grid {
+      border:2px solid #d93025;
+      padding:6px;
+      border-radius:4px;
+    }
+
+    /* Mobile accordion */
+    #timesHeader {
+      margin-top:14px;
+      padding:12px;
+      border:1px solid #ccc;
+      border-radius:4px;
+      cursor:pointer;
+      display:none;
+      font-weight:600;
+    }
+
+    #timesSummary {
+      display:block;
+      font-weight:normal;
+      font-size:14px;
+      color:#555;
+    }
+
+    @media (max-width: 768px) {
+      #timesHeader { display:block; }
+      #timesContainer.collapsed { display:none; }
+    }
+
+    /* Icon styling */
+    .time-icon {
+      font-size: 18px;
+      display: inline-block;
+      margin-right: 4px;
+    }
+
+    .time-label {
+      font-size: 13px;
+      color: #555;
+      display: block;
+      margin-top: 2px;
     }
   </style>
 </head>
@@ -37,9 +117,7 @@
 
 <h2 data-i18n="title">CoC Participant Registration</h2>
 
-<label>
-  Language / மொழி / भाषा / ಭಾಷೆ / భాష
-</label>
+<label>Language / மொழி / भाषा / ಭಾಷೆ / భాష</label>
 <select id="langSelect">
   <option value="en">English</option>
   <option value="ta">தமிழ்</option>
@@ -50,6 +128,7 @@
 
 <form id="regForm">
 
+  <!-- Hidden helpers -->
   <input type="hidden" name="Language" id="Language" value="en">
   <input type="text" name="honey" class="hidden">
 
@@ -66,6 +145,7 @@
   <label data-i18n="center_label">Your Heartfulness Center *</label>
   <input type="text" name="Center" required>
 
+  <!-- Conditional English question -->
   <div id="englishQuestion" class="collapse">
     <label data-i18n="english_label">Do you know English?</label>
     <select name="English">
@@ -75,44 +155,94 @@
     </select>
   </div>
 
-  <label data-i18n="preferred_times">Preferred days & times</label>
+  <!-- Preferred Times -->
+  <label data-i18n="preferred_times">Preferred days & times *</label>
 
-  <table>
-    <tr><th>Day</th><th>Morning</th><th>Evening</th></tr>
-    <tr><td>Mon</td><td><input type="checkbox" name="Times" value="Mon Morning"></td><td><input type="checkbox" name="Times" value="Mon Evening"></td></tr>
-    <tr><td>Tue</td><td><input type="checkbox" name="Times" value="Tue Morning"></td><td><input type="checkbox" name="Times" value="Tue Evening"></td></tr>
-    <tr><td>Wed</td><td><input type="checkbox" name="Times" value="Wed Morning"></td><td><input type="checkbox" name="Times" value="Wed Evening"></td></tr>
-    <tr><td>Thu</td><td><input type="checkbox" name="Times" value="Thu Morning"></td><td><input type="checkbox" name="Times" value="Thu Evening"></td></tr>
-    <tr><td>Fri</td><td><input type="checkbox" name="Times" value="Fri Morning"></td><td><input type="checkbox" name="Times" value="Fri Evening"></td></tr>
-    <tr><td>Sat</td><td><input type="checkbox" name="Times" value="Sat Morning"></td><td><input type="checkbox" name="Times" value="Sat Evening"></td></tr>
-    <tr><td>Sun</td><td><input type="checkbox" name="Times" value="Sun Morning"></td><td><input type="checkbox" name="Times" value="Sun Evening"></td></tr>
-  </table>
+  <div id="timesHeader">
+    Preferred days & times *
+    <span id="timesSummary">Tap to select</span>
+  </div>
 
-  <label data-i18n="coordinator_label">Willing to be a coordinator?</label>
-  <select name="Coordinator" required>
+  <div id="timesContainer" class="collapsed">
+    <table>
+      <tr>
+        <th>Day</th>
+        <th>
+          <span class="time-icon">🌅</span>
+          <div class="time-label">Morning</div>
+        </th>
+        <th>
+          <span class="time-icon">🌙</span>
+          <div class="time-label">Evening</div>
+        </th>
+      </tr>
+
+      <tr>
+        <td>Mon</td>
+        <td><input type="checkbox" name="Times" value="Mon Morning"></td>
+        <td><input type="checkbox" name="Times" value="Mon Evening"></td>
+      </tr>
+      <tr>
+        <td>Tue</td>
+        <td><input type="checkbox" name="Times" value="Tue Morning"></td>
+        <td><input type="checkbox" name="Times" value="Tue Evening"></td>
+      </tr>
+      <tr>
+        <td>Wed</td>
+        <td><input type="checkbox" name="Times" value="Wed Morning"></td>
+        <td><input type="checkbox" name="Times" value="Wed Evening"></td>
+      </tr>
+      <tr>
+        <td>Thu</td>
+        <td><input type="checkbox" name="Times" value="Thu Morning"></td>
+        <td><input type="checkbox" name="Times" value="Thu Evening"></td>
+      </tr>
+      <tr>
+        <td>Fri</td>
+        <td><input type="checkbox" name="Times" value="Fri Morning"></td>
+        <td><input type="checkbox" name="Times" value="Fri Evening"></td>
+      </tr>
+      <tr>
+        <td>Sat</td>
+        <td><input type="checkbox" name="Times" value="Sat Morning"></td>
+        <td><input type="checkbox" name="Times" value="Sat Evening"></td>
+      </tr>
+      <tr>
+        <td>Sun</td>
+        <td><input type="checkbox" name="Times" value="Sun Morning"></td>
+        <td><input type="checkbox" name="Times" value="Sun Evening"></td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Coordinator -->
+  <label data-i18n="coordinator_label">Willing to be a coordinator? *</label>
+  <select name="Coordinator" id="Coordinator" required>
     <option value="">Select</option>
     <option value="Yes">Yes</option>
     <option value="No">No</option>
   </select>
 
-  <button type="submit" data-i18n="submit">Submit Registration</button>
+  <p id="formError"></p>
+
+  <button type="submit">Submit Registration</button>
 </form>
 
 <script>
+/* ================= CONFIG ================= */
 const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxPw3PzC2RVFoo1cmxknCiwZeUr_wtECxDrI-2wzfTP3LK0rttnt2EzAuPuJU-M6WniCw/exec";
 const SITE_KEY = "6LcNKjosAAAAAD5Q2rkWA0vWwoGBBuoFlmbxR_Cq";
 
+/* ================= TRANSLATIONS ================= */
 const translations = {
-  en:{title:"CoC Participant Registration",email_label:"Email *",name_label:"Your Name *",phone_label:"WhatsApp Number *",center_label:"Your Heartfulness Center *",english_label:"Do you know English?",preferred_times:"Preferred days & times",coordinator_label:"Willing to be a coordinator?",submit:"Submit Registration"},
-  ta:{title:"CoC பங்கேற்பாளர் பதிவு",email_label:"மின்னஞ்சல் *",name_label:"உங்கள் பெயர் *",phone_label:"வாட்ஸாப்ப் எண் *",center_label:"ஹார்ட்ஃபுல்னெஸ் சென்டர் *",english_label:"உங்களுக்கு ஆங்கிலம் தெரியுமா?",preferred_times:"விருப்பமான நாட்கள் & நேரங்கள்",coordinator_label:"ஒருங்கிணைப்பாளராக இருக்க தயாரா?",submit:"சமர்ப்பிக்கவும்"},
-  hi:{title:"CoC प्रतिभागी पंजीकरण",email_label:"ईमेल *",name_label:"आपका नाम *",phone_label:"व्हाट्सएप नंबर *",center_label:"हार्टफुलनेस केंद्र *",english_label:"क्या आपको अंग्रेज़ी आती है?",preferred_times:"पसंदीदा दिन और समय",coordinator_label:"क्या आप समन्वयक बनना चाहेंगे?",submit:"जमा करें"},
-  kn:{title:"CoC ನೋಂದಣಿ",email_label:"ಇಮೇಲ್ *",name_label:"ನಿಮ್ಮ ಹೆಸರು *",phone_label:"ವಾಟ್ಸಾಪ್ ಸಂಖ್ಯೆ *",center_label:"ಹಾರ್ಟ್‌ಫುಲ್‌ನೆಸ್ ಕೇಂದ್ರ *",english_label:"ನೀವು ಇಂಗ್ಲಿಷ್ ತಿಳಿದಿದ್ದೀರಾ?",preferred_times:"ಆದ್ಯತೆಯ ದಿನಗಳು ಮತ್ತು ಸಮಯಗಳು",coordinator_label:"ನೀವು ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛಿಸುತ್ತೀರಾ?",submit:"ಸಲ್ಲಿಸು"},
-  te:{title:"CoC నమోదు",email_label:"ఇమెయిల్ *",name_label:"మీ పేరు *",phone_label:"వాట్సాప్ నంబర్ *",center_label:"హార్ట్‌ఫుల్‌నెస్ కేంద్రం *",english_label:"మీకు ఆంగ్లం తెలుసా?",preferred_times:"ఇష్టమైన రోజులు & సమయాలు",coordinator_label:"సమన్వయకర్తగా ఉండాలా?",submit:"సమర్పించండి"}
+  en:{title:"CoC Participant Registration",email_label:"Email *",name_label:"Your Name *",phone_label:"WhatsApp Number *",center_label:"Your Heartfulness Center *",english_label:"Do you know English?",preferred_times:"Preferred days & times *",coordinator_label:"Willing to be a coordinator? *"},
+  ta:{title:"CoC பங்கேற்பாளர் பதிவு",email_label:"மின்னஞ்சல் *",name_label:"உங்கள் பெயர் *",phone_label:"வாட்ஸாப்ப் எண் *",center_label:"ஹார்ட்ஃபுல்னெஸ் சென்டர் *",english_label:"உங்களுக்கு ஆங்கிலம் தெரியுமா?",preferred_times:"விருப்பமான நாட்கள் & நேரங்கள் *",coordinator_label:"ஒருங்கிணைப்பாளராக இருக்க தயாரா? *"},
+  hi:{title:"CoC प्रतिभागी पंजीकरण",email_label:"ईमेल *",name_label:"आपका नाम *",phone_label:"व्हाट्सएप नंबर *",center_label:"हार्टफुलनेस केंद्र *",english_label:"क्या आपको अंग्रेज़ी आती है?",preferred_times:"पसंदीदा दिन और समय *",coordinator_label:"क्या आप समन्वयक बनना चाहेंगे? *"},
+  kn:{title:"CoC ನೋಂದಣಿ",email_label:"ಇಮೇಲ್ *",name_label:"ನಿಮ್ಮ ಹೆಸರು *",phone_label:"ವಾಟ್ಸಾಪ್ ಸಂಖ್ಯೆ *",center_label:"ಹಾರ್ಟ್‌ಫುಲ್‌ನೆಸ್ ಕೇಂದ್ರ *",english_label:"ನೀವು ಇಂಗ್ಲಿಷ್ ತಿಳಿದಿದ್ದೀರಾ?",preferred_times:"ಆದ್ಯತೆಯ ದಿನಗಳು ಮತ್ತು ಸಮಯಗಳು *",coordinator_label:"ನೀವು ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛಿಸುತ್ತೀರಾ? *"},
+  te:{title:"CoC నమోదు",email_label:"ఇమెయిల్ *",name_label:"మీ పేరు *",phone_label:"వాట్సాప్ నంబర్ *",center_label:"హార్ట్‌ఫుల్‌నెస్ కేంద్రం *",english_label:"మీకు ఆంగ్లం తెలుసా?",preferred_times:"ఇష్టమైన రోజులు & సమయాలు *",coordinator_label:"సమన్వయకర్తగా ఉండాలా? *"}
 };
 
-const langSelect = document.getElementById("langSelect");
-const englishBlock = document.getElementById("englishQuestion");
-
+/* ================= HELPERS ================= */
 function applyLanguage(lang){
   document.querySelectorAll("[data-i18n]").forEach(el=>{
     el.innerText = translations[lang][el.dataset.i18n];
@@ -120,18 +250,36 @@ function applyLanguage(lang){
 }
 
 function toggleEnglishQuestion(lang){
-  const sel = englishBlock.querySelector("select");
+  const block = document.getElementById("englishQuestion");
+  const sel = block.querySelector("select");
   if(lang==="en"){
-    englishBlock.classList.add("hidden");
+    block.classList.add("hidden");
     sel.value="Yes";
-  }else{
-    englishBlock.classList.remove("hidden");
+  } else {
+    block.classList.remove("hidden");
     sel.value="";
   }
 }
 
+function updateTimesSummary(){
+  const count = document.querySelectorAll('input[name="Times"]:checked').length;
+  document.getElementById("timesSummary").innerText =
+    count ? `${count} slot(s) selected` : "Tap to select";
+}
+
+function validatePreferredTimes(){
+  return document.querySelectorAll('input[name="Times"]:checked').length > 0;
+}
+
+/* ================= INIT ================= */
+const langSelect = document.getElementById("langSelect");
+const timesHeader = document.getElementById("timesHeader");
+const timesContainer = document.getElementById("timesContainer");
+const submitBtn = document.querySelector("button[type='submit']");
+
 applyLanguage("en");
 toggleEnglishQuestion("en");
+submitBtn.disabled = true;
 
 langSelect.addEventListener("change",()=>{
   const lang = langSelect.value;
@@ -140,20 +288,56 @@ langSelect.addEventListener("change",()=>{
   toggleEnglishQuestion(lang);
 });
 
-document.getElementById("regForm").addEventListener("submit",e=>{
+/* Mobile accordion toggle */
+timesHeader.addEventListener("click",()=>{
+  timesContainer.classList.toggle("collapsed");
+});
+
+/* Checkbox listeners */
+document.querySelectorAll('input[name="Times"]').forEach(cb=>{
+  cb.addEventListener("change",()=>{
+    updateTimesSummary();
+    submitBtn.disabled = !validatePreferredTimes() || !document.getElementById("Coordinator").value;
+  });
+});
+
+document.getElementById("Coordinator").addEventListener("change",()=>{
+  submitBtn.disabled = !validatePreferredTimes() || !document.getElementById("Coordinator").value;
+});
+
+/* ================= SUBMIT ================= */
+document.getElementById("regForm").addEventListener("submit", e=>{
   e.preventDefault();
+  const errorEl = document.getElementById("formError");
+  errorEl.style.display="none";
+
+  if(!validatePreferredTimes()){
+    timesContainer.classList.remove("collapsed");
+    timesContainer.classList.add("invalid-grid");
+    timesContainer.scrollIntoView({behavior:"smooth",block:"center"});
+    errorEl.innerText="Please select at least one preferred day & time.";
+    errorEl.style.display="block";
+    return;
+  }
+
   grecaptcha.ready(()=>{
     grecaptcha.execute(SITE_KEY,{action:"submit"}).then(token=>{
-      const fd=new FormData(e.target);
+      const fd = new FormData(e.target);
       fd.append("recaptcha",token);
+
       fetch(WEBAPP_URL,{method:"POST",body:fd})
         .then(r=>r.json())
         .then(res=>{
           if(res.result==="success"){
-            window.location.href="success.html";
-          }else{
-            alert(res.error||"Submission blocked");
+            window.location.href="success.html?lang="+document.getElementById("Language").value;
+          } else {
+            errorEl.innerText = res.error || "Submission blocked.";
+            errorEl.style.display="block";
           }
+        })
+        .catch(()=>{
+          errorEl.innerText="Network error. Please try again.";
+          errorEl.style.display="block";
         });
     });
   });
