@@ -2,20 +2,32 @@
  * CONFIGURATION
  **************************************/
 const SHEET_NAME = "CustomForm";
-const RECAPTCHA_SECRET = "PASTE_YOUR_RECAPTCHA_SECRET_KEY";
 const MIN_SCORE = 0.5;
+
+/**************************************
+ * SECRET ACCESS
+ **************************************/
+function getRecaptchaSecret() {
+  const secret = PropertiesService
+    .getScriptProperties()
+    .getProperty("RECAPTCHA_SECRET");
+
+  if (!secret) {
+    throw new Error("reCAPTCHA secret not set in Script Properties");
+  }
+  return secret;
+}
 
 /**************************************
  * MAIN ENTRY POINT
  **************************************/
 function doPost(e) {
   try {
-    // Basic sanity check
     if (!e || !e.parameter) {
       return reject("Invalid request");
     }
 
-    // Honeypot (bot trap)
+    // Honeypot
     if (e.parameter.honey) {
       return reject("Spam detected");
     }
@@ -31,7 +43,7 @@ function doPost(e) {
       {
         method: "post",
         payload: {
-          secret: RECAPTCHA_SECRET,
+          secret: getRecaptchaSecret(),
           response: token
         }
       }
@@ -71,8 +83,10 @@ function doPost(e) {
     }
 
     /************* SHEET WRITE *************/
-    const ss = SpreadsheetApp.getActive();
-    const sheet = ss.getSheetByName(SHEET_NAME);
+    const sheet = SpreadsheetApp
+      .getActive()
+      .getSheetByName(SHEET_NAME);
+
     if (!sheet) {
       return reject("Sheet not found");
     }
@@ -118,81 +132,26 @@ function doPost(e) {
  **************************************/
 function buildConfirmationEmail(data, lang) {
   const labels = {
-    en: {
-      title: "Thank you for registering for CoC",
-      summary: "Here are the details you submitted:",
-      name: "Name",
-      email: "Email",
-      phone: "WhatsApp",
-      center: "Center",
-      times: "Preferred days & times",
-      coordinator: "Willing to be a coordinator",
-      footer: "We will contact you soon."
-    },
-    ta: {
-      title: "CoC பதிவு செய்ததற்கு நன்றி",
-      summary: "நீங்கள் அளித்த விவரங்கள்:",
-      name: "பெயர்",
-      email: "மின்னஞ்சல்",
-      phone: "வாட்ஸாப்ப்",
-      center: "மையம்",
-      times: "விருப்பமான நாட்கள் & நேரங்கள்",
-      coordinator: "ஒருங்கிணைப்பாளராக இருக்க தயாரா",
-      footer: "விரைவில் உங்களை தொடர்பு கொள்வோம்."
-    },
-    hi: {
-      title: "CoC पंजीकरण के लिए धन्यवाद",
-      summary: "आपके द्वारा दी गई जानकारी:",
-      name: "नाम",
-      email: "ईमेल",
-      phone: "व्हाट्सएप",
-      center: "केंद्र",
-      times: "पसंदीदा दिन और समय",
-      coordinator: "समन्वयक बनने की इच्छा",
-      footer: "हम जल्द ही आपसे संपर्क करेंगे।"
-    },
-    kn: {
-      title: "CoC ನೋಂದಣಿಗೆ ಧನ್ಯವಾದಗಳು",
-      summary: "ನೀವು ನೀಡಿದ ವಿವರಗಳು:",
-      name: "ಹೆಸರು",
-      email: "ಇಮೇಲ್",
-      phone: "ವಾಟ್ಸಾಪ್",
-      center: "ಕೇಂದ್ರ",
-      times: "ಆದ್ಯತೆಯ ದಿನಗಳು ಮತ್ತು ಸಮಯಗಳು",
-      coordinator: "ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛೆ",
-      footer: "ನಾವು ಶೀಘ್ರದಲ್ಲೇ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ."
-    },
-    te: {
-      title: "CoC నమోదు చేసినందుకు ధన్యవాదాలు",
-      summary: "మీరు సమర్పించిన వివరాలు:",
-      name: "పేరు",
-      email: "ఇమెయిల్",
-      phone: "వాట్సాప్",
-      center: "కేంద్రం",
-      times: "ఇష్టమైన రోజులు & సమయాలు",
-      coordinator: "సమన్వయకర్తగా ఉండాలా",
-      footer: "మేము త్వరలో మిమ్మల్ని సంప్రదిస్తాము."
-    }
+    en:{title:"Thank you for registering for CoC",summary:"Here are the details you submitted:",name:"Name",email:"Email",phone:"WhatsApp",center:"Center",times:"Preferred days & times",coordinator:"Willing to be a coordinator",footer:"We will contact you soon."},
+    ta:{title:"CoC பதிவு செய்ததற்கு நன்றி",summary:"நீங்கள் அளித்த விவரங்கள்:",name:"பெயர்",email:"மின்னஞ்சல்",phone:"வாட்ஸாப்ப்",center:"மையம்",times:"விருப்பமான நாட்கள் & நேரங்கள்",coordinator:"ஒருங்கிணைப்பாளராக இருக்க தயாரா",footer:"விரைவில் உங்களை தொடர்பு கொள்வோம்."},
+    hi:{title:"CoC पंजीकरण के लिए धन्यवाद",summary:"आपके द्वारा दी गई जानकारी:",name:"नाम",email:"ईमेल",phone:"व्हाट्सएप",center:"केंद्र",times:"पसंदीदा दिन और समय",coordinator:"समन्वयक बनने की इच्छा",footer:"हम जल्द ही आपसे संपर्क करेंगे।"},
+    kn:{title:"CoC ನೋಂದಣಿಗೆ ಧನ್ಯವಾದಗಳು",summary:"ನೀವು ನೀಡಿದ ವಿವರಗಳು:",name:"ಹೆಸರು",email:"ಇಮೇಲ್",phone:"ವಾಟ್ಸಾಪ್",center:"ಕೇಂದ್ರ",times:"ಆದ್ಯತೆಯ ದಿನಗಳು ಮತ್ತು ಸಮಯಗಳು",coordinator:"ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛೆ",footer:"ನಾವು ಶೀಘ್ರದಲ್ಲೇ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ."},
+    te:{title:"CoC నమోదు చేసినందుకు ధన్యవాదాలు",summary:"మీరు సమర్పించిన వివరాలు:",name:"పేరు",email:"ఇమెయిల్",phone:"వాట్సాప్",center:"కేంద్రం",times:"ఇష్టమైన రోజులు & సమయాలు",coordinator:"సమన్వయకర్తగా ఉండాలా",footer:"మేము త్వరలో మిమ్మల్ని సంప్రదిస్తాము."}
   };
 
   const t = labels[lang] || labels.en;
-
   const timesHtml = data.times.map(t => `<li>${t}</li>`).join("");
 
   return `
     <p>🙏 <strong>${t.title}</strong></p>
     <p>${t.summary}</p>
-
     <p><strong>${t.name}:</strong> ${data.name}</p>
     <p><strong>${t.email}:</strong> ${data.email}</p>
     <p><strong>${t.phone}:</strong> ${data.phone}</p>
     <p><strong>${t.center}:</strong> ${data.center}</p>
-
     <p><strong>${t.times}:</strong></p>
     <ul>${timesHtml}</ul>
-
     <p><strong>${t.coordinator}:</strong> ${data.coordinator}</p>
-
     <p>${t.footer}</p>
   `;
 }
