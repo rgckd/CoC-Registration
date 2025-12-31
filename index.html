@@ -82,16 +82,17 @@
 
 <label>Language / மொழி / भाषा / ಭಾಷೆ / భాష</label>
 <select id="langSelect">
-  <option value="en">English</option>
-  <option value="ta">தமிழ்</option>
-  <option value="hi">हिन्दी</option>
-  <option value="kn">ಕನ್ನಡ</option>
-  <option value="te">తెలుగు</option>
+  <option value="English">English</option>
+  <option value="Tamil">தமிழ்</option>
+  <option value="Hindi">हिन्दी</option>
+  <option value="Kannada">ಕನ್ನಡ</option>
+  <option value="Telugu">తెలుగు</option>
 </select>
+
 
 <form id="regForm" action="javascript:void(0);" onsubmit="return false;">
 
-  <input type="hidden" name="Language" id="Language" value="en">
+<input type="hidden" name="Language" id="Language" value="English">
   <input type="text" name="honey" class="hidden">
 
   <label>Email *</label>
@@ -105,14 +106,23 @@
 
   <label>Your Heartfulness Center *</label>
   <input type="text" name="Center" required>
+  
+<div id="englishQuestion" class="hidden">
+  <label data-i18n="english">Do you know English? *</label>
+  <select name="English">
+    <option value="">Select</option>
+    <option value="Yes">Yes</option>
+    <option value="No">No</option>
+  </select>
+</div>
 
   <label>Preferred days & times *</label>
 
   <table>
     <tr>
       <th>Day</th>
-      <th>🌅 <div class="time-label">Morning</div></th>
-      <th>🌙 <div class="time-label">Evening</div></th>
+      <th>🌅 <div class="time-label" data-i18n="morning">Morning</div></th>
+<th>🌙 <div class="time-label" data-i18n="evening">Evening</div></th>
     </tr>
 
     <tr><td>Mon</td><td><input type="checkbox" name="Times" value="Mon Morning"></td><td><input type="checkbox" name="Times" value="Mon Evening"></td></tr>
@@ -192,6 +202,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
+  
+  <script>
+const translations = {
+  English: { morning:"Morning", evening:"Evening", english:"Do you know English?" },
+  Tamil:   { morning:"காலை", evening:"மாலை", english:"உங்களுக்கு ஆங்கிலம் தெரியுமா?" },
+  Hindi:   { morning:"सुबह", evening:"शाम", english:"क्या आपको अंग्रेज़ी आती है?" },
+  Kannada: { morning:"ಬೆಳಗ್ಗೆ", evening:"ಸಂಜೆ", english:"ನೀವು ಇಂಗ್ಲಿಷ್ ತಿಳಿದಿದ್ದೀರಾ?" },
+  Telugu:  { morning:"ఉదయం", evening:"సాయంత్రం", english:"మీకు ఆంగ్లం తెలుసా?" }
+};
+
+function applyLanguage(lang) {
+  const dict = translations[lang];
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    if (dict && dict[el.dataset.i18n]) {
+      el.textContent = dict[el.dataset.i18n];
+    }
+  });
+}
+
+function toggleEnglishQuestion(lang) {
+  const box = document.getElementById("englishQuestion");
+  const select = box.querySelector("select");
+
+  if (lang === "English") {
+    box.classList.add("hidden");
+    select.removeAttribute("required");
+    select.value = "";
+  } else {
+    box.classList.remove("hidden");
+    select.setAttribute("required","required");
+  }
+}
+
+document.getElementById("langSelect").addEventListener("change", function () {
+  const lang = this.value;
+  document.getElementById("Language").value = lang;
+  applyLanguage(lang);
+  toggleEnglishQuestion(lang);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  applyLanguage("English");
+  toggleEnglishQuestion("English");
+});
+</script>
+
 
 </body>
 </html>
