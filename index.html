@@ -49,18 +49,6 @@
 
     .hidden { display:none; }
 
-    .collapse {
-      overflow:hidden;
-      max-height:500px;
-      transition:max-height 0.4s ease, opacity 0.3s ease;
-      opacity:1;
-    }
-
-    .collapse.hidden {
-      max-height:0;
-      opacity:0;
-    }
-
     #formError {
       color:#d93025;
       font-weight:600;
@@ -81,8 +69,8 @@
       border:1px solid #ccc;
       border-radius:4px;
       cursor:pointer;
-      display:none;
       font-weight:600;
+      display:none;
     }
 
     #timesSummary {
@@ -92,24 +80,13 @@
       color:#555;
     }
 
-    @media (max-width: 768px) {
+    @media (max-width:768px) {
       #timesHeader { display:block; }
       #timesContainer.collapsed { display:none; }
     }
 
-    /* Icon styling */
-    .time-icon {
-      font-size:18px;
-      display:inline-block;
-      margin-right:4px;
-    }
-
-    .time-label {
-      font-size:13px;
-      color:#555;
-      display:block;
-      margin-top:2px;
-    }
+    .time-icon { font-size:18px; }
+    .time-label { font-size:13px; color:#555; }
   </style>
 </head>
 
@@ -138,14 +115,12 @@
   <input type="text" name="Name" required>
 
   <label data-i18n="phone_label">WhatsApp Number *</label>
-  <input type="tel" name="WhatsApp" pattern="^[6-9]\d{9}$"
-         placeholder="10-digit Indian mobile number" required>
+  <input type="tel" name="WhatsApp" pattern="^[6-9]\d{9}$" required>
 
   <label data-i18n="center_label">Your Heartfulness Center *</label>
   <input type="text" name="Center" required>
 
-  <!-- Conditional English question -->
-  <div id="englishQuestion" class="collapse">
+  <div id="englishQuestion">
     <label data-i18n="english_label">Do you know English?</label>
     <select name="English">
       <option value="">Select</option>
@@ -154,12 +129,11 @@
     </select>
   </div>
 
-  <!-- Preferred Times -->
   <label data-i18n="preferred_times">Preferred days & times *</label>
 
-  <div id="timesHeader">
+  <div id="timesHeader" data-i18n="preferred_times">
     Preferred days & times *
-    <span id="timesSummary">Tap to select</span>
+    <span id="timesSummary" data-i18n="times_hint">Tap to select</span>
   </div>
 
   <div id="timesContainer" class="collapsed">
@@ -167,12 +141,10 @@
       <tr>
         <th data-i18n="day_label">Day</th>
         <th>
-          <span class="time-icon">🌅</span>
-          <div class="time-label" data-i18n="morning">Morning</div>
+          🌅 <div class="time-label" data-i18n="morning">Morning</div>
         </th>
         <th>
-          <span class="time-icon">🌙</span>
-          <div class="time-label" data-i18n="evening">Evening</div>
+          🌙 <div class="time-label" data-i18n="evening">Evening</div>
         </th>
       </tr>
 
@@ -186,7 +158,6 @@
     </table>
   </div>
 
-  <!-- Coordinator -->
   <label data-i18n="coordinator_label">Willing to be a coordinator? *</label>
   <select name="Coordinator" id="Coordinator" required>
     <option value="">Select</option>
@@ -195,183 +166,38 @@
   </select>
 
   <p id="formError"></p>
-
   <button type="submit">Submit Registration</button>
 </form>
 
 <script>
-/* ================= CONFIG ================= */
 const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxPw3PzC2RVFoo1cmxknCiwZeUr_wtECxDrI-2wzfTP3LK0rttnt2EzAuPuJU-M6WniCw/exec";
 const SITE_KEY = "6LcNKjosAAAAAD5Q2rkWA0vWwoGBBuoFlmbxR_Cq";
 
-/* ================= TRANSLATIONS ================= */
 const translations = {
-  en:{
-    title:"CoC Participant Registration",
-    email_label:"Email *",
-    name_label:"Your Name *",
-    phone_label:"WhatsApp Number *",
-    center_label:"Your Heartfulness Center *",
-    english_label:"Do you know English?",
-    preferred_times:"Preferred days & times *",
-    coordinator_label:"Willing to be a coordinator? *",
-    day_label:"Day",
-    morning:"Morning",
-    evening:"Evening"
-  },
-  ta:{
-    title:"CoC பங்கேற்பாளர் பதிவு",
-    email_label:"மின்னஞ்சல் *",
-    name_label:"உங்கள் பெயர் *",
-    phone_label:"வாட்ஸாப்ப் எண் *",
-    center_label:"ஹார்ட்ஃபுல்னெஸ் சென்டர் *",
-    english_label:"உங்களுக்கு ஆங்கிலம் தெரியுமா?",
-    preferred_times:"விருப்பமான நாட்கள் & நேரங்கள் *",
-    coordinator_label:"ஒருங்கிணைப்பாளராக இருக்க தயாரா? *",
-    day_label:"நாள்",
-    morning:"காலை",
-    evening:"மாலை"
-  },
-  hi:{
-    title:"CoC प्रतिभागी पंजीकरण",
-    email_label:"ईमेल *",
-    name_label:"आपका नाम *",
-    phone_label:"व्हाट्सएप नंबर *",
-    center_label:"हार्टफुलनेस केंद्र *",
-    english_label:"क्या आपको अंग्रेज़ी आती है?",
-    preferred_times:"पसंदीदा दिन और समय *",
-    coordinator_label:"क्या आप समन्वयक बनना चाहेंगे? *",
-    day_label:"दिन",
-    morning:"सुबह",
-    evening:"शाम"
-  },
-  kn:{
-    title:"CoC ನೋಂದಣಿ",
-    email_label:"ಇಮೇಲ್ *",
-    name_label:"ನಿಮ್ಮ ಹೆಸರು *",
-    phone_label:"ವಾಟ್ಸಾಪ್ ಸಂಖ್ಯೆ *",
-    center_label:"ಹಾರ್ಟ್‌ಫುಲ್‌ನೆಸ್ ಕೇಂದ್ರ *",
-    english_label:"ನೀವು ಇಂಗ್ಲಿಷ್ ತಿಳಿದಿದ್ದೀರಾ?",
-    preferred_times:"ಆದ್ಯತೆಯ ದಿನಗಳು ಮತ್ತು ಸಮಯಗಳು *",
-    coordinator_label:"ನೀವು ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛಿಸುತ್ತೀರಾ? *",
-    day_label:"ದಿನ",
-    morning:"ಬೆಳಗ್ಗೆ",
-    evening:"ಸಂಜೆ"
-  },
-  te:{
-    title:"CoC నమోదు",
-    email_label:"ఇమెయిల్ *",
-    name_label:"మీ పేరు *",
-    phone_label:"వాట్సాప్ నంబర్ *",
-    center_label:"హార్ట్‌ఫుల్‌నెస్ కేంద్రం *",
-    english_label:"మీకు ఆంగ్లం తెలుసా?",
-    preferred_times:"ఇష్టమైన రోజులు & సమయాలు *",
-    coordinator_label:"సమన్వయకర్తగా ఉండాలా? *",
-    day_label:"రోజు",
-    morning:"ఉదయం",
-    evening:"సాయంత్రం"
-  }
+  en:{title:"CoC Participant Registration",email_label:"Email *",name_label:"Your Name *",phone_label:"WhatsApp Number *",center_label:"Your Heartfulness Center *",english_label:"Do you know English?",preferred_times:"Preferred days & times *",coordinator_label:"Willing to be a coordinator? *",day_label:"Day",morning:"Morning",evening:"Evening",times_hint:"Tap to select"},
+  ta:{title:"CoC பங்கேற்பாளர் பதிவு",email_label:"மின்னஞ்சல் *",name_label:"உங்கள் பெயர் *",phone_label:"வாட்ஸாப்ப் எண் *",center_label:"ஹார்ட்ஃபுல்னெஸ் சென்டர் *",english_label:"உங்களுக்கு ஆங்கிலம் தெரியுமா?",preferred_times:"விருப்பமான நாட்கள் & நேரங்கள் *",coordinator_label:"ஒருங்கிணைப்பாளராக இருக்க தயாரா? *",day_label:"நாள்",morning:"காலை",evening:"மாலை",times_hint:"தேர்வு செய்ய தட்டவும்"},
+  hi:{title:"CoC प्रतिभागी पंजीकरण",email_label:"ईमेल *",name_label:"आपका नाम *",phone_label:"व्हाट्सएप नंबर *",center_label:"हार्टफुलनेस केंद्र *",english_label:"क्या आपको अंग्रेज़ी आती है?",preferred_times:"पसंदीदा दिन और समय *",coordinator_label:"क्या आप समन्वयक बनना चाहेंगे? *",day_label:"दिन",morning:"सुबह",evening:"शाम",times_hint:"चुनने के लिए टैप करें"},
+  kn:{title:"CoC ನೋಂದಣಿ",email_label:"ಇಮೇಲ್ *",name_label:"ನಿಮ್ಮ ಹೆಸರು *",phone_label:"ವಾಟ್ಸಾಪ್ ಸಂಖ್ಯೆ *",center_label:"ಹಾರ್ಟ್‌ಫುಲ್‌ನೆಸ್ ಕೇಂದ್ರ *",english_label:"ನೀವು ಇಂಗ್ಲಿಷ್ ತಿಳಿದಿದ್ದೀರಾ?",preferred_times:"ಆದ್ಯತೆಯ ದಿನಗಳು ಮತ್ತು ಸಮಯಗಳು *",coordinator_label:"ನೀವು ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛಿಸುತ್ತೀರಾ? *",day_label:"ದಿನ",morning:"ಬೆಳಗ್ಗೆ",evening:"ಸಂಜೆ",times_hint:"ಆಯ್ಕೆ ಮಾಡಲು ಟ್ಯಾಪ್ ಮಾಡಿ"},
+  te:{title:"CoC నమోదు",email_label:"ఇమెయిల్ *",name_label:"మీ పేరు *",phone_label:"వాట్సాప్ నంబర్ *",center_label:"హార్ట్‌ఫుల్‌నెస్ కేంద్రం *",english_label:"మీకు ఆంగ్లం తెలుసా?",preferred_times:"ఇష్టమైన రోజులు & సమయాలు *",coordinator_label:"సమన్వయకర్తగా ఉండాలా? *",day_label:"రోజు",morning:"ఉదయం",evening:"సాయంత్రం",times_hint:"ఎంచుకోవడానికి ట్యాప్ చేయండి"}
 };
 
-/* ================= HELPERS ================= */
 function applyLanguage(lang){
+  const dict = translations[lang];
   document.querySelectorAll("[data-i18n]").forEach(el=>{
-    el.innerText = translations[lang][el.dataset.i18n];
+    if(dict[el.dataset.i18n]){
+      el.textContent = dict[el.dataset.i18n];
+    }
   });
 }
 
-function toggleEnglishQuestion(lang){
-  const block = document.getElementById("englishQuestion");
-  const sel = block.querySelector("select");
-  if(lang==="en"){
-    block.classList.add("hidden");
-    sel.value="Yes";
-  } else {
-    block.classList.remove("hidden");
-    sel.value="";
-  }
-}
-
-function updateTimesSummary(){
-  const count = document.querySelectorAll('input[name="Times"]:checked').length;
-  document.getElementById("timesSummary").innerText =
-    count ? `${count} slot(s) selected` : "Tap to select";
-}
-
-function validatePreferredTimes(){
-  return document.querySelectorAll('input[name="Times"]:checked').length > 0;
-}
-
-/* ================= INIT ================= */
-const langSelect = document.getElementById("langSelect");
-const timesHeader = document.getElementById("timesHeader");
-const timesContainer = document.getElementById("timesContainer");
-const submitBtn = document.querySelector("button[type='submit']");
-
-applyLanguage("en");
-toggleEnglishQuestion("en");
-submitBtn.disabled = true;
-
-langSelect.addEventListener("change",()=>{
-  const lang = langSelect.value;
+document.getElementById("langSelect").addEventListener("change",e=>{
+  const lang = e.target.value;
   document.getElementById("Language").value = lang;
   applyLanguage(lang);
-  toggleEnglishQuestion(lang);
 });
 
-/* Mobile accordion toggle */
-timesHeader.addEventListener("click",()=>{
-  timesContainer.classList.toggle("collapsed");
-});
-
-/* Checkbox listeners */
-document.querySelectorAll('input[name="Times"]').forEach(cb=>{
-  cb.addEventListener("change",()=>{
-    updateTimesSummary();
-    submitBtn.disabled = !validatePreferredTimes() || !document.getElementById("Coordinator").value;
-  });
-});
-
-document.getElementById("Coordinator").addEventListener("change",()=>{
-  submitBtn.disabled = !validatePreferredTimes() || !document.getElementById("Coordinator").value;
-});
-
-/* ================= SUBMIT ================= */
-document.getElementById("regForm").addEventListener("submit", e=>{
-  e.preventDefault();
-  const errorEl = document.getElementById("formError");
-  errorEl.style.display="none";
-
-  if(!validatePreferredTimes()){
-    timesContainer.classList.remove("collapsed");
-    timesContainer.classList.add("invalid-grid");
-    timesContainer.scrollIntoView({behavior:"smooth",block:"center"});
-    errorEl.innerText="Please select at least one preferred day & time.";
-    errorEl.style.display="block";
-    return;
-  }
-
-  grecaptcha.ready(()=>{
-    grecaptcha.execute(SITE_KEY,{action:"submit"}).then(token=>{
-      const fd = new FormData(e.target);
-      fd.append("recaptcha",token);
-
-      fetch(WEBAPP_URL,{method:"POST",body:fd})
-        .then(r=>r.json())
-        .then(res=>{
-          if(res.result==="success"){
-            window.location.href="success.html?lang="+document.getElementById("Language").value;
-          } else {
-            errorEl.innerText = res.error || "Submission blocked.";
-            errorEl.style.display="block";
-          }
-        })
-        .catch(()=>{
-          errorEl.innerText="Network error. Please try again.";
-          errorEl.style.display="block";
-        });
-    });
-  });
+document.addEventListener("DOMContentLoaded",()=>{
+  applyLanguage("en");
 });
 </script>
 
