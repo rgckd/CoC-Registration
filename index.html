@@ -171,6 +171,26 @@ document.addEventListener("DOMContentLoaded", () => {
   btn.addEventListener("click", () => {
     errorEl.style.display = "none";
 
+    const fdCheck = new FormData(form);
+const lang = fdCheck.get("Language");
+const knowsEnglish = fdCheck.get("English");
+const selectedTimes = fdCheck.getAll("Times");
+
+// Validation
+if (
+  !fdCheck.get("Email") ||
+  !fdCheck.get("Name") ||
+  !fdCheck.get("WhatsApp") ||
+  !fdCheck.get("Center") ||
+  !fdCheck.get("Coordinator") ||
+  selectedTimes.length === 0 ||
+  (lang !== "English" && !knowsEnglish)
+) {
+  errorEl.textContent = "Missing required fields";
+  errorEl.style.display = "block";
+  return; // ⛔ STOP submission
+}
+
     setSubmitting(true);
 
     grecaptcha.ready(() => {
