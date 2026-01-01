@@ -236,7 +236,9 @@ function handleUpdateGroupStatus(e) {
   groupRow[gIdx.Status] = status;
   if (gIdx.WeeksCompleted !== undefined) groupRow[gIdx.WeeksCompleted] = weeksCompleted;
   if (gIdx.Notes !== undefined) {
-    groupRow[gIdx.Notes] = notes ? `${today} - ${notes}` : `${today}`;
+    const existingNotes = (groupRow[gIdx.Notes] || "").trim();
+    const newNote = notes ? `${today} - ${notes}` : `${today}`;
+    groupRow[gIdx.Notes] = existingNotes ? `${existingNotes}\n${newNote}` : newNote;
   }
   gData[groupRowIndex] = groupRow;
 
