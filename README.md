@@ -78,7 +78,6 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | Language | String | Full language name |
 | Day | String | Extracted from slot suggestions (e.g., Mon, Tue) |
 | Time | String | Day or Evening |
-| Center | String | Preferred meeting center |
 | CoordinatorEmail | String | Populated from Participants when admin assigns coordinator |
 | CoordinatorName | String | Populated from Participants when admin assigns coordinator |
 | MemberCount | Number | Auto-computed by refresh |

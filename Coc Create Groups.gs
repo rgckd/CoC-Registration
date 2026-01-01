@@ -162,12 +162,11 @@ function acceptGroupSuggestions() {
         row[pIdx.Language],     // B Language
         day || "",              // C Day
         time || "",             // D Time
-        row[pIdx.Center] || "", // E Center
-        "",                     // F CoordinatorEmail
-        "",                     // G CoordinatorName
-        0,                      // H MemberCount
-        "Active",               // I Status
-        seq                     // J Sequence
+        "",                     // E CoordinatorEmail
+        "",                     // F CoordinatorName
+        0,                      // G MemberCount
+        "Active",               // H Status
+        seq                     // I Sequence
       ]);
 
       gData.push([
@@ -175,7 +174,6 @@ function acceptGroupSuggestions() {
         row[pIdx.Language],
         day || "",
         time || "",
-        row[pIdx.Center] || "",
         "",
         "",
         0,
@@ -266,7 +264,6 @@ function updateGroupsSheet() {
         language,               // Language
         day,                    // Day
         time,                   // Time
-        firstMember[pIdx.Center] || "", // Center
         "",                     // CoordinatorEmail
         "",                     // CoordinatorName
         0,                      // MemberCount (will be updated below)
