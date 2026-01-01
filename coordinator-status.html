@@ -91,6 +91,11 @@
       statusMsg.classList.toggle("success", !!ok);
     }
 
+    function setSubmitting(state) {
+      submitBtn.disabled = !!state;
+      submitBtn.textContent = state ? "Submitting..." : "Submit Update";
+    }
+
     function fillWeeksOptions() {
       weeksSel.innerHTML = "";
       for (let i = 0; i <= 20; i++) {
@@ -234,8 +239,7 @@
         members: JSON.stringify(membersUpdate)
       };
 
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Submitting...";
+      setSubmitting(true);
 
       callApi("updateGroupStatus", payload)
         .then(res => {
@@ -244,8 +248,7 @@
         })
         .catch(err => setStatus(err.message || "Update failed"))
         .finally(() => {
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Submit Update";
+          setSubmitting(false);
         });
     }
 
