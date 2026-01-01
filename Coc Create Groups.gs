@@ -210,7 +210,7 @@ function refreshGroupsAndDashboard() {
 }
 
 /************************************************
- * UPDATE GROUPS (DERIVED FIELDS ONLY)
+ * UPDATE GROUPS (DERIVED FIELDS + CREATE MISSING)
  ************************************************/
 function updateGroupsSheet() {
   const ss = SpreadsheetApp.getActive();
@@ -220,14 +220,13 @@ function updateGroupsSheet() {
   const pData = pSheet.getDataRange().getValues();
   const gData = gSheet.getDataRange().getValues();
 
-  if (gData.length < 2) return;
-
   const pHeaders = pData.shift();
   const gHeaders = gData.shift();
 
   const pIdx = indexMap(pHeaders);
   const gIdx = indexMap(gHeaders);
 
+  // Build member map
   const members = {};
   pData.forEach(r => {
     if (!r[pIdx.AssignedGroup]) return;
@@ -239,7 +238,59 @@ function updateGroupsSheet() {
     members[r[pIdx.AssignedGroup]].push(r);
   });
 
+  // Find existing group names
+  const existingGroups = new Set(gData.map(r => r[gIdx.GroupName]).filter(Boolean));
 
+  // Create missing groups
+  const newGroups = [];
+  Object.keys(members).forEach(groupName => {
+    if (!existingGroups.has(groupName)) {
+      const firstMember = members[groupName][0];
+      const language = firstMember[pIdx.Language];
+      
+      // Parse day/time from group name or use first member's slot
+      let day = "", time = "";
+      const slots = splitSlots(firstMember[pIdx.PreferredSlots]);
+      if (slots.length > 0) {
+        const parts = slots[0].split(" ");
+        day = parts[0] || "";
+        time = parts[1] || "";
+      }
+
+      // Get sequence number from group name
+      const seqMatch = groupName.match(/-(\d+)$/);
+      const seq = seqMatch ? parseInt(seqMatch[1], 10) : 1;
+
+      newGroups.push([
+        groupName,              // GroupName
+        language,               // Language
+        day,                    // Day
+        time,                   // Time
+        firstMember[pIdx.Center] || "", // Center
+        "",                     // CoordinatorEmail
+        "",                     // CoordinatorName
+        0,                      // MemberCount (will be updated below)
+        "Active",               // Status
+        seq                     // Sequence
+      ]);
+
+      existingGroups.add(groupName);
+    }
+  });
+
+  // Append new groups
+  if (newGroups.length > 0) {
+    gSheet.getRange(gSheet.getLastRow() + 1, 1, newGroups.length, newGroups[0].length)
+      .setValues(newGroups);
+    
+    // Refresh gData to include new groups
+    const updatedGData = gSheet.getDataRange().getValues();
+    updatedGData.shift(); // Remove header
+    gData.length = 0;
+    gData.push(...updatedGData);
+  }
+
+  // Update all groups with member count and coordinator
   gData.forEach(r => {
     const m = members[r[gIdx.GroupName]] || [];
     r[gIdx.MemberCount] = m.length;
@@ -247,7 +298,7 @@ function updateGroupsSheet() {
     // Find coordinator (checkbox can be true, TRUE, or "TRUE")
     const c = m.find(x => {
       const val = x[pIdx.IsGroupCoordinator];
-      return val === true || val === "TRUE" || val === "true" || val === true;
+      return val === true || val === "TRUE" || val === "true";
     });
     r[gIdx.CoordinatorName] = c ? c[pIdx.Name] : "";
     r[gIdx.CoordinatorEmail] = c ? c[pIdx.Email] : "";
