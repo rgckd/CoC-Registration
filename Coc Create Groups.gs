@@ -244,7 +244,11 @@ function updateGroupsSheet() {
     const m = members[r[gIdx.GroupName]] || [];
     r[gIdx.MemberCount] = m.length;
 
-    const c = m.find(x => x[pIdx.IsGroupCoordinator] === true);
+    // Find coordinator (checkbox can be true, TRUE, or "TRUE")
+    const c = m.find(x => {
+      const val = x[pIdx.IsGroupCoordinator];
+      return val === true || val === "TRUE" || val === "true" || val === true;
+    });
     r[gIdx.CoordinatorName] = c ? c[pIdx.Name] : "";
     r[gIdx.CoordinatorEmail] = c ? c[pIdx.Email] : "";
   });
@@ -300,7 +304,7 @@ function updateAdminDashboard() {
 /************************************************
  * HELPERS
  ************************************************/
-function indexMap(h) { const m = {}; h.forEach((x, i) => m[x] = i); return m; }
+function indexMap(h) { const m = {}; h.forEach((x, i) => m[String(x).trim()] = i); return m; }
 function splitSlots(s) { return String(s || "").split(",").map(x => x.trim()).filter(Boolean); }
 function normalizeLanguage(v) {
   const m = { english: "English", tamil: "Tamil", hindi: "Hindi", kannada: "Kannada", telugu: "Telugu" };
