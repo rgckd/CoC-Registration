@@ -228,8 +228,12 @@ function handleUpdateGroupStatus(e) {
 
   const groupRow = gData[groupRowIndex];
   if (groupRow[gIdx.GroupName] !== groupName) return reject("GroupName mismatch");
-  if (coordinatorName && groupRow[gIdx.CoordinatorName] && coordinatorName !== groupRow[gIdx.CoordinatorName]) {
-    return reject("Coordinator mismatch");
+  if (coordinatorName && groupRow[gIdx.CoordinatorName]) {
+    const storedCoord = String(groupRow[gIdx.CoordinatorName] || "").trim().toLowerCase();
+    const submittedCoord = coordinatorName.trim().toLowerCase();
+    if (storedCoord && submittedCoord && storedCoord !== submittedCoord) {
+      return reject("Coordinator mismatch");
+    }
   }
 
   // Update groups row
