@@ -143,48 +143,53 @@
     <table>
       <tr>
         <th>Day</th>
-        <th>🌅 <div class="time-label" data-i18n="morning">Morning</div>
+        <th>
+          🌤️
+          <div class="time-label" data-i18n="day">Day (10am – 5pm)</div>
         </th>
-        <th>🌙 <div class="time-label" data-i18n="evening">Evening</div>
+        <th>
+          🌙
+          <div class="time-label" data-i18n="evening">Evening (5pm – 10pm)</div>
         </th>
       </tr>
 
       <tr>
         <td>Mon</td>
-        <td><input type="checkbox" name="Times" value="Mon Morning"></td>
+        <td><input type="checkbox" name="Times" value="Mon Day"></td>
         <td><input type="checkbox" name="Times" value="Mon Evening"></td>
       </tr>
       <tr>
         <td>Tue</td>
-        <td><input type="checkbox" name="Times" value="Tue Morning"></td>
+        <td><input type="checkbox" name="Times" value="Tue Day"></td>
         <td><input type="checkbox" name="Times" value="Tue Evening"></td>
       </tr>
       <tr>
         <td>Wed</td>
-        <td><input type="checkbox" name="Times" value="Wed Morning"></td>
+        <td><input type="checkbox" name="Times" value="Wed Day"></td>
         <td><input type="checkbox" name="Times" value="Wed Evening"></td>
       </tr>
       <tr>
         <td>Thu</td>
-        <td><input type="checkbox" name="Times" value="Thu Morning"></td>
+        <td><input type="checkbox" name="Times" value="Thu Day"></td>
         <td><input type="checkbox" name="Times" value="Thu Evening"></td>
       </tr>
       <tr>
         <td>Fri</td>
-        <td><input type="checkbox" name="Times" value="Fri Morning"></td>
+        <td><input type="checkbox" name="Times" value="Fri Day"></td>
         <td><input type="checkbox" name="Times" value="Fri Evening"></td>
       </tr>
       <tr>
         <td>Sat</td>
-        <td><input type="checkbox" name="Times" value="Sat Morning"></td>
+        <td><input type="checkbox" name="Times" value="Sat Day"></td>
         <td><input type="checkbox" name="Times" value="Sat Evening"></td>
       </tr>
       <tr>
         <td>Sun</td>
-        <td><input type="checkbox" name="Times" value="Sun Morning"></td>
+        <td><input type="checkbox" name="Times" value="Sun Day"></td>
         <td><input type="checkbox" name="Times" value="Sun Evening"></td>
       </tr>
     </table>
+
 
     <label>Willing to be a coordinator? *</label>
     <select name="Coordinator" required>
@@ -278,11 +283,31 @@ if (
 
   <script>
     const translations = {
-  English: { morning:"Morning", evening:"Evening", english:"Do you know English?" },
-  Tamil:   { morning:"காலை", evening:"மாலை", english:"உங்களுக்கு ஆங்கிலம் தெரியுமா?" },
-  Hindi:   { morning:"सुबह", evening:"शाम", english:"क्या आपको अंग्रेज़ी आती है?" },
-  Kannada: { morning:"ಬೆಳಗ್ಗೆ", evening:"ಸಂಜೆ", english:"ನೀವು ಇಂಗ್ಲಿಷ್ ತಿಳಿದಿದ್ದೀರಾ?" },
-  Telugu:  { morning:"ఉదయం", evening:"సాయంత్రం", english:"మీకు ఆంగ్లం తెలుసా?" }
+  English: {
+    day: "Day (10am – 5pm)",
+    evening: "Evening (5pm – 10pm)",
+    english: "Do you know English?"
+  },
+  Tamil: {
+    day: "10am – 5pm",
+    evening: "5pm – 10pm",
+    english: "உங்களுக்கு ஆங்கிலம் தெரியுமா?"
+  },
+  Hindi: {
+    day: "10am – 5pm",
+    evening: "5pm – 10pm",
+    english: "क्या आपको अंग्रेज़ी आती है?"
+  },
+  Kannada: {
+    day: "10am – 5pm",
+    evening: "5pm – 10pm",
+    english: "ನೀವು ಇಂಗ್ಲಿಷ್ ತಿಳಿದಿದ್ದೀರಾ?"
+  },
+  Telugu: {
+    day: "10am – 5pm",
+    evening: "5pm – 10pm",
+    english: "మీకు ఆంగ్లం తెలుసా?"
+  }
 };
 
 function applyLanguage(lang) {
