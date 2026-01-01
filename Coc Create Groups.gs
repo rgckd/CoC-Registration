@@ -193,6 +193,9 @@ function acceptGroupSuggestions() {
 
   pSheet.getRange(2, 1, pData.length, pHeaders.length).setValues(pData);
 
+  // Ensure data is written before refresh
+  SpreadsheetApp.flush();
+
   // Immediately recompute derived data
   updateGroupsSheet();
   updateAdminDashboard();
