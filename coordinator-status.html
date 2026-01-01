@@ -54,7 +54,7 @@
   </div>
 
   <div class="row members" id="membersBox">
-    <div><strong>Member Participation</strong></div>
+    <div><strong>Member Participation</strong> <span style="color:#555; font-weight:400;">(Is member active?)</span></div>
     <div id="membersList"></div>
   </div>
 
@@ -240,7 +240,7 @@
       callApi("updateGroupStatus", payload)
         .then(res => {
           if (res.result !== "success") throw new Error(res.error || "Update failed");
-          setStatus("Update saved", true);
+          setStatus("Update saved. You can close this page, or submit if you have more changes.", true);
         })
         .catch(err => setStatus(err.message || "Update failed"))
         .finally(() => {
