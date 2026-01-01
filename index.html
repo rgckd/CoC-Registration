@@ -212,7 +212,7 @@
     if (state) {
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span>Submitting... Please wait';
-      form.querySelectorAll("input, select").forEach(el => el.disabled = true);
+      submitBtn.disabled = true;
     } else {
       btn.disabled = false;
       btn.textContent = "Submit Registration";
