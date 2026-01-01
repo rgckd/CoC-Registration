@@ -86,15 +86,15 @@ function doPost(e) {
     }
 
     sheet.appendRow([
-      new Date(),
-      data.Email,
-      data.Name,
-      data.WhatsApp,
-      data.Center,
-      data.EnglishAbility || "Yes",
-      data.Times.join(", "),
-      data.Coordinator,
-      data.Language
+      new Date(),           // Timestamp
+      data.Email,           // Email
+      data.Name,            // Name
+      data.WhatsApp,        // WhatsApp
+      data.Center,          // Center
+      data.EnglishAbility || "Yes",  // EnglishProficiency
+      data.Times.join(", "),         // PreferredTimes
+      data.Coordinator,     // Coordinator
+      data.Language         // Language
     ]);
 
     /************* EMAIL CONFIRMATION *************/

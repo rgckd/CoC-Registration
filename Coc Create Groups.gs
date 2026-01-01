@@ -62,8 +62,8 @@ function populateParticipantsFromCustomForm() {
       r[sIdx.WhatsApp],
       normalizeLanguage(r[sIdx.Language]),
       r[sIdx.Center],
-      r[sIdx.PreferredTimes],
-      r[sIdx.Coordinator] === "Yes", // checkbox
+      r[sIdx.PreferredTimes],        // PreferredSlots in Participants
+      r[sIdx.Coordinator] === "Yes", // CoordinatorWilling
       "",                             // AssignedGroup
       "Unassigned",
       false,                          // IsGroupCoordinator
@@ -265,26 +265,28 @@ function updateAdminDashboard() {
 
   const langs = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
   const metrics = [
-    "Unassigned Participants",
-    "Assigned Participants",
-    "Total Groups",
-    "Active Groups",
-    "Groups without Coordinator"
+    { key: "Unassigned", label: "Unassigned Participants" },
+    { key: "Assigned", label: "Assigned Participants" },
+    { key: "TotalGroups", label: "Total Groups" },
+    { key: "ActiveGroups", label: "Active Groups" },
+    { key: "NoCoordinator", label: "Groups without Coordinator" }
   ];
 
   d.getRange(2, 1, 50, 10).clearContent();
 
   metrics.forEach((m, i) => {
-    d.getRange(i + 2, 1).setValue(m);
+    d.getRange(i + 2, 1).setValue(m.label);
     langs.forEach((l, j) => {
       let v = 0;
-      if (m.includes("Participants")) {
-        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === m.split(" ")[0]).length;
-      } else if (m === "Total Groups") {
+      if (m.key === "Unassigned") {
+        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Unassigned").length;
+      } else if (m.key === "Assigned") {
+        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Assigned").length;
+      } else if (m.key === "TotalGroups") {
         v = g.filter(r => r[gIdx.Language] === l).length;
-      } else if (m === "Active Groups") {
+      } else if (m.key === "ActiveGroups") {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Active").length;
-      } else {
+      } else if (m.key === "NoCoordinator") {
         v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail]).length;
       }
       d.getRange(i + 2, j + 2).setValue(v);
