@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <title>CoC Participant Registration</title>
@@ -17,71 +18,92 @@
       padding: 20px;
     }
 
-    h2 { text-align: center; }
-    label { display:block; margin-top:14px; font-weight:600; }
-    input, select { width:100%; padding:10px; margin-top:6px; }
+    h2 {
+      text-align: center;
+    }
+
+    label {
+      display: block;
+      margin-top: 14px;
+      font-weight: 600;
+    }
+
+    input,
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+    }
 
     button {
-      margin-top:20px;
-      padding:12px;
-      width:100%;
-      font-size:16px;
-      cursor:pointer;
+      margin-top: 20px;
+      padding: 12px;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
     }
 
     button:disabled {
-      background:#ccc;
-      cursor:not-allowed;
+      background: #ccc;
+      cursor: not-allowed;
     }
 
     table {
-      width:100%;
-      border-collapse:collapse;
-      margin-top:10px;
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
     }
 
-    th, td {
-      border:1px solid #ccc;
-      padding:8px;
-      text-align:center;
+    th,
+    td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
     }
 
-    .hidden { display:none; }
+    .hidden {
+      display: none;
+    }
 
     #formError {
-      color:#d93025;
-      font-weight:600;
-      margin-top:15px;
-      display:none;
+      color: #d93025;
+      font-weight: 600;
+      margin-top: 15px;
+      display: none;
     }
 
     /* Spinner */
     .spinner {
-      display:inline-block;
-      width:16px;
-      height:16px;
-      border:2px solid #ccc;
-      border-top:2px solid #333;
-      border-radius:50%;
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #ccc;
+      border-top: 2px solid #333;
+      border-radius: 50%;
       animation: spin 0.8s linear infinite;
       vertical-align: middle;
-      margin-right:6px;
+      margin-right: 6px;
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
-    .time-label { font-size:13px; color:#555; }
+    .time-label {
+      font-size: 13px;
+      color: #555;
+    }
   </style>
 </head>
 
 <body>
 
-<h2 data-i18n="title">CoC Participant Registration</h2>
+  <h2 data-i18n="title">CoC Participant Registration</h2>
 
-<label>Language / மொழி / भाषा / ಭಾಷೆ / భాష</label>
-<select id="langSelect">
+  <label>Language / மொழி / भाषा / ಭಾಷೆ / భాష</label>
+  <select id="langSelect">
   <option value="English">English</option>
   <option value="Tamil">தமிழ்</option>
   <option value="Hindi">हिन्दी</option>
@@ -90,64 +112,94 @@
 </select>
 
 
-<form id="regForm" action="javascript:void(0);" onsubmit="return false;">
+  <form id="regForm" action="javascript:void(0);" onsubmit="return false;">
 
-<input type="hidden" name="Language" id="Language" value="English">
-  <input type="text" name="honey" class="hidden">
+    <input type="hidden" name="Language" id="Language" value="English">
+    <input type="text" name="honey" class="hidden">
 
-  <label>Email *</label>
-  <input type="email" name="Email" required>
+    <label>Email *</label>
+    <input type="email" name="Email" required>
 
-  <label>Your Name *</label>
-  <input type="text" name="Name" required>
+    <label>Your Name *</label>
+    <input type="text" name="Name" required>
 
-  <label>WhatsApp Number *</label>
-  <input type="tel" name="WhatsApp" pattern="^[6-9]\d{9}$" required>
+    <label>WhatsApp Number *</label>
+    <input type="tel" name="WhatsApp" pattern="^[6-9]\d{9}$" required>
 
-  <label>Your Heartfulness Center *</label>
-  <input type="text" name="Center" required>
-  
-<div id="englishQuestion" class="hidden">
-  <label data-i18n="english">Do you know English? *</label>
-  <select name="English">
+    <label>Your Heartfulness Center *</label>
+    <input type="text" name="Center" required>
+
+    <div id="englishQuestion" class="hidden">
+      <label data-i18n="english">Do you know English? *</label>
+      <select name="EnglishAbility">
     <option value="">Select</option>
     <option value="Yes">Yes</option>
     <option value="No">No</option>
   </select>
-</div>
+    </div>
 
-  <label>Preferred days & times *</label>
+    <label>Preferred days & times *</label>
 
-  <table>
-    <tr>
-      <th>Day</th>
-      <th>🌅 <div class="time-label" data-i18n="morning">Morning</div></th>
-<th>🌙 <div class="time-label" data-i18n="evening">Evening</div></th>
-    </tr>
+    <table>
+      <tr>
+        <th>Day</th>
+        <th>🌅 <div class="time-label" data-i18n="morning">Morning</div>
+        </th>
+        <th>🌙 <div class="time-label" data-i18n="evening">Evening</div>
+        </th>
+      </tr>
 
-    <tr><td>Mon</td><td><input type="checkbox" name="Times" value="Mon Morning"></td><td><input type="checkbox" name="Times" value="Mon Evening"></td></tr>
-    <tr><td>Tue</td><td><input type="checkbox" name="Times" value="Tue Morning"></td><td><input type="checkbox" name="Times" value="Tue Evening"></td></tr>
-    <tr><td>Wed</td><td><input type="checkbox" name="Times" value="Wed Morning"></td><td><input type="checkbox" name="Times" value="Wed Evening"></td></tr>
-    <tr><td>Thu</td><td><input type="checkbox" name="Times" value="Thu Morning"></td><td><input type="checkbox" name="Times" value="Thu Evening"></td></tr>
-    <tr><td>Fri</td><td><input type="checkbox" name="Times" value="Fri Morning"></td><td><input type="checkbox" name="Times" value="Fri Evening"></td></tr>
-    <tr><td>Sat</td><td><input type="checkbox" name="Times" value="Sat Morning"></td><td><input type="checkbox" name="Times" value="Sat Evening"></td></tr>
-    <tr><td>Sun</td><td><input type="checkbox" name="Times" value="Sun Morning"></td><td><input type="checkbox" name="Times" value="Sun Evening"></td></tr>
-  </table>
+      <tr>
+        <td>Mon</td>
+        <td><input type="checkbox" name="Times" value="Mon Morning"></td>
+        <td><input type="checkbox" name="Times" value="Mon Evening"></td>
+      </tr>
+      <tr>
+        <td>Tue</td>
+        <td><input type="checkbox" name="Times" value="Tue Morning"></td>
+        <td><input type="checkbox" name="Times" value="Tue Evening"></td>
+      </tr>
+      <tr>
+        <td>Wed</td>
+        <td><input type="checkbox" name="Times" value="Wed Morning"></td>
+        <td><input type="checkbox" name="Times" value="Wed Evening"></td>
+      </tr>
+      <tr>
+        <td>Thu</td>
+        <td><input type="checkbox" name="Times" value="Thu Morning"></td>
+        <td><input type="checkbox" name="Times" value="Thu Evening"></td>
+      </tr>
+      <tr>
+        <td>Fri</td>
+        <td><input type="checkbox" name="Times" value="Fri Morning"></td>
+        <td><input type="checkbox" name="Times" value="Fri Evening"></td>
+      </tr>
+      <tr>
+        <td>Sat</td>
+        <td><input type="checkbox" name="Times" value="Sat Morning"></td>
+        <td><input type="checkbox" name="Times" value="Sat Evening"></td>
+      </tr>
+      <tr>
+        <td>Sun</td>
+        <td><input type="checkbox" name="Times" value="Sun Morning"></td>
+        <td><input type="checkbox" name="Times" value="Sun Evening"></td>
+      </tr>
+    </table>
 
-  <label>Willing to be a coordinator? *</label>
-  <select name="Coordinator" required>
+    <label>Willing to be a coordinator? *</label>
+    <select name="Coordinator" required>
     <option value="">Select</option>
     <option value="Yes">Yes</option>
     <option value="No">No</option>
   </select>
 
-  <p id="formError"></p>
+    <p id="formError"></p>
 
-  <button type="button" id="submitBtn">Submit Registration</button>
-</form>
+    <button type="button" id="submitBtn">Submit Registration</button>
+  </form>
 
-<script>
-document.addEventListener("DOMContentLoaded", () => {
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
 
   const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxPw3PzC2RVFoo1cmxknCiwZeUr_wtECxDrI-2wzfTP3LK0rttnt2EzAuPuJU-M6WniCw/exec";
   const SITE_KEY = "6Ld11zssAAAAAMa8hkYJHz1AWvXuUh_WIfad0zbT";
@@ -173,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const fdCheck = new FormData(form);
 const lang = fdCheck.get("Language");
-const knowsEnglish = fdCheck.get("English");
+const knowsEnglish = fdCheck.get("EnglishAbility");
 const selectedTimes = fdCheck.getAll("Times");
 
 // Validation
@@ -221,10 +273,10 @@ if (
   });
 
 });
-</script>
-  
+  </script>
+
   <script>
-const translations = {
+    const translations = {
   English: { morning:"Morning", evening:"Evening", english:"Do you know English?" },
   Tamil:   { morning:"காலை", evening:"மாலை", english:"உங்களுக்கு ஆங்கிலம் தெரியுமா?" },
   Hindi:   { morning:"सुबह", evening:"शाम", english:"क्या आपको अंग्रेज़ी आती है?" },
@@ -266,8 +318,9 @@ document.addEventListener("DOMContentLoaded", () => {
   applyLanguage("English");
   toggleEnglishQuestion("English");
 });
-</script>
+  </script>
 
 
 </body>
+
 </html>
