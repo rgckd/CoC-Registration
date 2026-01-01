@@ -243,13 +243,14 @@ if (
   return; // ⛔ STOP submission
 }
 
-    setSubmitting(true);
 
     grecaptcha.ready(() => {
       grecaptcha.execute(SITE_KEY, { action: "submit" }).then(token => {
 
         const fd = new FormData(form);
         fd.append("recaptcha", token);
+    
+        setSubmitting(true);
 
         fetch(WEBAPP_URL, { method: "POST", body: fd })
           .then(r => r.json())
