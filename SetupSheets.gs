@@ -15,23 +15,28 @@ function setupAllCoCSheets() {
         "CoordinatorWilling",
         "AssignedGroup",
         "AssignmentStatus",
+        "IsGroupCoordinator",
+        "AcceptSuggestion",
         "SuggestedGroup",
-        "Notes"
+        "Notes",
+        "IsActive"
       ]
     },
     {
       name: "Groups",
       headers: [
+        "GroupID",
         "GroupName",
         "Language",
         "Day",
         "Time",
-        "Center",
         "CoordinatorEmail",
         "CoordinatorName",
         "MemberCount",
         "Status",
-        "Sequence"
+        "Sequence",
+        "WeeksCompleted",
+        "Notes"
       ]
     },
     {

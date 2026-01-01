@@ -96,6 +96,10 @@ function suggestGroupsForLanguage(language) {
   const pIdx = indexMap(pHeaders);
   const gIdx = indexMap(gHeaders);
 
+  ensureGroupIds(gData, gIdx);
+
+  ensureGroupIds(gData, gIdx);
+
   const participants = pData
     .map((r, i) => ({ row: i + 2, data: r }))
     .filter(p =>
@@ -157,29 +161,22 @@ function acceptGroupSuggestions() {
       const [day, time] = slot.split(" ");
       const seq = getNextGroupSequence(gData, gIdx, row[pIdx.Language]);
 
-      gSheet.appendRow([
-        groupName,              // A GroupName
-        row[pIdx.Language],     // B Language
-        day || "",              // C Day
-        time || "",             // D Time
-        "",                     // E CoordinatorEmail
-        "",                     // F CoordinatorName
-        0,                      // G MemberCount
-        "Active",               // H Status
-        seq                     // I Sequence
-      ]);
+      const newRow = new Array(gHeaders.length).fill("");
+      newRow[gIdx.GroupID] = getNextGroupId(gData, gIdx);
+      newRow[gIdx.GroupName] = groupName;
+      newRow[gIdx.Language] = row[pIdx.Language];
+      newRow[gIdx.Day] = day || "";
+      newRow[gIdx.Time] = time || "";
+      newRow[gIdx.CoordinatorEmail] = "";
+      newRow[gIdx.CoordinatorName] = "";
+      newRow[gIdx.MemberCount] = 0;
+      newRow[gIdx.Status] = "Active";
+      newRow[gIdx.Sequence] = seq;
+      if (gIdx.WeeksCompleted !== undefined) newRow[gIdx.WeeksCompleted] = 0;
+      if (gIdx.Notes !== undefined) newRow[gIdx.Notes] = "";
 
-      gData.push([
-        groupName,
-        row[pIdx.Language],
-        day || "",
-        time || "",
-        "",
-        "",
-        0,
-        "Active",
-        seq
-      ]);
+      gSheet.appendRow(newRow);
+      gData.push(newRow);
     }
 
     row[pIdx.AssignedGroup] = groupName;
@@ -259,17 +256,21 @@ function updateGroupsSheet() {
       const seqMatch = groupName.match(/-(\d+)$/);
       const seq = seqMatch ? parseInt(seqMatch[1], 10) : 1;
 
-      newGroups.push([
-        groupName,              // GroupName
-        language,               // Language
-        day,                    // Day
-        time,                   // Time
-        "",                     // CoordinatorEmail
-        "",                     // CoordinatorName
-        0,                      // MemberCount (will be updated below)
-        "Active",               // Status
-        seq                     // Sequence
-      ]);
+      const newRow = new Array(gHeaders.length).fill("");
+      newRow[gIdx.GroupID] = getNextGroupId(gData, gIdx);
+      newRow[gIdx.GroupName] = groupName;
+      newRow[gIdx.Language] = language;
+      newRow[gIdx.Day] = day;
+      newRow[gIdx.Time] = time;
+      newRow[gIdx.CoordinatorEmail] = "";
+      newRow[gIdx.CoordinatorName] = "";
+      newRow[gIdx.MemberCount] = 0;
+      newRow[gIdx.Status] = "Active";
+      newRow[gIdx.Sequence] = seq;
+      if (gIdx.WeeksCompleted !== undefined) newRow[gIdx.WeeksCompleted] = 0;
+      if (gIdx.Notes !== undefined) newRow[gIdx.Notes] = "";
+
+      newGroups.push(newRow);
 
       existingGroups.add(groupName);
     }
@@ -368,4 +369,32 @@ function getNextParticipantIdStart(sh, idx) {
 }
 function getNextGroupSequence(d, idx, l) {
   return Math.max(0, ...d.filter(r => r[idx.Language] === l).map(r => Number(r[idx.Sequence]) || 0)) + 1;
+}
+function getNextGroupId(d, idx) {
+  let maxId = 0;
+  d.forEach(r => {
+    const id = r[idx.GroupID];
+    const n = typeof id === "string" && id.match(/G-(\d+)/)
+      ? Number(id.replace("G-", ""))
+      : 0;
+    if (!Number.isNaN(n)) {
+      maxId = Math.max(maxId, n);
+    }
+  });
+  return "G-" + String(maxId + 1).padStart(4, "0");
+}
+function ensureGroupIds(d, idx) {
+  if (idx.GroupID === undefined) return;
+  let changed = false;
+  for (let i = 0; i < d.length; i++) {
+    if (!d[i][idx.GroupID]) {
+      d[i][idx.GroupID] = getNextGroupId(d, idx);
+      changed = true;
+    }
+  }
+  if (changed) {
+    const sh = SpreadsheetApp.getActive().getSheetByName("Groups");
+    const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+    sh.getRange(2, 1, d.length, headers.length).setValues(d);
+  }
 }

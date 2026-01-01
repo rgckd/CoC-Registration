@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CoC Coordinator Status Update</title>
+  <script src="https://www.google.com/recaptcha/api.js?render=6Ld11zssAAAAAMa8hkYJHz1AWvXuUh_WIfad0zbT"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 820px; margin: auto; padding: 20px; }
+    h2 { text-align: center; }
+    label { display: block; margin-top: 14px; font-weight: 600; }
+    select, textarea, button { width: 100%; padding: 10px; margin-top: 6px; box-sizing: border-box; }
+    textarea { min-height: 80px; }
+    button { margin-top: 20px; font-size: 16px; cursor: pointer; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    .row { margin-top: 10px; }
+    .members { border: 1px solid #ddd; padding: 10px; margin-top: 10px; }
+    .member-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f2f2f2; }
+    .member-item:last-child { border-bottom: none; }
+    .hidden { display: none; }
+    #statusMsg { margin-top: 12px; font-weight: 600; color: #d93025; }
+    #statusMsg.success { color: #0b8043; }
+  </style>
+</head>
+<body>
+  <h2>Coordinator Group Status Update</h2>
+    <div id="todayLine" style="text-align:center; margin-bottom:10px; color:#555;"></div>
+
+  <label for="language">Language</label>
+  <select id="language">
+    <option value="English">English</option>
+    <option value="Tamil">Tamil</option>
+    <option value="Hindi">Hindi</option>
+    <option value="Kannada">Kannada</option>
+    <option value="Telugu">Telugu</option>
+  </select>
+
+  <label for="groupSelect">Coordinator / Group</label>
+  <select id="groupSelect">
+    <option value="">Select language first</option>
+  </select>
+
+  <div class="row">
+    <label for="status">Is your group currently active?</label>
+    <select id="status">
+      <option value="Active">Yes - Active</option>
+      <option value="Inactive">No - Inactive</option>
+    </select>
+  </div>
+
+  <div class="row" id="weeksRow">
+    <label for="weeksCompleted">Weeks completed</label>
+    <select id="weeksCompleted"></select>
+  </div>
+
+  <div class="row members" id="membersBox">
+    <div><strong>Member Participation</strong></div>
+    <div id="membersList"></div>
+  </div>
+
+  <label for="notes">Coordinator Notes (optional)</label>
+  <textarea id="notes" placeholder="Any updates to share"></textarea>
+
+  <input type="text" name="honey" id="honey" class="hidden" autocomplete="off" />
+
+  <div id="statusMsg"></div>
+
+  <button type="button" id="submitBtn">Submit Update</button>
+
+  <script>
+    const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbxPw3PzC2RVFoo1cmxknCiwZeUr_wtECxDrI-2wzfTP3LK0rttnt2EzAuPuJU-M6WniCw/exec";
+    const today = new Date().toISOString().slice(0, 10);
+    const SITE_KEY = "6Ld11zssAAAAAMa8hkYJHz1AWvXuUh_WIfad0zbT";
+
+    const language = document.getElementById("language");
+    const groupSelect = document.getElementById("groupSelect");
+    const statusSel = document.getElementById("status");
+    const weeksSel = document.getElementById("weeksCompleted");
+    const weeksRow = document.getElementById("weeksRow");
+    const membersList = document.getElementById("membersList");
+    const membersBox = document.getElementById("membersBox");
+    const notesEl = document.getElementById("notes");
+    const statusMsg = document.getElementById("statusMsg");
+    const submitBtn = document.getElementById("submitBtn");
+    const honey = document.getElementById("honey");
+
+    let groupsCache = [];
+
+    function setStatus(message, ok = false) {
+      statusMsg.textContent = message || "";
+      statusMsg.classList.toggle("success", !!ok);
+    }
+
+    function fillWeeksOptions() {
+      weeksSel.innerHTML = "";
+      for (let i = 0; i <= 20; i++) {
+        const opt = document.createElement("option");
+        opt.value = String(i);
+        opt.textContent = i;
+        weeksSel.appendChild(opt);
+      }
+    }
+
+    function toggleWeeks() {
+      if (statusSel.value === "Active") {
+        weeksRow.classList.remove("hidden");
+      } else {
+        weeksRow.classList.add("hidden");
+        weeksSel.value = "0";
+      }
+    }
+
+    function buildMembersUI(members) {
+      membersList.innerHTML = "";
+      if (!members || members.length === 0) {
+        membersList.textContent = "No members found for this group.";
+        return;
+      }
+      members.forEach(m => {
+        const row = document.createElement("div");
+        row.className = "member-item";
+        const name = document.createElement("span");
+        name.textContent = m.name;
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = !!m.isActive;
+        cb.dataset.participantId = m.participantID;
+        row.appendChild(name);
+        row.appendChild(cb);
+        membersList.appendChild(row);
+      });
+    }
+
+    function getSelectedGroupMeta() {
+      const opt = groupSelect.options[groupSelect.selectedIndex];
+      if (!opt || !opt.value) return null;
+      return {
+        groupID: opt.value,
+        groupName: opt.dataset.groupName,
+        coordinatorName: opt.dataset.coordinatorName || "",
+        status: opt.dataset.status || "",
+        weeksCompleted: opt.dataset.weeks || "0"
+      };
+    }
+
+    function callApi(action, payload = {}) {
+      return grecaptcha.execute(SITE_KEY, { action: "submit" }).then(token => {
+        const fd = new FormData();
+        fd.append("action", action);
+        Object.keys(payload).forEach(k => fd.append(k, payload[k]));
+        fd.append("recaptcha", token);
+        fd.append("honey", honey.value || "");
+        return fetch(WEBAPP_URL, { method: "POST", body: fd }).then(r => r.json());
+      });
+    }
+
+    function loadGroups() {
+      setStatus("Loading groups...");
+      callApi("queryCoordinatorGroups", { Language: language.value })
+        .then(res => {
+          if (res.result !== "success") throw new Error(res.error || "Failed to load groups");
+          groupsCache = res.groups || [];
+          groupSelect.innerHTML = "";
+          if (groupsCache.length === 0) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "No groups for this language";
+            groupSelect.appendChild(opt);
+            buildMembersUI([]);
+            setStatus("No groups found", false);
+            return;
+          }
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Select coordinator / group";
+          groupSelect.appendChild(placeholder);
+          groupsCache.forEach(g => {
+            const opt = document.createElement("option");
+            opt.value = g.groupID;
+            opt.textContent = `${g.coordinatorName || "Coordinator"} (${g.groupName})`;
+            opt.dataset.groupName = g.groupName;
+            opt.dataset.coordinatorName = g.coordinatorName || "";
+            opt.dataset.status = g.status || "Active";
+            opt.dataset.weeks = g.weeksCompleted || 0;
+            groupSelect.appendChild(opt);
+          });
+          setStatus("");
+        })
+        .catch(err => setStatus(err.message || "Failed to load groups"));
+    }
+
+    function loadMembersForSelection() {
+      const meta = getSelectedGroupMeta();
+      if (!meta) {
+        buildMembersUI([]);
+        return;
+      }
+
+      statusSel.value = meta.status || "Active";
+      weeksSel.value = String(meta.weeksCompleted || 0);
+      toggleWeeks();
+
+      setStatus("Loading members...");
+      callApi("getGroupMembers", { GroupName: meta.groupName })
+        .then(res => {
+          if (res.result !== "success") throw new Error(res.error || "Failed to load members");
+          buildMembersUI(res.members || []);
+          setStatus("");
+        })
+        .catch(err => setStatus(err.message || "Failed to load members"));
+    }
+
+    function handleSubmit() {
+      setStatus("");
+      const meta = getSelectedGroupMeta();
+      if (!meta) {
+        setStatus("Please select a group");
+        return;
+      }
+
+      const membersUpdate = {};
+      membersList.querySelectorAll("input[type='checkbox']").forEach(cb => {
+        membersUpdate[cb.dataset.participantId] = cb.checked;
+      });
+
+      const payload = {
+        groupID: meta.groupID,
+        groupName: meta.groupName,
+        coordinatorName: meta.coordinatorName,
+        status: statusSel.value,
+        weeksCompleted: statusSel.value === "Active" ? weeksSel.value : "0",
+        notes: notesEl.value.trim(),
+        today,
+        members: JSON.stringify(membersUpdate)
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+
+      callApi("updateGroupStatus", payload)
+        .then(res => {
+          if (res.result !== "success") throw new Error(res.error || "Update failed");
+          setStatus("Update saved", true);
+        })
+        .catch(err => setStatus(err.message || "Update failed"))
+        .finally(() => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit Update";
+        });
+    }
+
+    // Init
+    fillWeeksOptions();
+    toggleWeeks();
+    language.addEventListener("change", loadGroups);
+    groupSelect.addEventListener("change", loadMembersForSelection);
+    statusSel.addEventListener("change", toggleWeeks);
+    submitBtn.addEventListener("click", handleSubmit);
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("todayLine").textContent = `Today: ${today}`;
+      loadGroups();
+    });
+  </script>
+</body>
+</html>

@@ -69,11 +69,13 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | AcceptSuggestion | Boolean | Admin confirms suggested group |
 | SuggestedGroup | String | System-generated group suggestion |
 | Notes | String | Admin notes |
+| IsActive | Boolean | Coordinator-updated participation flag |
 
 ### 3.3 Groups Sheet Columns
 
 | Column | Type | Notes |
 |--------|------|-------|
+| GroupID | String | Unique opaque ID (e.g., G-0001) |
 | GroupName | String | Formatted as CoC-<Language>-<Sequence> (e.g., CoC-English-001) |
 | Language | String | Full language name |
 | Day | String | Extracted from slot suggestions (e.g., Mon, Tue) |
@@ -83,6 +85,8 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | MemberCount | Number | Auto-computed by refresh |
 | Status | String | Active, Inactive, etc. |
 | Sequence | Number | Language-specific sequence number |
+| WeeksCompleted | Number | Coordinator-updated weeks completed (0–20) |
+| Notes | String | Coordinator notes |
 
 ### 3.4 AdminDashboard Sheet Columns
 
