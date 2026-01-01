@@ -244,7 +244,7 @@
       callApi("updateGroupStatus", payload)
         .then(res => {
           if (res.result !== "success") throw new Error(res.error || "Update failed");
-          setStatus("Update saved. You can close this page, or submit if you have more changes.", true);
+          setStatus("Update saved successfully. You can close this page.", true);
         })
         .catch(err => setStatus(err.message || "Update failed"))
         .finally(() => {
