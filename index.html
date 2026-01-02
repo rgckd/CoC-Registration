@@ -151,48 +151,59 @@
       <tr>
         <th>Day</th>
         <th>
+          �
+          <div class="time-label" data-i18n="morning">Morning (9am – noon)</div>
+        </th>
+        <th>
           🌤️
-          <div class="time-label" data-i18n="day">Day (10am – 5pm)</div>
+          <div class="time-label" data-i18n="afternoon">Afternoon (noon – 5pm)</div>
         </th>
         <th>
           🌙
-          <div class="time-label" data-i18n="evening">Evening (5pm – 10pm)</div>
+          <div class="time-label" data-i18n="evening">Evening (5pm – 9pm)</div>
         </th>
       </tr>
 
       <tr>
         <td>Mon</td>
-        <td><input type="checkbox" name="Times" value="Mon Day"></td>
+        <td><input type="checkbox" name="Times" value="Mon Morning"></td>
+        <td><input type="checkbox" name="Times" value="Mon Afternoon"></td>
         <td><input type="checkbox" name="Times" value="Mon Evening"></td>
       </tr>
       <tr>
         <td>Tue</td>
-        <td><input type="checkbox" name="Times" value="Tue Day"></td>
+        <td><input type="checkbox" name="Times" value="Tue Morning"></td>
+        <td><input type="checkbox" name="Times" value="Tue Afternoon"></td>
         <td><input type="checkbox" name="Times" value="Tue Evening"></td>
       </tr>
       <tr>
         <td>Wed</td>
-        <td><input type="checkbox" name="Times" value="Wed Day"></td>
+        <td><input type="checkbox" name="Times" value="Wed Morning"></td>
+        <td><input type="checkbox" name="Times" value="Wed Afternoon"></td>
         <td><input type="checkbox" name="Times" value="Wed Evening"></td>
       </tr>
       <tr>
         <td>Thu</td>
-        <td><input type="checkbox" name="Times" value="Thu Day"></td>
+        <td><input type="checkbox" name="Times" value="Thu Morning"></td>
+        <td><input type="checkbox" name="Times" value="Thu Afternoon"></td>
         <td><input type="checkbox" name="Times" value="Thu Evening"></td>
       </tr>
       <tr>
         <td>Fri</td>
-        <td><input type="checkbox" name="Times" value="Fri Day"></td>
+        <td><input type="checkbox" name="Times" value="Fri Morning"></td>
+        <td><input type="checkbox" name="Times" value="Fri Afternoon"></td>
         <td><input type="checkbox" name="Times" value="Fri Evening"></td>
       </tr>
       <tr>
         <td>Sat</td>
-        <td><input type="checkbox" name="Times" value="Sat Day"></td>
+        <td><input type="checkbox" name="Times" value="Sat Morning"></td>
+        <td><input type="checkbox" name="Times" value="Sat Afternoon"></td>
         <td><input type="checkbox" name="Times" value="Sat Evening"></td>
       </tr>
       <tr>
         <td>Sun</td>
-        <td><input type="checkbox" name="Times" value="Sun Day"></td>
+        <td><input type="checkbox" name="Times" value="Sun Morning"></td>
+        <td><input type="checkbox" name="Times" value="Sun Afternoon"></td>
         <td><input type="checkbox" name="Times" value="Sun Evening"></td>
       </tr>
     </table>
@@ -291,28 +302,33 @@ if (
   <script>
     const translations = {
   English: {
-    day: "Day (10am – 5pm)",
-    evening: "Evening (5pm – 10pm)",
+    morning: "Morning (9am – noon)",
+    afternoon: "Afternoon (noon – 5pm)",
+    evening: "Evening (5pm – 9pm)",
     english: "Do you know English?"
   },
   Tamil: {
-    day: "10am – 5pm",
-    evening: "5pm – 10pm",
+    morning: "காலை (9am – 12pm)",
+    afternoon: "பிற்பகல் (12pm – 5pm)",
+    evening: "மாலை (5pm – 9pm)",
     english: "உங்களுக்கு ஆங்கிலம் தெரியுமா?"
   },
   Hindi: {
-    day: "10am – 5pm",
-    evening: "5pm – 10pm",
+    morning: "सुबह (9am – 12pm)",
+    afternoon: "दोपहर (12pm – 5pm)",
+    evening: "शाम (5pm – 9pm)",
     english: "क्या आपको अंग्रेज़ी आती है?"
   },
   Kannada: {
-    day: "10am – 5pm",
-    evening: "5pm – 10pm",
+    morning: "ಬೆಳಗಿನ (9am – 12pm)",
+    afternoon: "ಮಧ್ಯಾಹ್ನ (12pm – 5pm)",
+    evening: "ಸಂಜೆ (5pm – 9pm)",
     english: "ನೀವು ಇಂಗ್ಲಿಷ್ ತಿಳಿದಿದ್ದೀರಾ?"
   },
   Telugu: {
-    day: "10am – 5pm",
-    evening: "5pm – 10pm",
+    morning: "ఉదయం (9am – 12pm)",
+    afternoon: "మధ్యాహ్నం (12pm – 5pm)",
+    evening: "సాయంత్రం (5pm – 9pm)",
     english: "మీకు ఆంగ్లం తెలుసా?"
   }
 };
