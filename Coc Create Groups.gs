@@ -323,12 +323,12 @@ function updateAdminDashboard() {
 
   const langs = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
   const metrics = [
-    { key: "ActiveParticipants", label: "Active Participants" },
-    { key: "Unassigned", label: "Unassigned Participants" },
-    { key: "Assigned", label: "Assigned Participants" },
     { key: "TotalGroups", label: "Total Groups" },
     { key: "ActiveGroups", label: "Active Groups" },
-    { key: "NoCoordinator", label: "Groups without Coordinator" }
+    { key: "NoCoordinator", label: "Groups without Coordinator" },
+    { key: "Assigned", label: "Assigned Participants" },
+    { key: "ActiveParticipants", label: "Active Participants" },
+    { key: "Unassigned", label: "Unassigned Participants" }
   ];
 
   d.getRange(2, 1, 50, 10).clearContent();
