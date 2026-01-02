@@ -122,7 +122,7 @@ function suggestGroupsForLanguage(language) {
       pSheet.getRange(p.row, pIdx.SuggestedGroup + 1)
         .setValue(match[gIdx.GroupName]);
     } else {
-      const seq = getNextGroupSequence(gData, gIdx, language);
+      const seq = getNextGroupSequenceByCount(gData, gIdx, language);
       pSheet.getRange(p.row, pIdx.SuggestedGroup + 1)
         .setValue(`NEW → CoC-${language}-${String(seq).padStart(3, "0")} (${slots[0] || "TBD"})`);
     }
@@ -161,7 +161,6 @@ function acceptGroupSuggestions() {
     if (!gData.some(g => g[gIdx.GroupName] === groupName)) {
       const slot = (row[pIdx.SuggestedGroup].match(/\((.*?)\)/) || [])[1] || "TBD";
       const [day, time] = slot.split(" ");
-      const seq = getNextGroupSequence(gData, gIdx, row[pIdx.Language]);
 
       const newRow = new Array(gHeaders.length).fill("");
       newRow[gIdx.GroupID] = getNextGroupId(gData, gIdx);
@@ -173,7 +172,6 @@ function acceptGroupSuggestions() {
       newRow[gIdx.CoordinatorName] = "";
       newRow[gIdx.MemberCount] = 0;
       newRow[gIdx.Status] = "Active";
-      newRow[gIdx.Sequence] = seq;
       if (gIdx.WeeksCompleted !== undefined) newRow[gIdx.WeeksCompleted] = 0;
       if (gIdx.Notes !== undefined) newRow[gIdx.Notes] = "";
 
@@ -255,8 +253,8 @@ function updateGroupsSheet() {
       }
 
       // Get sequence number from group name
-      const seqMatch = groupName.match(/-(\d+)$/);
-      const seq = seqMatch ? parseInt(seqMatch[1], 10) : 1;
+      const seqMatch = groupName.match(/-(\d{3})$/);
+      const seq = seqMatch ? parseInt(seqMatch[1], 10) : gData.filter(r => r[gIdx.Language] === language).length + 1;
 
       const newRow = new Array(gHeaders.length).fill("");
       newRow[gIdx.GroupID] = getNextGroupId(gData, gIdx);
@@ -268,7 +266,6 @@ function updateGroupsSheet() {
       newRow[gIdx.CoordinatorName] = "";
       newRow[gIdx.MemberCount] = 0;
       newRow[gIdx.Status] = "Active";
-      newRow[gIdx.Sequence] = seq;
       if (gIdx.WeeksCompleted !== undefined) newRow[gIdx.WeeksCompleted] = 0;
       if (gIdx.Notes !== undefined) newRow[gIdx.Notes] = "";
 
@@ -372,8 +369,8 @@ function getNextParticipantIdStart(sh, idx) {
   }
   return m + 1;
 }
-function getNextGroupSequence(d, idx, l) {
-  return Math.max(0, ...d.filter(r => r[idx.Language] === l).map(r => Number(r[idx.Sequence]) || 0)) + 1;
+function getNextGroupSequenceByCount(d, idx, l) {
+  return d.filter(r => r[idx.Language] === l).length + 1;
 }
 function getNextGroupId(d, idx) {
   let maxId = 0;
