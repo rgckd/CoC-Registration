@@ -55,22 +55,24 @@ function populateParticipantsFromCustomForm() {
     const email = r[sIdx.Email];
     if (!email || existingEmails.has(email)) return;
 
-    rows.push([
-      "P-" + String(nextId++).padStart(4, "0"), // ParticipantID
-      r[sIdx.Name],
-      email,
-      r[sIdx.WhatsApp],
-      normalizeLanguage(r[sIdx.Language]),
-      r[sIdx.Center],
-      r[sIdx.PreferredTimes],        // PreferredSlots in Participants
-      r[sIdx.Coordinator] === "Yes", // CoordinatorWilling
-      "",                             // AssignedGroup
-      "Unassigned",
-      false,                          // IsGroupCoordinator
-      false,                          // AcceptSuggestion
-      "",                             // SuggestedGroup
-      ""                              // Notes
-    ]);
+    const newRow = new Array(tHeaders.length).fill("");
+    newRow[tIdx.ParticipantID] = "P-" + String(nextId++).padStart(4, "0");
+    newRow[tIdx.Name] = r[sIdx.Name];
+    newRow[tIdx.Email] = email;
+    newRow[tIdx.WhatsApp] = r[sIdx.WhatsApp];
+    newRow[tIdx.Language] = normalizeLanguage(r[sIdx.Language]);
+    newRow[tIdx.Center] = r[sIdx.Center];
+    newRow[tIdx.PreferredSlots] = r[sIdx.PreferredTimes];
+    newRow[tIdx.CoordinatorWilling] = r[sIdx.Coordinator] === "Yes";
+    newRow[tIdx.AssignedGroup] = "";
+    newRow[tIdx.AssignmentStatus] = "Unassigned";
+    newRow[tIdx.IsGroupCoordinator] = false;
+    newRow[tIdx.AcceptSuggestion] = false;
+    newRow[tIdx.SuggestedGroup] = "";
+    if (tIdx.Notes !== undefined) newRow[tIdx.Notes] = "";
+    if (tIdx.IsActive !== undefined) newRow[tIdx.IsActive] = true;
+
+    rows.push(newRow);
   });
 
   if (rows.length) {
