@@ -323,6 +323,7 @@ function updateAdminDashboard() {
 
   const langs = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
   const metrics = [
+    { key: "ActiveParticipants", label: "Active Participants" },
     { key: "Unassigned", label: "Unassigned Participants" },
     { key: "Assigned", label: "Assigned Participants" },
     { key: "TotalGroups", label: "Total Groups" },
@@ -336,7 +337,9 @@ function updateAdminDashboard() {
     d.getRange(i + 2, 1).setValue(m.label);
     langs.forEach((l, j) => {
       let v = 0;
-      if (m.key === "Unassigned") {
+      if (m.key === "ActiveParticipants") {
+        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.IsActive] === true).length;
+      } else if (m.key === "Unassigned") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Unassigned").length;
       } else if (m.key === "Assigned") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Assigned").length;
