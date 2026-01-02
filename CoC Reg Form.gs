@@ -305,7 +305,7 @@ function validateSubmission(data) {
   }
 
   if (data.Language !== "English") {
-    if (data.EnglishAbility !== "Yes") {
+    if (!data.EnglishAbility) {
       missing.push("Do you know English?");
     }
   }
