@@ -44,16 +44,22 @@ function populateParticipantsFromCustomForm() {
   const sIdx = indexMap(sHeaders);
   const tIdx = indexMap(tHeaders);
 
-  const existingEmails = new Set(
-    tData.map(r => r[tIdx.Email]).filter(Boolean)
-  );
+  // Ensure "Processed" column exists in CustomForm
+  if (sIdx.Processed === undefined) {
+    src.insertColumns(src.getLastColumn() + 1);
+    src.getRange(1, src.getLastColumn()).setValue("Processed");
+    sIdx.Processed = src.getLastColumn() - 1;
+  }
 
   let nextId = getNextParticipantIdStart(tgt, tIdx.ParticipantID);
   let rows = [];
+  let processedRowIndices = [];
 
-  sData.forEach(r => {
+  sData.forEach((r, index) => {
     const email = r[sIdx.Email];
-    if (!email || existingEmails.has(email)) return;
+    const isProcessed = r[sIdx.Processed] === true || r[sIdx.Processed] === "TRUE";
+    
+    if (!email || isProcessed) return;
 
     const newRow = new Array(tHeaders.length).fill("");
     newRow[tIdx.ParticipantID] = "P-" + String(nextId++).padStart(4, "0");
@@ -73,11 +79,17 @@ function populateParticipantsFromCustomForm() {
     if (tIdx.IsActive !== undefined) newRow[tIdx.IsActive] = true;
 
     rows.push(newRow);
+    processedRowIndices.push(index + 2); // +2 because of header row and 1-based indexing
   });
 
   if (rows.length) {
     tgt.getRange(tgt.getLastRow() + 1, 1, rows.length, rows[0].length)
       .setValues(rows);
+    
+    // Mark processed rows in CustomForm
+    processedRowIndices.forEach(rowNum => {
+      src.getRange(rowNum, sIdx.Processed + 1).setValue(true);
+    });
   }
 }
 
