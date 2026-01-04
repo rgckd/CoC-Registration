@@ -84,6 +84,7 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | Time | String | Day or Evening |
 | CoordinatorEmail | String | Populated from Participants when admin assigns coordinator |
 | CoordinatorName | String | Populated from Participants when admin assigns coordinator |
+| CoordinatorWhatsApp | String | Populated from Participants when admin assigns coordinator |
 | MemberCount | Number | Auto-computed by refresh |
 | Status | String | Active, Inactive, etc. |
 | Sequence | Number | Language-specific sequence number |

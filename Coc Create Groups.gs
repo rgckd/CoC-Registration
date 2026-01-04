@@ -229,6 +229,7 @@ function acceptGroupSuggestions() {
       newRow[gIdx.Time] = time || "";
       newRow[gIdx.CoordinatorEmail] = "";
       newRow[gIdx.CoordinatorName] = "";
+      if (gIdx.CoordinatorWhatsApp !== undefined) newRow[gIdx.CoordinatorWhatsApp] = "";
       newRow[gIdx.MemberCount] = 0;
       newRow[gIdx.Status] = "Active";
       if (gIdx.WeeksCompleted !== undefined) newRow[gIdx.WeeksCompleted] = 0;
@@ -315,14 +316,23 @@ function updateGroupsSheet() {
       const seqMatch = groupName.match(/-(\d{3})$/);
       const seq = seqMatch ? parseInt(seqMatch[1], 10) : gData.filter(r => r[gIdx.Language] === language).length + 1;
 
+      // Find coordinator in the group members
+      const coordinator = members[groupName].find(m => {
+        const val = m[pIdx.IsGroupCoordinator];
+        return val === true || val === "TRUE" || val === "true";
+      });
+
       const newRow = new Array(gHeaders.length).fill("");
       newRow[gIdx.GroupID] = getNextGroupId(gData, gIdx);
       newRow[gIdx.GroupName] = groupName;
       newRow[gIdx.Language] = language;
       newRow[gIdx.Day] = day;
       newRow[gIdx.Time] = time;
-      newRow[gIdx.CoordinatorEmail] = "";
-      newRow[gIdx.CoordinatorName] = "";
+      newRow[gIdx.CoordinatorEmail] = coordinator ? coordinator[pIdx.Email] : "";
+      newRow[gIdx.CoordinatorName] = coordinator ? coordinator[pIdx.Name] : "";
+      if (gIdx.CoordinatorWhatsApp !== undefined) {
+        newRow[gIdx.CoordinatorWhatsApp] = coordinator ? coordinator[pIdx.WhatsApp] : "";
+      }
       newRow[gIdx.MemberCount] = 0;
       newRow[gIdx.Status] = "Active";
       if (gIdx.WeeksCompleted !== undefined) newRow[gIdx.WeeksCompleted] = 0;
@@ -358,6 +368,9 @@ function updateGroupsSheet() {
     });
     r[gIdx.CoordinatorName] = c ? c[pIdx.Name] : "";
     r[gIdx.CoordinatorEmail] = c ? c[pIdx.Email] : "";
+    if (gIdx.CoordinatorWhatsApp !== undefined) {
+      r[gIdx.CoordinatorWhatsApp] = c ? c[pIdx.WhatsApp] : "";
+    }
   });
 
   gSheet.getRange(2, 1, gData.length, gHeaders.length).setValues(gData);
