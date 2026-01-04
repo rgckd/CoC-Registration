@@ -118,9 +118,7 @@ function suggestGroupsForLanguage(language) {
   const pIdx = indexMap(pHeaders);
   const gIdx = indexMap(gHeaders);
 
-  ensureGroupIds(gData, gIdx);
-
-  ensureGroupIds(gData, gIdx);
+  ensureGroupIds(gSheet, gData, gIdx);
 
   const participants = pData
     .map((r, i) => ({ row: i + 2, data: r }))
