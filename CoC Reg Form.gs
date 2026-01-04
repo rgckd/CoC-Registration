@@ -284,6 +284,7 @@ function normalizeRequest(e) {
     Coordinator: sanitize(e.parameter.Coordinator || ""),
     Language: e.parameter.Language || "English",
     EnglishAbility: sanitize(e.parameter.EnglishAbility || ""),
+    Comments: sanitize(e.parameter.Comments || ""),
     Times: e.parameters && e.parameters.Times
       ? [].concat(e.parameters.Times)
       : []
@@ -327,8 +328,10 @@ function buildConfirmationEmail(data) {
       email: "Email",
       phone: "WhatsApp",
       center: "Center",
+      english: "English proficiency",
       times: "Preferred days & times",
       coordinator: "Willing to be a coordinator",
+      comments: "Comments",
       footer: "We will contact you soon."
     },
     Tamil: {
@@ -338,8 +341,10 @@ function buildConfirmationEmail(data) {
       email: "மின்னஞ்சல்",
       phone: "வாட்ஸாப்ப்",
       center: "மையம்",
+      english: "ஆங்கிலம் தெரியுமா",
       times: "விருப்பமான நாட்கள் & நேரங்கள்",
       coordinator: "ஒருங்கிணைப்பாளராக இருக்க தயாரா",
+      comments: "கருத்துக்கள்",
       footer: "விரைவில் உங்களை தொடர்பு கொள்வோம்."
     },
     Hindi: {
@@ -349,8 +354,10 @@ function buildConfirmationEmail(data) {
       email: "ईमेल",
       phone: "व्हाट्सएप",
       center: "केंद्र",
+      english: "अंग्रेज़ी का ज्ञान",
       times: "पसंदीदा दिन और समय",
       coordinator: "समन्वयक बनने की इच्छा",
+      comments: "टिप्पणियाँ",
       footer: "हम जल्द ही आपसे संपर्क करेंगे।"
     },
     Kannada: {
@@ -360,8 +367,10 @@ function buildConfirmationEmail(data) {
       email: "ಇಮೇಲ್",
       phone: "ವಾಟ್ಸಾಪ್",
       center: "ಕೇಂದ್ರ",
+      english: "ಇಂಗ್ಲಿಷ್ ಜ್ಞಾನ",
       times: "ಆದ್ಯತೆಯ ದಿನಗಳು ಮತ್ತು ಸಮಯಗಳು",
       coordinator: "ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛೆ",
+      comments: "ಅಭಿಪ್ರಾಯಗಳು",
       footer: "ನಾವು ಶೀಘ್ರದಲ್ಲೇ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ."
     },
     Telugu: {
@@ -371,14 +380,18 @@ function buildConfirmationEmail(data) {
       email: "ఇమెయిల్",
       phone: "వాట్సాప్",
       center: "కేంద్రం",
+      english: "ఆంగ్ల పరిజ్ఞానం",
       times: "ఇష్టమైన రోజులు & సమయాలు",
       coordinator: "సమన్వయకర్తగా ఉండాలా",
+      comments: "వ్యాఖ్యలు",
       footer: "మేము త్వరలో మిమ్మల్ని సంప్రదిస్తాము."
     }
   };
 
   const t = labels[data.Language] || labels.English;
   const timesHtml = data.Times.map(t => `<li>${t}</li>`).join("");
+  const englishAbility = data.Language !== "English" && data.EnglishAbility ? `<p><strong>${t.english}:</strong> ${data.EnglishAbility}</p>` : "";
+  const comments = data.Comments ? `<p><strong>${t.comments}:</strong> ${data.Comments}</p>` : "";
 
   return `
     <p>🙏 <strong>${t.title}</strong></p>
@@ -387,9 +400,11 @@ function buildConfirmationEmail(data) {
     <p><strong>${t.email}:</strong> ${data.Email}</p>
     <p><strong>${t.phone}:</strong> ${data.WhatsApp}</p>
     <p><strong>${t.center}:</strong> ${data.Center}</p>
+    ${englishAbility}
     <p><strong>${t.times}:</strong></p>
     <ul>${timesHtml}</ul>
     <p><strong>${t.coordinator}:</strong> ${data.Coordinator}</p>
+    ${comments}
     <p>${t.footer}</p>
   `;
 }
