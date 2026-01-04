@@ -50,6 +50,8 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | PreferredTimes | String | Comma-separated day/time slots (e.g., "Mon Day, Tue Evening") |
 | Coordinator | String | Yes/No indicating willingness to coordinate |
 | Language | String | Full language name (required) |
+| Processed | Boolean | Marks if the row has been transferred to Participants sheet |
+| Comments | String | Optional comments from participant (last column) |
 
 ### 3.2 Participants Sheet Columns
 
@@ -167,7 +169,7 @@ Validation (backend authoritative)
   ↓
 Google Sheet (CustomForm) - append-only
   ↓
-Confirmation Email
+Confirmation Email (includes all fields + English proficiency for non-English + comments if provided)
 ```
 
 ---
@@ -184,6 +186,7 @@ Confirmation Email
 | English proficiency | `EnglishAbility` | Conditional | Required if Language ≠ English |
 | Preferred times | `Times` | Yes | Checkbox grid |
 | Coordinator willing | `Coordinator` | Yes | Yes / No (select dropdown) |
+| Comments | `Comments` | No | Optional free text (label: "Comments (if any)", not translated) |
 | Honeypot | `honey` | No | Must be empty (spam trap) |
 | Captcha token | `recaptcha` | Yes | Added programmatically by form |
 
@@ -284,7 +287,7 @@ Examples:
 - CoC-Tamil-004
 - CoC-Hindi-002
 
-**Sequence is per-language.** New groups continue the highest existing sequence for that language.
+**Sequence is per-language and count-based.** The sequence number is determined by counting existing groups for that language and adding 1. For example, if there are 4 Tamil groups, the next suggested group will be `CoC-Tamil-005`.
 
 ---
 
@@ -299,9 +302,11 @@ Examples:
 
 #### Suggest Groups
 - Triggered by language-specific menu items
-- Suggests group names for unassigned participants
+- Suggests **NEW group names only** for unassigned participants
+- Does **not** assign participants to existing groups
+- Each participant gets a unique new group suggestion based on their first preferred time slot
 - Does **not** auto-commit assignments
-- Suggestions appear in SuggestedGroup column
+- Suggestions appear in SuggestedGroup column with format: `NEW → CoC-{Language}-{Seq} ({TimeSlot})`
 - Admin reviews and checks AcceptSuggestion checkbox to confirm
 
 #### Accept Group Suggestions

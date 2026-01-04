@@ -131,21 +131,9 @@ function suggestGroupsForLanguage(language) {
 
   participants.forEach(p => {
     const slots = splitSlots(p.data[pIdx.PreferredSlots]);
-
-    const match = gData.find(g =>
-      g[gIdx.Language] === language &&
-      g[gIdx.Status] === "Active" &&
-      slots.includes(`${g[gIdx.Day]} ${g[gIdx.Time]}`)
-    );
-
-    if (match) {
-      pSheet.getRange(p.row, pIdx.SuggestedGroup + 1)
-        .setValue(match[gIdx.GroupName]);
-    } else {
-      const seq = getNextGroupSequenceByCount(gData, gIdx, language);
-      pSheet.getRange(p.row, pIdx.SuggestedGroup + 1)
-        .setValue(`NEW → CoC-${language}-${String(seq).padStart(3, "0")} (${slots[0] || "TBD"})`);
-    }
+    const seq = getNextGroupSequenceByCount(gData, gIdx, language);
+    pSheet.getRange(p.row, pIdx.SuggestedGroup + 1)
+      .setValue(`NEW → CoC-${language}-${String(seq).padStart(3, "0")} (${slots[0] || "TBD"})`);
   });
 }
 
