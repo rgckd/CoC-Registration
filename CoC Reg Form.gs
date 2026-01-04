@@ -90,8 +90,9 @@ function handleRegistration(e) {
     data.Center,          // Center
     data.EnglishAbility || "Yes",  // EnglishProficiency
     data.Times.join(", "),         // PreferredTimes
-    data.Coordinator      // Coordinator
-    // Processed column will be empty for new rows
+    data.Coordinator,     // Coordinator
+    "",                   // Processed (empty for new rows)
+    data.Comments || ""   // Comments
   ]);
 
   const emailBody = buildConfirmationEmail(data);
