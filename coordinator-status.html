@@ -21,11 +21,21 @@
     #statusMsg { margin-top: 12px; font-weight: 600; color: #d93025; }
     #statusMsg.success { color: #0b8043; }
 
-    /* Pin reCAPTCHA badge bottom-left instead of default bottom-right */
+    /* Hide reCAPTCHA badge */
     .grecaptcha-badge {
-      left: 12px !important;
-      right: auto !important;
-      bottom: 12px !important;
+      visibility: hidden;
+    }
+
+    .recaptcha-text {
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+      margin-top: 20px;
+    }
+
+    .recaptcha-text a {
+      color: #4285f4;
+      text-decoration: none;
     }
   </style>
 </head>
@@ -73,6 +83,12 @@
   <div id="statusMsg"></div>
 
   <button type="button" id="submitBtn">Submit Update</button>
+
+  <div class="recaptcha-text">
+    Protected by reCAPTCHA - 
+    <a href="https://www.google.com/intl/en/policies/privacy/" target="_blank">Privacy</a> - 
+    <a href="https://www.google.com/intl/en/policies/terms/" target="_blank">Terms</a>
+  </div>
 
   <script src="js/coordinator-status.js"></script>
 </body>
