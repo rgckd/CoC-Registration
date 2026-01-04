@@ -127,11 +127,38 @@ function suggestGroupsForLanguage(language) {
       p.data[pIdx.AssignmentStatus] === "Unassigned"
     );
 
+  // Group participants by first preferred time slot
+  const slotGroups = {};
   participants.forEach(p => {
     const slots = splitSlots(p.data[pIdx.PreferredSlots]);
-    const seq = getNextGroupSequenceByCount(gData, gIdx, language);
-    pSheet.getRange(p.row, pIdx.SuggestedGroup + 1)
-      .setValue(`NEW → CoC-${language}-${String(seq).padStart(3, "0")} (${slots[0] || "TBD"})`);
+    const firstSlot = slots[0] || "TBD";
+    if (!slotGroups[firstSlot]) {
+      slotGroups[firstSlot] = [];
+    }
+    slotGroups[firstSlot].push(p);
+  });
+
+  let seq = getNextGroupSequenceByCount(gData, gIdx, language);
+
+  // Process each time slot group
+  Object.keys(slotGroups).forEach(slot => {
+    const group = slotGroups[slot];
+    const hasCoordinator = group.some(p => p.data[pIdx.CoordinatorWilling] === true);
+    
+    // Split large groups into subgroups of max 8 members
+    const subgroups = [];
+    for (let i = 0; i < group.length; i += 8) {
+      subgroups.push(group.slice(i, i + 8));
+    }
+
+    // Assign same sequence to all members in each subgroup
+    subgroups.forEach(subgroup => {
+      const groupName = `NEW → CoC-${language}-${String(seq).padStart(3, "0")} (${slot})`;
+      subgroup.forEach(p => {
+        pSheet.getRange(p.row, pIdx.SuggestedGroup + 1).setValue(groupName);
+      });
+      seq++; // Increment for next group
+    });
   });
 }
 
