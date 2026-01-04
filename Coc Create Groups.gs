@@ -192,6 +192,7 @@ function suggestGroupsForLanguage(language) {
  * ACCEPT GROUP SUGGESTIONS
  * - Creates groups
  * - Assigns participants
+ * - Sends assignment emails
  * - Computes member count & coordinator
  ************************************************/
 function acceptGroupSuggestions() {
@@ -208,25 +209,49 @@ function acceptGroupSuggestions() {
   const pIdx = indexMap(pHeaders);
   const gIdx = indexMap(gHeaders);
 
+  const processedParticipants = [];
+  const groupsToProcess = new Set();
+
+  // Step 1 & 2: Filter and extract group names
   pData.forEach((row, i) => {
     if (row[pIdx.AcceptSuggestion] !== true) return;
     if (!row[pIdx.SuggestedGroup]) return;
 
-    const m = row[pIdx.SuggestedGroup].match(/CoC-[^-]+-\d{3}/);
-    if (!m) return;
+    let groupName = "";
+    let timing = "";
 
-    const groupName = m[0];
+    // Pattern a: "NEW → CoC-Tamil-020 (Mon Morning)"
+    const newPatternMatch = row[pIdx.SuggestedGroup].match(/NEW\s*→\s*(CoC-[^-]+-\d{3})\s*\(([^)]+)\)/);
+    if (newPatternMatch) {
+      groupName = newPatternMatch[1];
+      timing = newPatternMatch[2];
+    } else {
+      // Pattern b: "CoC-Tamil-020"
+      const directMatch = row[pIdx.SuggestedGroup].match(/CoC-[^-]+-\d{3}/);
+      if (directMatch) {
+        groupName = directMatch[0];
+      }
+    }
 
+    if (!groupName) return;
+
+    // Step 3: Create group if doesn't exist
     if (!gData.some(g => g[gIdx.GroupName] === groupName)) {
-      const slot = (row[pIdx.SuggestedGroup].match(/\((.*?)\)/) || [])[1] || "TBD";
-      const [day, time] = slot.split(" ");
+      let day = "TBD";
+      let time = "TBD";
+      
+      if (timing && timing !== "TBD") {
+        const parts = timing.split(" ");
+        day = parts[0] || "TBD";
+        time = parts[1] || "TBD";
+      }
 
       const newRow = new Array(gHeaders.length).fill("");
       newRow[gIdx.GroupID] = getNextGroupId(gData, gIdx);
       newRow[gIdx.GroupName] = groupName;
       newRow[gIdx.Language] = row[pIdx.Language];
-      newRow[gIdx.Day] = day || "";
-      newRow[gIdx.Time] = time || "";
+      newRow[gIdx.Day] = day;
+      newRow[gIdx.Time] = time;
       newRow[gIdx.CoordinatorEmail] = "";
       newRow[gIdx.CoordinatorName] = "";
       if (gIdx.CoordinatorWhatsApp !== undefined) newRow[gIdx.CoordinatorWhatsApp] = "";
@@ -239,21 +264,67 @@ function acceptGroupSuggestions() {
       gData.push(newRow);
     }
 
+    // Step 4: Update participant
     row[pIdx.AssignedGroup] = groupName;
     row[pIdx.AssignmentStatus] = "Assigned";
     row[pIdx.SuggestedGroup] = "";
     row[pIdx.AcceptSuggestion] = false;
     pData[i] = row;
+
+    // Store for email sending
+    processedParticipants.push({
+      rowIndex: i,
+      email: row[pIdx.Email],
+      name: row[pIdx.Name],
+      language: row[pIdx.Language],
+      groupName: groupName,
+      isCoordinator: row[pIdx.IsGroupCoordinator] === true || row[pIdx.IsGroupCoordinator] === "TRUE" || row[pIdx.IsGroupCoordinator] === "true"
+    });
+
+    groupsToProcess.add(groupName);
   });
 
+  // Write participant updates
   pSheet.getRange(2, 1, pData.length, pHeaders.length).setValues(pData);
-
-  // Ensure data is written before refresh
   SpreadsheetApp.flush();
 
-  // Immediately recompute derived data
+  // Refresh derived data to populate coordinator info
   updateGroupsSheet();
   updateAdminDashboard();
+
+  // Reload data after refresh
+  const gDataRefreshed = gSheet.getDataRange().getValues();
+  const gHeadersRefreshed = gDataRefreshed.shift();
+  const gIdxRefreshed = indexMap(gHeadersRefreshed);
+
+  // Step 5: Send emails to processed participants
+  processedParticipants.forEach(participant => {
+    const groupRow = gDataRefreshed.find(g => g[gIdxRefreshed.GroupName] === participant.groupName);
+    if (!groupRow) return;
+
+    const groupInfo = {
+      name: groupRow[gIdxRefreshed.GroupName],
+      day: groupRow[gIdxRefreshed.Day] || "TBD",
+      time: groupRow[gIdxRefreshed.Time] || "TBD",
+      coordinatorName: groupRow[gIdxRefreshed.CoordinatorName] || "",
+      coordinatorEmail: groupRow[gIdxRefreshed.CoordinatorEmail] || "",
+      coordinatorWhatsApp: gIdxRefreshed.CoordinatorWhatsApp !== undefined ? (groupRow[gIdxRefreshed.CoordinatorWhatsApp] || "") : ""
+    };
+
+    if (participant.isCoordinator) {
+      // Send coordinator email with all members
+      const members = pData.filter(r => r[pIdx.AssignedGroup] === participant.groupName)
+        .map(r => ({
+          name: r[pIdx.Name],
+          email: r[pIdx.Email],
+          whatsapp: r[pIdx.WhatsApp]
+        }));
+      sendCoordinatorAssignmentEmail(participant.email, participant.name, participant.language, groupInfo, members);
+    } else {
+      // Send member email with coordinator info
+      sendMemberAssignmentEmail(participant.email, participant.name, participant.language, groupInfo);
+    }
+  });
 }
 
 /************************************************
@@ -471,4 +542,159 @@ function ensureGroupIds(d, idx) {
     const headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
     sh.getRange(2, 1, d.length, headers.length).setValues(d);
   }
+}
+
+/************************************************
+ * EMAIL NOTIFICATIONS FOR GROUP ASSIGNMENTS
+ ************************************************/
+function sendMemberAssignmentEmail(email, name, language, groupInfo) {
+  const labels = getEmailLabels(language);
+  
+  const subject = labels.memberSubject;
+  const htmlBody = `
+    <p>Dear ${name},</p>
+    <p>${labels.memberIntro}</p>
+    <p><strong>${labels.groupName}:</strong> ${groupInfo.name}</p>
+    <p><strong>${labels.schedule}:</strong> ${groupInfo.day} ${groupInfo.time}</p>
+    <br>
+    <p><strong>${labels.coordinatorInfo}:</strong></p>
+    <p><strong>${labels.name}:</strong> ${groupInfo.coordinatorName}</p>
+    <p><strong>${labels.email}:</strong> ${groupInfo.coordinatorEmail}</p>
+    <p><strong>${labels.whatsapp}:</strong> ${groupInfo.coordinatorWhatsApp}</p>
+    <br>
+    <p>${labels.memberClosing}</p>
+    <p>${labels.regards}</p>
+  `;
+  
+  MailApp.sendEmail({
+    to: email,
+    subject: subject,
+    htmlBody: htmlBody
+  });
+}
+
+function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, members) {
+  const labels = getEmailLabels(language);
+  
+  const memberListHtml = members.map(m => `
+    <tr>
+      <td>${m.name}</td>
+      <td>${m.email}</td>
+      <td>${m.whatsapp}</td>
+    </tr>
+  `).join('');
+  
+  const subject = labels.coordinatorSubject;
+  const htmlBody = `
+    <p>Dear ${name},</p>
+    <p>${labels.coordinatorIntro}</p>
+    <p><strong>${labels.groupName}:</strong> ${groupInfo.name}</p>
+    <p><strong>${labels.schedule}:</strong> ${groupInfo.day} ${groupInfo.time}</p>
+    <br>
+    <p><strong>${labels.membersTitle}:</strong></p>
+    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse;">
+      <tr>
+        <th>${labels.name}</th>
+        <th>${labels.email}</th>
+        <th>${labels.whatsapp}</th>
+      </tr>
+      ${memberListHtml}
+    </table>
+    <br>
+    <p>${labels.coordinatorClosing}</p>
+    <p>${labels.regards}</p>
+  `;
+  
+  MailApp.sendEmail({
+    to: email,
+    subject: subject,
+    htmlBody: htmlBody
+  });
+}
+
+function getEmailLabels(language) {
+  const allLabels = {
+    English: {
+      memberSubject: "CoC Group Assignment Confirmation",
+      memberIntro: "You have been assigned to a CoC study group!",
+      coordinatorSubject: "CoC Group Coordinator Assignment",
+      coordinatorIntro: "You have been assigned as the coordinator for a CoC study group!",
+      groupName: "Group Name",
+      schedule: "Schedule",
+      coordinatorInfo: "Your Group Coordinator",
+      membersTitle: "Group Members",
+      name: "Name",
+      email: "Email",
+      whatsapp: "WhatsApp",
+      memberClosing: "Your coordinator will reach out to you soon with further details.",
+      coordinatorClosing: "Please reach out to your group members to schedule the first session.",
+      regards: "Best regards,<br>CoC Team"
+    },
+    Tamil: {
+      memberSubject: "CoC குழு ஒதுக்கீடு உறுதிப்படுத்தல்",
+      memberIntro: "நீங்கள் CoC படிப்பு குழுவில் சேர்க்கப்பட்டுள்ளீர்கள்!",
+      coordinatorSubject: "CoC குழு ஒருங்கிணைப்பாளர் ஒதுக்கீடு",
+      coordinatorIntro: "நீங்கள் CoC படிப்பு குழுவின் ஒருங்கிணைப்பாளராக நியமிக்கப்பட்டுள்ளீர்கள்!",
+      groupName: "குழு பெயர்",
+      schedule: "அட்டவணை",
+      coordinatorInfo: "உங்கள் குழு ஒருங்கிணைப்பாளர்",
+      membersTitle: "குழு உறுப்பினர்கள்",
+      name: "பெயர்",
+      email: "மின்னஞ்சல்",
+      whatsapp: "வாட்ஸாப்",
+      memberClosing: "உங்கள் ஒருங்கிணைப்பாளர் விரைவில் மேலும் விவரங்களுடன் உங்களை தொடர்பு கொள்வார்.",
+      coordinatorClosing: "முதல் அமர்வை திட்டமிட உங்கள் குழு உறுப்பினர்களை தொடர்பு கொள்ளவும்.",
+      regards: "நன்றி,<br>CoC குழு"
+    },
+    Hindi: {
+      memberSubject: "CoC समूह असाइनमेंट की पुष्टि",
+      memberIntro: "आपको CoC अध्ययन समूह में नियुक्त किया गया है!",
+      coordinatorSubject: "CoC समूह समन्वयक असाइनमेंट",
+      coordinatorIntro: "आपको CoC अध्ययन समूह के समन्वयक के रूप में नियुक्त किया गया है!",
+      groupName: "समूह का नाम",
+      schedule: "कार्यक्रम",
+      coordinatorInfo: "आपके समूह समन्वयक",
+      membersTitle: "समूह के सदस्य",
+      name: "नाम",
+      email: "ईमेल",
+      whatsapp: "व्हाट्सएप",
+      memberClosing: "आपके समन्वयक जल्द ही अधिक विवरण के साथ आपसे संपर्क करेंगे।",
+      coordinatorClosing: "कृपया पहला सत्र निर्धारित करने के लिए अपने समूह सदस्यों से संपर्क करें।",
+      regards: "सादर,<br>CoC टीम"
+    },
+    Kannada: {
+      memberSubject: "CoC ಗುಂಪು ನಿಯೋಜನೆ ದೃಢೀಕರಣ",
+      memberIntro: "ನೀವು CoC ಅಧ್ಯಯನ ಗುಂಪಿಗೆ ನಿಯೋಜಿಸಲ್ಪಟ್ಟಿದ್ದೀರಿ!",
+      coordinatorSubject: "CoC ಗುಂಪು ಸಮನ್ವಯಕ ನಿಯೋಜನೆ",
+      coordinatorIntro: "ನೀವು CoC ಅಧ್ಯಯನ ಗುಂಪಿನ ಸಮನ್ವಯಕರಾಗಿ ನಿಯೋಜಿಸಲ್ಪಟ್ಟಿದ್ದೀರಿ!",
+      groupName: "ಗುಂಪಿನ ಹೆಸರು",
+      schedule: "ವೇಳಾಪಟ್ಟಿ",
+      coordinatorInfo: "ನಿಮ್ಮ ಗುಂಪು ಸಮನ್ವಯಕ",
+      membersTitle: "ಗುಂಪು ಸದಸ್ಯರು",
+      name: "ಹೆಸರು",
+      email: "ಇಮೇಲ್",
+      whatsapp: "ವಾಟ್ಸಾಪ್",
+      memberClosing: "ನಿಮ್ಮ ಸಮನ್ವಯಕ ಶೀಘ್ರದಲ್ಲೇ ಹೆಚ್ಚಿನ ವಿವರಗಳೊಂದಿಗೆ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತಾರೆ.",
+      coordinatorClosing: "ಮೊದಲ ಅಧಿವೇಶನವನ್ನು ನಿಗದಿಪಡಿಸಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಗುಂಪು ಸದಸ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
+      regards: "ಧನ್ಯವಾದಗಳು,<br>CoC ತಂಡ"
+    },
+    Telugu: {
+      memberSubject: "CoC గ్రూప్ అసైన్‌మెంట్ నిర్ధారణ",
+      memberIntro: "మీరు CoC అధ్యయన సమూహానికి కేటాయించబడ్డారు!",
+      coordinatorSubject: "CoC గ్రూప్ సమన్వయకర్త అసైన్‌మెంట్",
+      coordinatorIntro: "మీరు CoC అధ్యయన సమూహానికి సమన్వయకర్తగా కేటాయించబడ్డారు!",
+      groupName: "సమూహం పేరు",
+      schedule: "షెడ్యూల్",
+      coordinatorInfo: "మీ సమూహ సమన్వయకర్త",
+      membersTitle: "సమూహ సభ్యులు",
+      name: "పేరు",
+      email: "ఇమెయిల్",
+      whatsapp: "వాట్సాప్",
+      memberClosing: "మీ సమన్వయకర్త త్వరలో మరిన్ని వివరాలతో మిమ్మల్ని సంప్రదిస్తారు.",
+      coordinatorClosing: "దయచేసి మొదటి సెషన్‌ను షెడ్యూల్ చేయడానికి మీ సమూహ సభ్యులను సంప్రదించండి.",
+      regards: "శుభాకాంక్షలు,<br>CoC బృందం"
+    }
+  };
+  
+  return allLabels[language] || allLabels.English;
 }

@@ -312,13 +312,23 @@ Examples:
 
 #### Accept Group Suggestions
 - Processes all rows with AcceptSuggestion = true
+- **Pattern matching for group assignments:**
+  - **Pattern a** (`NEW → CoC-{Language}-{Seq} ({TimeSlot})`): Creates new group with specified timing
+  - **Pattern b** (`CoC-{Language}-{Seq}`): Reassigns to existing group
 - Creates new groups in Groups sheet if needed
+  - Extracts Day & Time from timing slot (or sets to "TBD")
+  - Auto-populates coordinator info if IsGroupCoordinator is set for any member
 - Updates Participants with AssignedGroup and AssignmentStatus
-- Does not auto-pick coordinators (admin must set IsGroupCoordinator)
+- **Sends assignment emails:**
+  - **For group members**: Group info + coordinator contact details
+  - **For coordinators**: Group info + full member list with contact details
+  - All emails sent in participant's selected language
+- Does not auto-pick coordinators (admin must set IsGroupCoordinator before accepting suggestions)
 
 #### Refresh Groups & Dashboard
 - Rebuilds Groups sheet from Participants data
-- Recomputes MemberCount, CoordinatorEmail, CoordinatorName
+- Auto-creates any groups referenced in Participants but missing from Groups sheet
+- Recomputes MemberCount, CoordinatorEmail, CoordinatorName, CoordinatorWhatsApp
 - Updates AdminDashboard stats (by language)
 
 ---
@@ -328,7 +338,8 @@ Examples:
 1. **Participants indicate willingness** → CustomForm.Coordinator = Yes/No
 2. **System populates** → Participants.CoordinatorWilling
 3. **Admin explicitly designates** → Participants.IsGroupCoordinator = true
-4. **System derives** → Groups.CoordinatorEmail, Groups.CoordinatorName
+4. **System derives** → Groups.CoordinatorEmail, CoordinatorName, CoordinatorWhatsApp
+5. **Email notifications** → Sent automatically when accepting group suggestions
 
 System does **not** auto-pick coordinators.
 
