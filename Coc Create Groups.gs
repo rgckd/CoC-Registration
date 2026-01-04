@@ -143,12 +143,38 @@ function suggestGroupsForLanguage(language) {
   // Process each time slot group
   Object.keys(slotGroups).forEach(slot => {
     const group = slotGroups[slot];
+    
+    // Skip groups with less than 5 members
+    if (group.length < 5) {
+      return;
+    }
+    
     const hasCoordinator = group.some(p => p.data[pIdx.CoordinatorWilling] === true);
     
-    // Split large groups into subgroups of max 8 members
+    // Split large groups into subgroups of 5-8 members
     const subgroups = [];
-    for (let i = 0; i < group.length; i += 8) {
-      subgroups.push(group.slice(i, i + 8));
+    let remaining = group.length;
+    let index = 0;
+    
+    while (remaining > 0) {
+      if (remaining <= 8) {
+        // Last group - take all remaining if >= 5
+        if (remaining >= 5) {
+          subgroups.push(group.slice(index));
+        }
+        break;
+      } else if (remaining <= 13) {
+        // Split into two groups (to avoid creating a group < 5)
+        const firstGroupSize = Math.ceil(remaining / 2);
+        subgroups.push(group.slice(index, index + firstGroupSize));
+        subgroups.push(group.slice(index + firstGroupSize));
+        break;
+      } else {
+        // Take 8 members
+        subgroups.push(group.slice(index, index + 8));
+        index += 8;
+        remaining -= 8;
+      }
     }
 
     // Assign same sequence to all members in each subgroup
