@@ -568,6 +568,15 @@ function sendMemberAssignmentEmail(email, name, language, groupInfo) {
     <p><strong>${labels.whatsapp}:</strong> ${groupInfo.coordinatorWhatsApp}</p>
     <br>
     <p>${labels.memberClosing}</p>
+    <br>
+    <p><strong>Please refer to the following documents for information:</strong></p>
+    <p><strong>CoC Overview</strong> - <a href="https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link">https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link</a></p>
+    <p><strong>CoC Weekly Schedule and Study Materials</strong> - <a href="https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link">https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link</a></p>
+    <p><strong>Nonviolent Communication: A Language of Life (3rd Edition):</strong><br>
+    Book can be purchased at: <a href="https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295">https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295</a></p>
+    <br>
+    <p>Your Coordinator will add you to your CoC WhatsApp group within a day or two. If you have not been added, you may directly reach out to your coordinator whose contact details are above.</p>
+    <br>
     <p>${labels.regards}</p>
   `;
   
@@ -607,6 +616,21 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
     </table>
     <br>
     <p>${labels.coordinatorClosing}</p>
+    <br>
+    <p><strong>Next Steps:</strong></p>
+    <ol>
+      <li>Please create a WhatsApp group for your CoC Study Group with the above members within a day or two.</li>
+      <li>Share the following details in the WhatsApp Group's description:
+        <ul style="margin-top: 10px;">
+          <li><strong>CoC Overview</strong> - <a href="https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link">https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link</a></li>
+          <li><strong>CoC Weekly Schedule and Study Materials</strong> - <a href="https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link">https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link</a></li>
+          <li><strong>Nonviolent Communication: A Language of Life (3rd Edition):</strong><br>
+          Book can be purchased at: <a href="https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295">https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295</a></li>
+        </ul>
+      </li>
+      <li>Invite the members to an initial meeting over Zoom or Google Meet.</li>
+    </ol>
+    <br>
     <p>${labels.regards}</p>
   `;
   
