@@ -35,21 +35,29 @@ function populateParticipantsFromCustomForm() {
   const src = ss.getSheetByName("CustomForm");
   const tgt = ss.getSheetByName("Participants");
 
-  const sData = src.getDataRange().getValues();
+  // Get initial data and headers
+  let sData = src.getDataRange().getValues();
+  let sHeaders = sData[0];
+  
+  // Check if "Processed" column exists, if not add it
+  let processedColIndex = sHeaders.indexOf("Processed");
+  if (processedColIndex === -1) {
+    const lastCol = src.getLastColumn();
+    src.getRange(1, lastCol + 1).setValue("Processed");
+    // Re-fetch data with the new column
+    sData = src.getDataRange().getValues();
+    sHeaders = sData[0];
+    processedColIndex = sHeaders.indexOf("Processed");
+  }
+  
   const tData = tgt.getDataRange().getValues();
-
-  const sHeaders = sData.shift();
   const tHeaders = tData.shift();
+  
+  // Remove headers from source data
+  sData.shift();
 
   const sIdx = indexMap(sHeaders);
   const tIdx = indexMap(tHeaders);
-
-  // Ensure "Processed" column exists in CustomForm
-  if (sIdx.Processed === undefined) {
-    src.insertColumns(src.getLastColumn() + 1);
-    src.getRange(1, src.getLastColumn()).setValue("Processed");
-    sIdx.Processed = src.getLastColumn() - 1;
-  }
 
   let nextId = getNextParticipantIdStart(tgt, tIdx.ParticipantID);
   let rows = [];
@@ -86,7 +94,7 @@ function populateParticipantsFromCustomForm() {
     tgt.getRange(tgt.getLastRow() + 1, 1, rows.length, rows[0].length)
       .setValues(rows);
     
-    // Mark processed rows in CustomForm
+    // Mark processed rows in CustomForm using column index + 1 (1-based)
     processedRowIndices.forEach(rowNum => {
       src.getRange(rowNum, sIdx.Processed + 1).setValue(true);
     });

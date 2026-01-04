@@ -83,14 +83,15 @@ function handleRegistration(e) {
 
   sheet.appendRow([
     new Date(),           // Timestamp
+    data.Language,        // Language
     data.Email,           // Email
     data.Name,            // Name
     data.WhatsApp,        // WhatsApp
     data.Center,          // Center
     data.EnglishAbility || "Yes",  // EnglishProficiency
     data.Times.join(", "),         // PreferredTimes
-    data.Coordinator,     // Coordinator
-    data.Language         // Language
+    data.Coordinator      // Coordinator
+    // Processed column will be empty for new rows
   ]);
 
   const emailBody = buildConfirmationEmail(data);
