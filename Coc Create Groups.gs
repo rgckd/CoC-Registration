@@ -209,10 +209,11 @@ function acceptGroupSuggestions() {
   const pIdx = indexMap(pHeaders);
   const gIdx = indexMap(gHeaders);
 
-  const processedParticipants = [];
-  const groupsToProcess = new Set();
+  const processedParticipantIDs = [];
 
-  // Step 1 & 2: Filter and extract group names
+  // ============ PASS 1: UPDATE PARTICIPANTS & GROUPS ============
+  
+  // Filter and extract group names
   pData.forEach((row, i) => {
     if (row[pIdx.AcceptSuggestion] !== true) return;
     if (!row[pIdx.SuggestedGroup]) return;
@@ -235,7 +236,7 @@ function acceptGroupSuggestions() {
 
     if (!groupName) return;
 
-    // Step 3: Create group if doesn't exist
+    // Create group if doesn't exist
     if (!gData.some(g => g[gIdx.GroupName] === groupName)) {
       let day = "TBD";
       let time = "TBD";
@@ -264,27 +265,18 @@ function acceptGroupSuggestions() {
       gData.push(newRow);
     }
 
-    // Step 4: Update participant
+    // Update participant
     row[pIdx.AssignedGroup] = groupName;
     row[pIdx.AssignmentStatus] = "Assigned";
     row[pIdx.SuggestedGroup] = "";
     row[pIdx.AcceptSuggestion] = false;
     pData[i] = row;
 
-    // Store for email sending
-    processedParticipants.push({
-      rowIndex: i,
-      email: row[pIdx.Email],
-      name: row[pIdx.Name],
-      language: row[pIdx.Language],
-      groupName: groupName,
-      isCoordinator: row[pIdx.IsGroupCoordinator] === true || row[pIdx.IsGroupCoordinator] === "TRUE" || row[pIdx.IsGroupCoordinator] === "true"
-    });
-
-    groupsToProcess.add(groupName);
+    // Track ParticipantID for Pass 2
+    processedParticipantIDs.push(row[pIdx.ParticipantID]);
   });
 
-  // Write participant updates
+  // Write participant updates to sheet
   pSheet.getRange(2, 1, pData.length, pHeaders.length).setValues(pData);
   SpreadsheetApp.flush();
 
@@ -292,37 +284,50 @@ function acceptGroupSuggestions() {
   updateGroupsSheet();
   updateAdminDashboard();
 
-  // Reload data after refresh
-  const gDataRefreshed = gSheet.getDataRange().getValues();
-  const gHeadersRefreshed = gDataRefreshed.shift();
-  const gIdxRefreshed = indexMap(gHeadersRefreshed);
+  // ============ PASS 2: SEND EMAILS (WITH COMPLETE DATA) ============
+  
+  // Reload fresh data from sheets
+  const pDataFresh = pSheet.getDataRange().getValues();
+  const gDataFresh = gSheet.getDataRange().getValues();
+  
+  const pHeadersFresh = pDataFresh.shift();
+  const gHeadersFresh = gDataFresh.shift();
+  
+  const pIdxFresh = indexMap(pHeadersFresh);
+  const gIdxFresh = indexMap(gHeadersFresh);
 
-  // Step 5: Send emails to processed participants
-  processedParticipants.forEach(participant => {
-    const groupRow = gDataRefreshed.find(g => g[gIdxRefreshed.GroupName] === participant.groupName);
+  // Send emails only for processed participants
+  processedParticipantIDs.forEach(participantID => {
+    const participantRow = pDataFresh.find(r => r[pIdxFresh.ParticipantID] === participantID);
+    if (!participantRow) return;
+
+    const groupName = participantRow[pIdxFresh.AssignedGroup];
+    const groupRow = gDataFresh.find(g => g[gIdxFresh.GroupName] === groupName);
     if (!groupRow) return;
 
     const groupInfo = {
-      name: groupRow[gIdxRefreshed.GroupName],
-      day: groupRow[gIdxRefreshed.Day] || "TBD",
-      time: groupRow[gIdxRefreshed.Time] || "TBD",
-      coordinatorName: groupRow[gIdxRefreshed.CoordinatorName] || "",
-      coordinatorEmail: groupRow[gIdxRefreshed.CoordinatorEmail] || "",
-      coordinatorWhatsApp: gIdxRefreshed.CoordinatorWhatsApp !== undefined ? (groupRow[gIdxRefreshed.CoordinatorWhatsApp] || "") : ""
+      name: groupRow[gIdxFresh.GroupName],
+      day: groupRow[gIdxFresh.Day] || "TBD",
+      time: groupRow[gIdxFresh.Time] || "TBD",
+      coordinatorName: groupRow[gIdxFresh.CoordinatorName] || "",
+      coordinatorEmail: groupRow[gIdxFresh.CoordinatorEmail] || "",
+      coordinatorWhatsApp: gIdxFresh.CoordinatorWhatsApp !== undefined ? (groupRow[gIdxFresh.CoordinatorWhatsApp] || "") : ""
     };
 
-    if (participant.isCoordinator) {
+    const isCoordinator = participantRow[pIdxFresh.IsGroupCoordinator] === true || participantRow[pIdxFresh.IsGroupCoordinator] === "TRUE" || participantRow[pIdxFresh.IsGroupCoordinator] === "true";
+
+    if (isCoordinator) {
       // Send coordinator email with all members
-      const members = pData.filter(r => r[pIdx.AssignedGroup] === participant.groupName)
+      const members = pDataFresh.filter(r => r[pIdxFresh.AssignedGroup] === groupName)
         .map(r => ({
-          name: r[pIdx.Name],
-          email: r[pIdx.Email],
-          whatsapp: r[pIdx.WhatsApp]
+          name: r[pIdxFresh.Name],
+          email: r[pIdxFresh.Email],
+          whatsapp: r[pIdxFresh.WhatsApp]
         }));
-      sendCoordinatorAssignmentEmail(participant.email, participant.name, participant.language, groupInfo, members);
+      sendCoordinatorAssignmentEmail(participantRow[pIdxFresh.Email], participantRow[pIdxFresh.Name], participantRow[pIdxFresh.Language], groupInfo, members);
     } else {
       // Send member email with coordinator info
-      sendMemberAssignmentEmail(participant.email, participant.name, participant.language, groupInfo);
+      sendMemberAssignmentEmail(participantRow[pIdxFresh.Email], participantRow[pIdxFresh.Name], participantRow[pIdxFresh.Language], groupInfo);
     }
   });
 }
