@@ -76,11 +76,11 @@ function populateParticipantsFromCustomForm() {
     newRow[tIdx.WhatsApp] = r[sIdx.WhatsApp];
     newRow[tIdx.Language] = normalizeLanguage(r[sIdx.Language]);
     newRow[tIdx.Center] = r[sIdx.Center];
+    if (tIdx.EnglishProficiency !== undefined && sIdx.EnglishAbility !== undefined) {
+      newRow[tIdx.EnglishProficiency] = r[sIdx.EnglishAbility] || "";
+    }
     newRow[tIdx.PreferredSlots] = r[sIdx.PreferredTimes];
     newRow[tIdx.CoordinatorWilling] = r[sIdx.Coordinator] === "Yes";
-    if (tIdx.EnglishProficiency !== undefined && sIdx.EnglishProficiency !== undefined) {
-      newRow[tIdx.EnglishProficiency] = r[sIdx.EnglishProficiency] || "";
-    }
     newRow[tIdx.AssignedGroup] = "";
     newRow[tIdx.AssignmentStatus] = "Unassigned";
     newRow[tIdx.IsGroupCoordinator] = false;
