@@ -317,19 +317,25 @@ function acceptGroupSuggestions() {
   const pIdxFresh = indexMap(pHeadersFresh);
   const gIdxFresh = indexMap(gHeadersFresh);
 
+  // Log for debugging
+  Logger.log(`Starting email send for ${processedParticipantIDs.length} participants`);
+  Logger.log(`Participant IDs to process: ${processedParticipantIDs.join(', ')}`);
+
   // Send emails only for processed participants
   processedParticipantIDs.forEach(participantID => {
     try {
       const participantRow = pDataFresh.find(r => r[pIdxFresh.ParticipantID] === participantID);
       if (!participantRow) {
-        errors.push(`Participant ${participantID} not found in fresh data`);
+        emailsFailed++;
+        errors.push(`❌ ${participantID}: Not found in fresh data after update`);
         return;
       }
 
       const groupName = participantRow[pIdxFresh.AssignedGroup];
       const groupRow = gDataFresh.find(g => g[gIdxFresh.GroupName] === groupName);
       if (!groupRow) {
-        errors.push(`Group ${groupName} not found for ${participantID}`);
+        emailsFailed++;
+        errors.push(`❌ ${participantID} (${participantRow[pIdxFresh.Name]}): Group "${groupName}" not found`);
         return;
       }
 
@@ -361,24 +367,23 @@ function acceptGroupSuggestions() {
       emailsSent++;
     } catch (error) {
       emailsFailed++;
-      errors.push(`Failed to send email to ${participantID}: ${error.message}`);
+      errors.push(`❌ ${participantID}: ${error.message}`);
     }
   });
   
   // Show summary
-  let message = `Process completed!\n\n`;
-  message += `✓ Participants processed: ${processedParticipantIDs.length}\n`;
-  message += `✓ Emails sent: ${emailsSent}\n`;
+  let message = `Participants processed: ${processedParticipantIDs.length}\n`;
+  message += `Emails sent successfully: ${emailsSent}\n`;
   
   if (emailsFailed > 0) {
-    message += `✗ Emails failed: ${emailsFailed}\n\n`;
-    message += `Errors:\n${errors.join('\n')}`;
+    message += `Emails failed: ${emailsFailed}\n\n`;
+    message += `ERRORS:\n${errors.join('\n')}`;
   }
   
-  if (errors.length > 0 && emailsSent === 0) {
-    SpreadsheetApp.getUi().alert('Error', message, SpreadsheetApp.getUi().ButtonSet.OK);
+  if (emailsFailed > 0 || errors.length > 0) {
+    SpreadsheetApp.getUi().alert('⚠️ Process Completed with Issues', message, SpreadsheetApp.getUi().ButtonSet.OK);
   } else {
-    SpreadsheetApp.getUi().alert('Success', message, SpreadsheetApp.getUi().ButtonSet.OK);
+    SpreadsheetApp.getUi().alert('✅ Success', message, SpreadsheetApp.getUi().ButtonSet.OK);
   }
 }
 
