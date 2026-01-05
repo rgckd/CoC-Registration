@@ -78,6 +78,9 @@ function populateParticipantsFromCustomForm() {
     newRow[tIdx.Center] = r[sIdx.Center];
     newRow[tIdx.PreferredSlots] = r[sIdx.PreferredTimes];
     newRow[tIdx.CoordinatorWilling] = r[sIdx.Coordinator] === "Yes";
+    if (tIdx.EnglishProficiency !== undefined && sIdx.EnglishProficiency !== undefined) {
+      newRow[tIdx.EnglishProficiency] = r[sIdx.EnglishProficiency] || "";
+    }
     newRow[tIdx.AssignedGroup] = "";
     newRow[tIdx.AssignmentStatus] = "Unassigned";
     newRow[tIdx.IsGroupCoordinator] = false;
