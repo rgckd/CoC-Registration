@@ -646,11 +646,18 @@ function sendMemberAssignmentEmail(email, name, language, groupInfo) {
   `;
   
   try {
-    MailApp.sendEmail({
+    const emailOptions = {
       to: email,
       subject: subject,
       htmlBody: htmlBody
-    });
+    };
+    
+    // Add coordinator as CC if available
+    if (groupInfo.coordinatorEmail && groupInfo.coordinatorEmail.trim()) {
+      emailOptions.cc = groupInfo.coordinatorEmail;
+    }
+    
+    MailApp.sendEmail(emailOptions);
   } catch (error) {
     throw new Error(`Email sending failed for ${email}: ${error.message}`);
   }
