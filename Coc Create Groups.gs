@@ -572,6 +572,7 @@ function sendMemberAssignmentEmail(email, name, language, groupInfo) {
     <p><strong>${labels.resourcesTitle}</strong></p>
     <p><strong>${labels.cocOverview}</strong> - <a href="https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link">https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link</a></p>
     <p><strong>${labels.cocSchedule}</strong> - <a href="https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link">https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link</a></p>
+    <p><strong>${labels.downloadableBooks}</strong> - <a href="https://drive.google.com/drive/folders/1YBA3bXMdivoN3oPslCK5gBw_chjPRDYQ?usp=drive_link">https://drive.google.com/drive/folders/1YBA3bXMdivoN3oPslCK5gBw_chjPRDYQ?usp=drive_link</a></p>
     <p><strong>${labels.nvcBook}</strong><br>
     ${labels.bookPurchase} <a href="https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295">https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295</a></p>
     <br>
@@ -624,6 +625,7 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
         <ul style="margin-top: 10px;">
           <li><strong>${labels.cocOverview}</strong> - <a href="https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link">https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link</a></li>
           <li><strong>${labels.cocSchedule}</strong> - <a href="https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link">https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link</a></li>
+          <li><strong>${labels.downloadableBooks}</strong> - <a href="https://drive.google.com/drive/folders/1YBA3bXMdivoN3oPslCK5gBw_chjPRDYQ?usp=drive_link">https://drive.google.com/drive/folders/1YBA3bXMdivoN3oPslCK5gBw_chjPRDYQ?usp=drive_link</a></li>
           <li><strong>${labels.nvcBook}</strong><br>
           ${labels.bookPurchase} <a href="https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295">https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295</a></li>
         </ul>
@@ -661,6 +663,7 @@ function getEmailLabels(language) {
       resourcesTitle: "Please refer to the following documents for information:",
       cocOverview: "CoC Overview",
       cocSchedule: "CoC Weekly Schedule and Study Materials",
+      downloadableBooks: "Tamil and English Downloadable Books (link valid for 3 days only)",
       nvcBook: "Nonviolent Communication: A Language of Life (3rd Edition):",
       bookPurchase: "Book can be purchased at:",
       whatsappNote: "Your Coordinator will add you to your CoC WhatsApp group within a day or two. If you have not been added, you may directly reach out to your coordinator whose contact details are above.",
@@ -687,11 +690,12 @@ function getEmailLabels(language) {
       resourcesTitle: "தகவலுக்கு பின்வரும் ஆவணங்களைப் பார்க்கவும்:",
       cocOverview: "CoC கண்ணோட்டம்",
       cocSchedule: "CoC வாராந்திர அட்டவணை மற்றும் படிப்புப் பொருட்கள்",
+      downloadableBooks: "தமிழ் மற்றும் ஆங்கில பதிவிறக்கம் செய்யக்கூடிய புத்தகங்கள் (இணைப்பு 3 நாட்களுக்கு மட்டுமே செல்லுபடியாகும்)",
       nvcBook: "அகிம்சை தொடர்பு: வாழ்க்கையின் மொழி (3வது பதிப்பு) ஆங்கிலம் :",
       bookPurchase: "புத்தகத்தை வாங்க:",
       whatsappNote: "உங்கள் ஒருங்கிணைப்பாளர் ஒரு அல்லது இரண்டு நாட்களுக்குள் உங்களை CoC வாட்ஸ்அப் குழுவில் சேர்ப்பார். நீங்கள் சேர்க்கப்படவில்லை என்றால், மேலே உள்ள தொடர்பு விவரங்களைப் பயன்படுத்தி நேரடியாக உங்கள் ஒருங்கிணைப்பாளரைத் தொடர்பு கொள்ளலாம்.",
       nextSteps: "அடுத்த படிகள்:",
-      createWhatsApp: "ஒரு அல்லது இரண்டு நாட்களுக்குள் மேலே உள்ள உறுப்பினர்களுடன் உங்கள் CoC படிப்பு குழுவிற்கான வாட்ஸ்அப் குழுவை உருவாக்கவும்.",
+      createWhatsApp: "ஓன்று அல்லது இரண்டு நாட்களுக்குள் மேலே உள்ள உறுப்பினர்களுடன் உங்கள் CoC படிப்பு குழுவிற்கான வாட்ஸ்அப் குழுவை உருவாக்கவும்.",
       shareResources: "வாட்ஸ்அப் குழுவின் Description-ல் பின்வரும் விவரங்களைப் பகிரவும்:",
       inviteMembers: "Zoom அல்லது Google Meet மூலம் உறுப்பினர்களை ஆரம்ப சந்திப்பிற்கு அழைக்கவும்."
     },
@@ -713,6 +717,7 @@ function getEmailLabels(language) {
       resourcesTitle: "जानकारी के लिए कृपया निम्नलिखित दस्तावेज़ देखें:",
       cocOverview: "CoC अवलोकन",
       cocSchedule: "CoC साप्ताहिक कार्यक्रम और अध्ययन सामग्री",
+      downloadableBooks: "तमिल और अंग्रेजी डाउनलोड करने योग्य पुस्तकें (लिंक केवल 3 दिनों के लिए मान्य)",
       nvcBook: "अहिंसक संचार: जीवन की भाषा (तीसरा संस्करण):",
       bookPurchase: "पुस्तक यहाँ से खरीदी जा सकती है:",
       whatsappNote: "आपके समन्वयक एक या दो दिन में आपको CoC व्हाट्सएप समूह में जोड़ेंगे। यदि आपको नहीं जोड़ा गया है, तो आप ऊपर दिए गए संपर्क विवरण का उपयोग करके सीधे अपने समन्वयक से संपर्क कर सकते हैं।",
@@ -739,6 +744,7 @@ function getEmailLabels(language) {
       resourcesTitle: "ಮಾಹಿತಿಗಾಗಿ ದಯವಿಟ್ಟು ಈ ಕೆಳಗಿನ ದಾಖಲೆಗಳನ್ನು ನೋಡಿ:",
       cocOverview: "CoC ಅವಲೋಕನ",
       cocSchedule: "CoC ವಾರಾಂತ್ಯ ವೇಳಾಪಟ್ಟಿ ಮತ್ತು ಅಧ್ಯಯನ ಸಾಮಗ್ರಿಗಳು",
+      downloadableBooks: "ತಮಿಳು ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಡೌನ್‌ಲೋಡ್ ಮಾಡಬಹುದಾದ ಪುಸ್ತಕಗಳು (ಲಿಂಕ್ ಕೇವಲ 3 ದಿನಗಳವರೆಗೆ ಮಾತ್ರ ಮಾನ್ಯ)",
       nvcBook: "ಅಹಿಂಸಾ ಸಂವಹನ: ಜೀವನದ ಭಾಷೆ (3ನೇ ಆವೃತ್ತಿ):",
       bookPurchase: "ಪುಸ್ತಕವನ್ನು ಇಲ್ಲಿ ಖರೀದಿಸಬಹುದು:",
       whatsappNote: "ನಿಮ್ಮ ಸಮನ್ವಯಕರು ಒಂದು ಅಥವಾ ಎರಡು ದಿನಗಳಲ್ಲಿ ನಿಮ್ಮನ್ನು CoC ವಾಟ್ಸಾಪ್ ಗುಂಪಿಗೆ ಸೇರಿಸುತ್ತಾರೆ. ನೀವು ಸೇರಿಸದಿದ್ದರೆ, ಮೇಲೆ ನೀಡಲಾದ ಸಂಪರ್ಕ ವಿವರಗಳನ್ನು ಬಳಸಿಕೊಂಡು ನೀವು ನೇರವಾಗಿ ನಿಮ್ಮ ಸಮನ್ವಯಕರನ್ನು ಸಂಪರ್ಕಿಸಬಹುದು.",
@@ -765,6 +771,7 @@ function getEmailLabels(language) {
       resourcesTitle: "సమాచారం కోసం దయచేసి క్రింది పత్రాలను చూడండి:",
       cocOverview: "CoC అవలోకనం",
       cocSchedule: "CoC వారపు షెడ్యూల్ మరియు అధ్యయన పత్రాలు",
+      downloadableBooks: "తమిళం మరియు ఇంగ్లీష్ డౌన్‌లోడ్ చేయదగిన పుస్తకాలు (లింక్ 3 రోజులకు మాత్రమే చెల్లుతుంది)",
       nvcBook: "అహింసా సంభాషణ: జీవితం యొక్క భాష (3వ ఎడిషన్):",
       bookPurchase: "పుస్తకాన్ని ఇక్కడ కొనుగోలు చేయవచ్చు:",
       whatsappNote: "మీ సమన్వయకర్త ఒకటి లేదా రెండు రోజుల్లో మిమ్మల్ని CoC వాట్సాప్ సమూహంలో చేర్చుతారు. మీరు చేర్చబడకపోతే, పైన ఇచ్చిన సంప్రదింపు వివరాలను ఉపయోగించి మీరు నేరుగా మీ సమన్వయకర్తను సంప్రదించవచ్చు.",
