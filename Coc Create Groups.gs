@@ -86,7 +86,6 @@ function populateParticipantsFromCustomForm() {
     if (tIdx.Comments !== undefined && sIdx.Comments !== undefined) {
       newRow[tIdx.Comments] = r[sIdx.Comments] || "";
     }
-    if (tIdx.Notes !== undefined) newRow[tIdx.Notes] = "";
     if (tIdx.IsActive !== undefined) newRow[tIdx.IsActive] = true;
 
     rows.push(newRow);
