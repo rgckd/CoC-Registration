@@ -13,6 +13,7 @@ function onOpen() {
     .addItem("Suggest Groups – Telugu", "suggestGroupsTelugu")
     .addSeparator()
     .addItem("Accept Group Suggestions", "acceptGroupSuggestions")
+    .addItem("Accept Group Suggestions Without Emailing", "acceptGroupSuggestionsNoEmail")
     .addSeparator()
     .addItem("Refresh Groups and Dashboard", "refreshGroupsAndDashboard")
     .addToUi();
@@ -26,6 +27,7 @@ function suggestGroupsTamil() { suggestGroupsForLanguage("Tamil"); }
 function suggestGroupsHindi() { suggestGroupsForLanguage("Hindi"); }
 function suggestGroupsKannada() { suggestGroupsForLanguage("Kannada"); }
 function suggestGroupsTelugu() { suggestGroupsForLanguage("Telugu"); }
+function acceptGroupSuggestionsNoEmail() { acceptGroupSuggestions(false); }
 
 /************************************************
  * POPULATE PARTICIPANTS FROM CustomForm
@@ -198,10 +200,10 @@ function suggestGroupsForLanguage(language) {
  * ACCEPT GROUP SUGGESTIONS
  * - Creates groups
  * - Assigns participants
- * - Sends assignment emails
+ * - Sends assignment emails (optional)
  * - Computes member count & coordinator
  ************************************************/
-function acceptGroupSuggestions() {
+function acceptGroupSuggestions(sendEmails = true) {
   const ss = SpreadsheetApp.getActive();
   const pSheet = ss.getSheetByName("Participants");
   const gSheet = ss.getSheetByName("Groups");
@@ -326,9 +328,11 @@ function acceptGroupSuggestions() {
   // Log for debugging
   Logger.log(`Starting email send for ${processedParticipantIDs.length} participants`);
   Logger.log(`Participant IDs to process: ${processedParticipantIDs.join(', ')}`);
+  Logger.log(`Send emails: ${sendEmails}`);
 
-  // Send emails only for processed participants
-  processedParticipantIDs.forEach(participantID => {
+  // Send emails only for processed participants (if enabled)
+  if (sendEmails) {
+    processedParticipantIDs.forEach(participantID => {
     try {
       const participantRow = pDataFresh.find(r => r[pIdxFresh.ParticipantID] === participantID);
       if (!participantRow) {
@@ -375,15 +379,20 @@ function acceptGroupSuggestions() {
       emailsFailed++;
       errors.push(`❌ ${participantID}: ${error.message}`);
     }
-  });
+    });
+  }
   
   // Show summary
   let message = `Participants processed: ${processedParticipantIDs.length}\n`;
-  message += `Emails sent successfully: ${emailsSent}\n`;
+  if (sendEmails) {
+    message += `Emails sent successfully: ${emailsSent}\n`;
   
-  if (emailsFailed > 0) {
-    message += `Emails failed: ${emailsFailed}\n\n`;
-    message += `ERRORS:\n${errors.join('\n')}`;
+    if (emailsFailed > 0) {
+      message += `Emails failed: ${emailsFailed}\n\n`;
+      message += `ERRORS:\n${errors.join('\n')}`;
+    }
+  } else {
+    message += `Emails: Skipped (no email mode)\n`;
   }
   
   if (emailsFailed > 0 || errors.length > 0) {
