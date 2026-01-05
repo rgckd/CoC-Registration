@@ -1,3 +1,8 @@
+function checkEmailQuota() {
+  const emailQuotaRemaining = MailApp.getRemainingDailyQuota();
+  Logger.log(`Remaining email quota: ${emailQuotaRemaining}`);
+}
+
 function setupAllCoCSheets() {
   const ss = SpreadsheetApp.getActive();
 
