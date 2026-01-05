@@ -129,7 +129,8 @@ function suggestGroupsForLanguage(language) {
     .map((r, i) => ({ row: i + 2, data: r }))
     .filter(p =>
       p.data[pIdx.Language] === language &&
-      p.data[pIdx.AssignmentStatus] === "Unassigned"
+      p.data[pIdx.AssignmentStatus] === "Unassigned" &&
+      !p.data[pIdx.SuggestedGroup]
     );
 
   // Group participants by first preferred time slot
