@@ -210,8 +210,29 @@ function acceptGroupSuggestions() {
   const gIdx = indexMap(gHeaders);
 
   const processedParticipantIDs = [];
+  let emailsSent = 0;
+  let emailsFailed = 0;
+  const errors = [];
 
   // ============ PASS 1: UPDATE PARTICIPANTS & GROUPS ============
+  
+  // Count candidates for processing
+  const candidateCount = pData.filter(row => 
+    row[pIdx.AcceptSuggestion] === true && row[pIdx.SuggestedGroup]
+  ).length;
+  
+  if (candidateCount === 0) {
+    SpreadsheetApp.getUi().alert(
+      'No Suggestions to Accept',
+      'No participants have "Accept Suggestion" checked with a suggested group.\n\n' +
+      'Please:\n' +
+      '1. Run "Suggest Groups" for a language\n' +
+      '2. Check the "Accept Suggestion" checkbox for participants you want to assign\n' +
+      '3. Then run this function again',
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    return;
+  }
   
   // Filter and extract group names
   pData.forEach((row, i) => {
@@ -298,38 +319,67 @@ function acceptGroupSuggestions() {
 
   // Send emails only for processed participants
   processedParticipantIDs.forEach(participantID => {
-    const participantRow = pDataFresh.find(r => r[pIdxFresh.ParticipantID] === participantID);
-    if (!participantRow) return;
+    try {
+      const participantRow = pDataFresh.find(r => r[pIdxFresh.ParticipantID] === participantID);
+      if (!participantRow) {
+        errors.push(`Participant ${participantID} not found in fresh data`);
+        return;
+      }
 
-    const groupName = participantRow[pIdxFresh.AssignedGroup];
-    const groupRow = gDataFresh.find(g => g[gIdxFresh.GroupName] === groupName);
-    if (!groupRow) return;
+      const groupName = participantRow[pIdxFresh.AssignedGroup];
+      const groupRow = gDataFresh.find(g => g[gIdxFresh.GroupName] === groupName);
+      if (!groupRow) {
+        errors.push(`Group ${groupName} not found for ${participantID}`);
+        return;
+      }
 
-    const groupInfo = {
-      name: groupRow[gIdxFresh.GroupName],
-      day: groupRow[gIdxFresh.Day] || "TBD",
-      time: groupRow[gIdxFresh.Time] || "TBD",
-      coordinatorName: groupRow[gIdxFresh.CoordinatorName] || "",
-      coordinatorEmail: groupRow[gIdxFresh.CoordinatorEmail] || "",
-      coordinatorWhatsApp: gIdxFresh.CoordinatorWhatsApp !== undefined ? (groupRow[gIdxFresh.CoordinatorWhatsApp] || "") : ""
-    };
+      const groupInfo = {
+        name: groupRow[gIdxFresh.GroupName],
+        day: groupRow[gIdxFresh.Day] || "TBD",
+        time: groupRow[gIdxFresh.Time] || "TBD",
+        coordinatorName: groupRow[gIdxFresh.CoordinatorName] || "",
+        coordinatorEmail: groupRow[gIdxFresh.CoordinatorEmail] || "",
+        coordinatorWhatsApp: gIdxFresh.CoordinatorWhatsApp !== undefined ? (groupRow[gIdxFresh.CoordinatorWhatsApp] || "") : ""
+      };
 
-    const isCoordinator = participantRow[pIdxFresh.IsGroupCoordinator] === true || participantRow[pIdxFresh.IsGroupCoordinator] === "TRUE" || participantRow[pIdxFresh.IsGroupCoordinator] === "true";
+      const isCoordinator = participantRow[pIdxFresh.IsGroupCoordinator] === true || participantRow[pIdxFresh.IsGroupCoordinator] === "TRUE" || participantRow[pIdxFresh.IsGroupCoordinator] === "true";
 
-    if (isCoordinator) {
-      // Send coordinator email with all members
-      const members = pDataFresh.filter(r => r[pIdxFresh.AssignedGroup] === groupName)
-        .map(r => ({
-          name: r[pIdxFresh.Name],
-          email: r[pIdxFresh.Email],
-          whatsapp: r[pIdxFresh.WhatsApp]
-        }));
-      sendCoordinatorAssignmentEmail(participantRow[pIdxFresh.Email], participantRow[pIdxFresh.Name], participantRow[pIdxFresh.Language], groupInfo, members);
-    } else {
-      // Send member email with coordinator info
-      sendMemberAssignmentEmail(participantRow[pIdxFresh.Email], participantRow[pIdxFresh.Name], participantRow[pIdxFresh.Language], groupInfo);
+      if (isCoordinator) {
+        // Send coordinator email with all members
+        const members = pDataFresh.filter(r => r[pIdxFresh.AssignedGroup] === groupName)
+          .map(r => ({
+            name: r[pIdxFresh.Name],
+            email: r[pIdxFresh.Email],
+            whatsapp: r[pIdxFresh.WhatsApp]
+          }));
+        sendCoordinatorAssignmentEmail(participantRow[pIdxFresh.Email], participantRow[pIdxFresh.Name], participantRow[pIdxFresh.Language], groupInfo, members);
+      } else {
+        // Send member email with coordinator info
+        sendMemberAssignmentEmail(participantRow[pIdxFresh.Email], participantRow[pIdxFresh.Name], participantRow[pIdxFresh.Language], groupInfo);
+      }
+      
+      emailsSent++;
+    } catch (error) {
+      emailsFailed++;
+      errors.push(`Failed to send email to ${participantID}: ${error.message}`);
     }
   });
+  
+  // Show summary
+  let message = `Process completed!\n\n`;
+  message += `✓ Participants processed: ${processedParticipantIDs.length}\n`;
+  message += `✓ Emails sent: ${emailsSent}\n`;
+  
+  if (emailsFailed > 0) {
+    message += `✗ Emails failed: ${emailsFailed}\n\n`;
+    message += `Errors:\n${errors.join('\n')}`;
+  }
+  
+  if (errors.length > 0 && emailsSent === 0) {
+    SpreadsheetApp.getUi().alert('Error', message, SpreadsheetApp.getUi().ButtonSet.OK);
+  } else {
+    SpreadsheetApp.getUi().alert('Success', message, SpreadsheetApp.getUi().ButtonSet.OK);
+  }
 }
 
 /************************************************
@@ -553,6 +603,10 @@ function ensureGroupIds(d, idx) {
  * EMAIL NOTIFICATIONS FOR GROUP ASSIGNMENTS
  ************************************************/
 function sendMemberAssignmentEmail(email, name, language, groupInfo) {
+  if (!email || !email.trim()) {
+    throw new Error(`Invalid email address for ${name}`);
+  }
+  
   const labels = getEmailLabels(language);
   
   const subject = labels.memberSubject;
@@ -581,14 +635,22 @@ function sendMemberAssignmentEmail(email, name, language, groupInfo) {
     <p>${labels.regards}</p>
   `;
   
-  MailApp.sendEmail({
-    to: email,
-    subject: subject,
-    htmlBody: htmlBody
-  });
+  try {
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      htmlBody: htmlBody
+    });
+  } catch (error) {
+    throw new Error(`Email sending failed for ${email}: ${error.message}`);
+  }
 }
 
 function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, members) {
+  if (!email || !email.trim()) {
+    throw new Error(`Invalid email address for coordinator ${name}`);
+  }
+  
   const labels = getEmailLabels(language);
   
   const memberListHtml = members.map(m => `
@@ -636,11 +698,15 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
     <p>${labels.regards}</p>
   `;
   
-  MailApp.sendEmail({
-    to: email,
-    subject: subject,
-    htmlBody: htmlBody
-  });
+  try {
+    MailApp.sendEmail({
+      to: email,
+      subject: subject,
+      htmlBody: htmlBody
+    });
+  } catch (error) {
+    throw new Error(`Email sending failed for coordinator ${email}: ${error.message}`);
+  }
 }
 
 function getEmailLabels(language) {
