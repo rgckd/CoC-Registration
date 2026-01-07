@@ -29,13 +29,23 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const missingFields = [];
     
-    if (!lang) missingFields.push("Language");
+    // Check Language first (required before anything else)
+    if (!lang) {
+      missingFields.push("Language");
+      errorEl.textContent = "Missing required fields: " + missingFields.join(", ");
+      errorEl.style.display = "block";
+      return; // ⛔ STOP submission
+    }
+    
+    // Check other required fields
     if (!fdCheck.get("Email")) missingFields.push("Email");
     if (!fdCheck.get("Name")) missingFields.push("Your Name");
     if (!fdCheck.get("WhatsApp")) missingFields.push("WhatsApp Number");
     if (!fdCheck.get("Center")) missingFields.push("Your Heartfulness Center");
     if (selectedTimes.length === 0) missingFields.push("Preferred days & times");
     if (!fdCheck.get("Coordinator")) missingFields.push("Willing to be a coordinator");
+    
+    // Check EnglishAbility only if non-English language is selected
     if (lang !== "English" && !knowsEnglish) missingFields.push("English Ability");
 
     if (missingFields.length > 0) {
