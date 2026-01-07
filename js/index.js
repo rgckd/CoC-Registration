@@ -91,7 +91,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("langSelect").addEventListener("change", function () {
     const lang = this.value;
     document.getElementById("Language").value = lang;
-    applyLanguage(lang);
-    toggleEnglishQuestion(lang);
+    if (lang) {
+      applyLanguage(lang);
+      toggleEnglishQuestion(lang);
+    }
   });
 });
