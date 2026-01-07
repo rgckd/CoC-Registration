@@ -26,19 +26,20 @@ document.addEventListener("DOMContentLoaded", () => {
     const lang = fdCheck.get("Language");
     const knowsEnglish = fdCheck.get("EnglishAbility");
     const selectedTimes = fdCheck.getAll("Times");
+    
+    const missingFields = [];
+    
+    if (!lang) missingFields.push("Language");
+    if (!fdCheck.get("Email")) missingFields.push("Email");
+    if (!fdCheck.get("Name")) missingFields.push("Your Name");
+    if (!fdCheck.get("WhatsApp")) missingFields.push("WhatsApp Number");
+    if (!fdCheck.get("Center")) missingFields.push("Your Heartfulness Center");
+    if (selectedTimes.length === 0) missingFields.push("Preferred days & times");
+    if (!fdCheck.get("Coordinator")) missingFields.push("Willing to be a coordinator");
+    if (lang !== "English" && !knowsEnglish) missingFields.push("English Ability");
 
-    // Validation
-    if (
-      !lang ||
-      !fdCheck.get("Email") ||
-      !fdCheck.get("Name") ||
-      !fdCheck.get("WhatsApp") ||
-      !fdCheck.get("Center") ||
-      !fdCheck.get("Coordinator") ||
-      selectedTimes.length === 0 ||
-      (lang !== "English" && !knowsEnglish)
-    ) {
-      errorEl.textContent = "Missing required fields";
+    if (missingFields.length > 0) {
+      errorEl.textContent = "Missing required fields: " + missingFields.join(", ");
       errorEl.style.display = "block";
       return; // ⛔ STOP submission
     }
