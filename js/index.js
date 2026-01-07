@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Validation
     if (
+      !lang ||
       !fdCheck.get("Email") ||
       !fdCheck.get("Name") ||
       !fdCheck.get("WhatsApp") ||
@@ -93,7 +94,4 @@ document.addEventListener("DOMContentLoaded", () => {
     applyLanguage(lang);
     toggleEnglishQuestion(lang);
   });
-
-  applyLanguage("English");
-  toggleEnglishQuestion("English");
 });
