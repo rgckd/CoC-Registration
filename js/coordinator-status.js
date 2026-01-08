@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const statusSel = document.getElementById("status");
   const weeksSel = document.getElementById("weeksCompleted");
   const weeksRow = document.getElementById("weeksRow");
+  const daySel = document.getElementById("day");
+  const timeInput = document.getElementById("time");
   const membersList = document.getElementById("membersList");
   const membersBox = document.getElementById("membersBox");
   const notesEl = document.getElementById("notes");
@@ -56,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const row = document.createElement("div");
       row.className = "member-item";
       const name = document.createElement("span");
-      name.textContent = m.name;
+      name.textContent = m.center ? `${m.name} (${m.center})` : m.name;
       const cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = !!m.isActive;
@@ -75,7 +77,9 @@ document.addEventListener("DOMContentLoaded", () => {
       groupName: opt.dataset.groupName,
       coordinatorName: opt.dataset.coordinatorName || "",
       status: opt.dataset.status || "",
-      weeksCompleted: opt.dataset.weeks || "0"
+      weeksCompleted: opt.dataset.weeks || "0",
+      day: opt.dataset.day || "",
+      time: opt.dataset.time || ""
     };
   }
 
@@ -118,6 +122,8 @@ document.addEventListener("DOMContentLoaded", () => {
           opt.dataset.coordinatorName = g.coordinatorName || "";
           opt.dataset.status = g.status || "Active";
           opt.dataset.weeks = g.weeksCompleted || 0;
+          opt.dataset.day = g.day || "";
+          opt.dataset.time = g.time || "";
           groupSelect.appendChild(opt);
         });
         setStatus("");
@@ -134,6 +140,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     statusSel.value = meta.status || "Active";
     weeksSel.value = String(meta.weeksCompleted || 0);
+    daySel.value = meta.day || "";
+    timeInput.value = meta.time || "";
     toggleWeeks();
 
     setStatus("Loading members...");
@@ -165,6 +173,8 @@ document.addEventListener("DOMContentLoaded", () => {
       coordinatorName: meta.coordinatorName,
       status: statusSel.value,
       weeksCompleted: statusSel.value === "Active" ? weeksSel.value : "0",
+      day: daySel.value,
+      time: timeInput.value.trim(),
       notes: notesEl.value.trim(),
       today,
       members: JSON.stringify(membersUpdate)
