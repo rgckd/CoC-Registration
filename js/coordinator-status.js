@@ -24,9 +24,18 @@ document.addEventListener("DOMContentLoaded", () => {
     statusMsg.classList.toggle("success", !!ok);
   }
 
+  function currentDict() {
+    return (typeof translations !== "undefined" && translations[language.value]) || null;
+  }
+
   function setSubmitting(state) {
     submitBtn.disabled = !!state;
-    submitBtn.textContent = state ? "Submitting..." : "Submit Update";
+    if (state) {
+      submitBtn.textContent = "Submitting...";
+    } else {
+      const dict = currentDict();
+      submitBtn.textContent = (dict && dict.submitUpdate) || "Submit Update";
+    }
   }
 
   function fillWeeksOptions() {
@@ -69,6 +78,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function setDayValue(day) {
+    const val = (day || "").trim();
+    if (!val) {
+      daySel.value = "";
+      return;
+    }
+    const match = Array.from(daySel.options).some(o => o.value === val);
+    if (!match) {
+      const opt = document.createElement("option");
+      opt.value = val;
+      opt.textContent = val;
+      daySel.appendChild(opt);
+    }
+    daySel.value = val;
+  }
+
   function getSelectedGroupMeta() {
     const opt = groupSelect.options[groupSelect.selectedIndex];
     if (!opt || !opt.value) return null;
@@ -96,6 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function loadGroups() {
     setStatus("Loading groups...");
+    const dict = currentDict();
     callApi("queryCoordinatorGroups", { Language: language.value })
       .then(res => {
         if (res.result !== "success") throw new Error(res.error || "Failed to load groups");
@@ -104,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (groupsCache.length === 0) {
           const opt = document.createElement("option");
           opt.value = "";
-          opt.textContent = "No groups for this language";
+          opt.textContent = (dict && dict.noGroups) || "No groups for this language";
           groupSelect.appendChild(opt);
           buildMembersUI([]);
           setStatus("No groups found", false);
@@ -112,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         const placeholder = document.createElement("option");
         placeholder.value = "";
-        placeholder.textContent = "Select coordinator / group";
+        placeholder.textContent = (dict && dict.selectCoordinator) || "Select coordinator / group";
         groupSelect.appendChild(placeholder);
         groupsCache.forEach(g => {
           const opt = document.createElement("option");
@@ -140,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     statusSel.value = meta.status || "Active";
     weeksSel.value = String(meta.weeksCompleted || 0);
-    daySel.value = meta.day || "";
+    setDayValue(meta.day || "");
     timeInput.value = meta.time || "";
     toggleWeeks();
 
@@ -196,7 +222,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // Init
   fillWeeksOptions();
   toggleWeeks();
-  language.addEventListener("change", loadGroups);
+  applyLanguage(language.value);
+
+  language.addEventListener("change", () => {
+    applyLanguage(language.value);
+    const dict = currentDict();
+    submitBtn.textContent = (dict && dict.submitUpdate) || "Submit Update";
+    loadGroups();
+  });
   groupSelect.addEventListener("change", loadMembersForSelection);
   statusSel.addEventListener("change", toggleWeeks);
   submitBtn.addEventListener("click", handleSubmit);

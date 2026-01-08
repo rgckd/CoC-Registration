@@ -31,8 +31,8 @@ function handleQueryCoordinatorGroups(e) {
       coordinatorName: r[gIdx.CoordinatorName] || "",
       status: r[gIdx.Status] || "",
       weeksCompleted: Number(r[gIdx.WeeksCompleted] || 0),
-      day: gIdx.Day !== undefined ? (r[gIdx.Day] || "") : "",
-      time: gIdx.Time !== undefined ? (r[gIdx.Time] || "") : ""
+      day: gIdx.Day !== undefined ? String(r[gIdx.Day] || "").trim() : "",
+      time: gIdx.Time !== undefined ? String(r[gIdx.Time] || "").trim() : ""
     }));
 
   return ContentService
