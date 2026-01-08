@@ -27,7 +27,8 @@ const translations = {
     yesActive: "Yes - Active",
     noInactive: "No - Inactive",
     submitUpdate: "Submit Update",
-    noGroups: "No groups for this language"
+    noGroups: "No groups for this language",
+    optional: "optional"
   },
   Tamil: {
     email: "மின்னஞ்சல் *",
@@ -57,7 +58,8 @@ const translations = {
     yesActive: "ஆம் - செயலில்",
     noInactive: "இல்லை - செயலற்றது",
     submitUpdate: "புதுப்பிப்பை சமர்ப்பிக்கவும்",
-    noGroups: "இந்த மொழிக்கு குழுக்கள் இல்லை"
+    noGroups: "இந்த மொழிக்கு குழுக்கள் இல்லை",
+    optional: "optional"
   },
   Hindi: {
     email: "ईमेल *",
@@ -87,7 +89,8 @@ const translations = {
     yesActive: "हाँ - सक्रिय",
     noInactive: "नहीं - निष्क्रिय",
     submitUpdate: "अपडेट जमा करें",
-    noGroups: "इस भाषा के लिए समूह नहीं"
+    noGroups: "इस भाषा के लिए समूह नहीं",
+    optional: "optional"
   },
   Kannada: {
     email: "ಇಮೇಲ್ *",
@@ -117,7 +120,8 @@ const translations = {
     yesActive: "ಹೌದು - ಸಕ್ರಿಯ",
     noInactive: "ಇಲ್ಲ - ನಿಷ್ಕ್ರಿಯ",
     submitUpdate: "ನವೀಕರಣ ಸಲ್ಲಿಸಿ",
-    noGroups: "ಈ ಭಾಷೆಗೆ ಗುಂಪುಗಳಿಲ್ಲ"
+    noGroups: "ಈ ಭಾಷೆಗೆ ಗುಂಪುಗಳಿಲ್ಲ",
+    optional: "optional"
   },
   Telugu: {
     email: "ఈమెయిల్ *",
@@ -147,7 +151,8 @@ const translations = {
     yesActive: "అవును - సక్రియం",
     noInactive: "కాదు - క్రియారహితం",
     submitUpdate: "అప్‌డేట్ సమర్పించండి",
-    noGroups: "ఈ భాషకు గుంపులు లేవు"
+    noGroups: "ఈ భాషకు గుంపులు లేవు",
+    optional: "optional"
   }
 };
 

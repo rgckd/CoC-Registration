@@ -23,7 +23,7 @@
     .schedule-row { display: flex; gap: 10px; flex-wrap: wrap; }
     .schedule-field { flex: 1; min-width: 160px; }
     .schedule-field select,
-    .schedule-field input { width: 100%; box-sizing: border-box; }
+    .schedule-field input { width: 100%; box-sizing: border-box; padding: 10px; margin-top: 6px; }
 
     /* Hide reCAPTCHA badge */
     .grecaptcha-badge {
@@ -44,7 +44,7 @@
   </style>
 </head>
 <body>
-  <h2 data-i18n="coordinatorTitle">Coordinator Group Status Update</h2>
+  <h2>Coordinator Group Status Update</h2>
     <div id="todayLine" style="text-align:center; margin-bottom:10px; color:#555;"></div>
 
   <label for="language" data-i18n="languageLabel">Language</label>
@@ -87,8 +87,8 @@
   <div class="row">
     <label for="status" data-i18n="statusLabel">Is your group currently active?</label>
     <select id="status">
-      <option value="Active" data-i18n="yesActive">Yes - Active</option>
-      <option value="Inactive" data-i18n="noInactive">No - Inactive</option>
+      <option value="Active">Yes - Active</option>
+      <option value="Inactive">No - Inactive</option>
     </select>
   </div>
 
@@ -102,14 +102,14 @@
     <div id="membersList"></div>
   </div>
 
-  <label for="notes" data-i18n="notesLabel">Coordinator Notes (optional)</label>
+  <label for="notes" data-i18n="notesLabel">Coordinator Notes (<span data-i18n="optional">optional</span>)</label>
   <textarea id="notes" placeholder="Any updates to share"></textarea>
 
   <input type="text" name="honey" id="honey" class="hidden" autocomplete="off" />
 
   <div id="statusMsg"></div>
 
-  <button type="button" id="submitBtn" data-i18n="submitUpdate">Submit Update</button>
+  <button type="button" id="submitBtn">Submit Update</button>
 
   <div class="recaptcha-text">
     Protected by reCAPTCHA - 

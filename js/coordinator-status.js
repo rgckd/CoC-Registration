@@ -30,12 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setSubmitting(state) {
     submitBtn.disabled = !!state;
-    if (state) {
-      submitBtn.textContent = "Submitting...";
-    } else {
-      const dict = currentDict();
-      submitBtn.textContent = (dict && dict.submitUpdate) || "Submit Update";
-    }
+    submitBtn.textContent = state ? "Submitting..." : "Submit Update";
   }
 
   function fillWeeksOptions() {
@@ -226,8 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   language.addEventListener("change", () => {
     applyLanguage(language.value);
-    const dict = currentDict();
-    submitBtn.textContent = (dict && dict.submitUpdate) || "Submit Update";
     loadGroups();
   });
   groupSelect.addEventListener("change", loadMembersForSelection);
