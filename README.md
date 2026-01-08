@@ -44,7 +44,7 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | Timestamp | DateTime | Auto-generated submission time |
 | Email | String | Participant email (required, unique) |
 | Name | String | Full name (required) |
-| WhatsApp | String | Indian 10-digit number (required) |
+| WhatsApp | String | International number: 8–15 digits (required) |
 | Center | String | Heartfulness center name (required) |
 | EnglishProficiency | String | Yes/No or auto-filled based on language |
 | PreferredTimes | String | Comma-separated day/time slots (e.g., "Mon Day, Tue Evening") |
@@ -181,7 +181,7 @@ Confirmation Email (includes all fields + English proficiency for non-English + 
 |-------|-----------|----------|-------|
 | Email | `Email` | Yes | HTML + backend validated |
 | Name | `Name` | Yes | Free text |
-| WhatsApp | `WhatsApp` | Yes | Indian mobile regex `^[6-9]\d{9}$` |
+| WhatsApp | `WhatsApp` | Yes | International number: 8–15 digits (include country code) |
 | Center | `Center` | Yes | Free text |
 | Language | `Language` | Yes | Canonical value (select dropdown) |
 | English proficiency | `EnglishAbility` | Conditional | Required if Language ≠ English |
@@ -199,7 +199,7 @@ Confirmation Email (includes all fields + English proficiency for non-English + 
 
 Rules:
 - Required fields must be present
-- WhatsApp must match Indian number pattern `^[6-9]\d{9}$`
+- WhatsApp must be 8–15 digits after stripping symbols (include country code)
 - At least one preferred time must be selected
 - If Language ≠ English → `EnglishAbility` must be "Yes"
 - If Language = English → backend auto-sets `EnglishAbility` to "Yes"

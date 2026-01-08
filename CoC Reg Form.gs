@@ -72,8 +72,9 @@ function handleRegistration(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  if (!/^[6-9]\d{9}$/.test(data.WhatsApp)) {
-    return reject("Invalid phone number");
+  // Allow international numbers: 8–15 digits after stripping symbols (E.164 length range)
+  if (!/^\d{8,15}$/.test(data.WhatsApp)) {
+    return reject("Invalid phone number (enter 8-15 digits, include country code)");
   }
 
   const sheet = SpreadsheetApp.getActive().getSheetByName(SHEET_NAME);
