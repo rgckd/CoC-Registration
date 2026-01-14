@@ -578,6 +578,7 @@ function updateAdminDashboard() {
   const metrics = [
     { key: "TotalGroups", label: "Total Groups" },
     { key: "ActiveGroups", label: "Active Groups" },
+    { key: "InActiveGroups", label: "InActive Groups" },
     { key: "NoCoordinator", label: "Groups without Coordinator" },
     { key: "Assigned", label: "Assigned Participants" },
     { key: "ActiveParticipants", label: "Active Participants" },
@@ -600,6 +601,8 @@ function updateAdminDashboard() {
         v = g.filter(r => r[gIdx.Language] === l).length;
       } else if (m.key === "ActiveGroups") {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Active").length;
+      } else if (m.key === "InActiveGroups") {
+        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Inactive").length;
       } else if (m.key === "NoCoordinator") {
         v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail]).length;
       }
