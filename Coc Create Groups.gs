@@ -6,6 +6,8 @@ function onOpen() {
     .createMenu("CoC Admin")
     .addItem("Populate Participants (All Languages)", "populateParticipantsFromCustomForm")
     .addSeparator()
+    .addItem("Daily Batch Processing with Alerts", "dailyParticipantProcessingWithAlerts")
+    .addSeparator()
     .addItem("Suggest Groups – English", "suggestGroupsEnglish")
     .addItem("Suggest Groups – Tamil", "suggestGroupsTamil")
     .addItem("Suggest Groups – Hindi", "suggestGroupsHindi")
@@ -139,6 +141,134 @@ function populateParticipantsFromCustomForm() {
     // Refresh groups and dashboard after populating participants
     refreshGroupsAndDashboard();
   }
+}
+
+/************************************************
+ * DAILY BATCH PROCESSING WITH ALERTS
+ * 
+ * This function is designed to run daily (via time-based trigger).
+ * It populates participants from CustomForm and sends alert emails
+ * to language stewards when new participants need group assignment.
+ * 
+ * SETUP INSTRUCTIONS:
+ * 1. Go to Apps Script Editor > Project Settings > Script Properties
+ * 2. Add the following properties with steward email addresses:
+ *    - STEWARD_EMAIL_ENGLISH
+ *    - STEWARD_EMAIL_TAMIL
+ *    - STEWARD_EMAIL_HINDI
+ *    - STEWARD_EMAIL_KANNADA
+ *    - STEWARD_EMAIL_TELUGU
+ * 3. Set up a time-based trigger:
+ *    - Go to Triggers (clock icon)
+ *    - Click "+ Add Trigger"
+ *    - Choose function: dailyParticipantProcessingWithAlerts
+ *    - Event source: Time-driven
+ *    - Type: Day timer
+ *    - Time of day: Choose preferred time (e.g., 9am to 10am)
+ ************************************************/
+function dailyParticipantProcessingWithAlerts() {
+  const ss = SpreadsheetApp.getActive();
+  const tgt = ss.getSheetByName("Participants");
+  
+  // Get participants count before processing
+  const rowsBeforeProcessing = tgt.getLastRow() - 1; // -1 for header
+  
+  // Run populate participants
+  populateParticipantsFromCustomForm();
+  
+  // Get participants count after processing
+  const rowsAfterProcessing = tgt.getLastRow() - 1;
+  const newParticipantsCount = rowsAfterProcessing - rowsBeforeProcessing;
+  
+  // If no new participants, exit
+  if (newParticipantsCount <= 0) {
+    Logger.log("No new participants to process");
+    return;
+  }
+  
+  // Get the newly added participants (last N rows)
+  const pData = tgt.getDataRange().getValues();
+  const pHeaders = pData.shift();
+  const pIdx = indexMap(pHeaders);
+  
+  const newParticipants = pData.slice(-newParticipantsCount);
+  
+  // Group new participants by language
+  const participantsByLanguage = {};
+  const languages = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
+  
+  languages.forEach(lang => {
+    participantsByLanguage[lang] = newParticipants.filter(p => 
+      p[pIdx.Language] === lang && p[pIdx.AssignmentStatus] === "Unassigned"
+    );
+  });
+  
+  // Get language steward emails from script properties
+  const props = PropertiesService.getScriptProperties();
+  
+  // Send emails to language stewards
+  languages.forEach(lang => {
+    const participants = participantsByLanguage[lang];
+    if (participants.length === 0) return;
+    
+    const stewardEmail = props.getProperty(`STEWARD_EMAIL_${lang.toUpperCase()}`);
+    if (!stewardEmail) {
+      Logger.log(`No steward email configured for ${lang}`);
+      return;
+    }
+    
+    try {
+      sendStewardAlertEmail(stewardEmail, lang, participants, pIdx);
+      Logger.log(`Alert sent to ${lang} steward: ${stewardEmail}`);
+    } catch (error) {
+      Logger.log(`Failed to send alert to ${lang} steward: ${error.message}`);
+    }
+  });
+}
+
+/************************************************
+ * SEND ALERT EMAIL TO LANGUAGE STEWARD
+ ************************************************/
+function sendStewardAlertEmail(email, language, participants, pIdx) {
+  const subject = `CoC New Registrations Alert - ${language}`;
+  
+  const participantListHtml = participants.map(p => `
+    <tr>
+      <td>${p[pIdx.ParticipantID]}</td>
+      <td>${p[pIdx.Name]}</td>
+      <td>${p[pIdx.Email]}</td>
+      <td>${p[pIdx.WhatsApp]}</td>
+      <td>${p[pIdx.PreferredSlots]}</td>
+      <td>${p[pIdx.CoordinatorWilling] ? 'Yes' : 'No'}</td>
+    </tr>
+  `).join('');
+  
+  const htmlBody = `
+    <p>Dear ${language} Steward,</p>
+    <p>There are <strong>${participants.length}</strong> new participant(s) registered for ${language} CoC groups who need to be assigned to groups.</p>
+    <br>
+    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse;">
+      <tr>
+        <th>Participant ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>WhatsApp</th>
+        <th>Preferred Slots</th>
+        <th>Willing to Coordinate</th>
+      </tr>
+      ${participantListHtml}
+    </table>
+    <br>
+    <p>Please review these registrations and assign them to appropriate groups.</p>
+    <br>
+    <p>Best regards,<br>CoC Admin System</p>
+  `;
+  
+  MailApp.sendEmail({
+    to: email,
+    subject: subject,
+    htmlBody: htmlBody
+  });
 }
 
 /************************************************
