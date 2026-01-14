@@ -743,6 +743,8 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
     <br>
     <p>${labels.coordinatorClosing}</p>
     <br>
+    <p>${labels.coordinatorUpdate} <a href="https://www.hcessentials.org/coc-coordinator-update">https://www.hcessentials.org/coc-coordinator-update</a></p>
+    <br>
     <p><strong>${labels.nextSteps}</strong></p>
     <ol>
       <li>${labels.createWhatsApp}</li>
@@ -799,7 +801,8 @@ function getEmailLabels(language) {
       nextSteps: "Next Steps:",
       createWhatsApp: "Please create a WhatsApp group for your CoC Study Group with the above members within a day or two.",
       shareResources: "Share the following details in the WhatsApp Group's description:",
-      inviteMembers: "Invite the members to an initial meeting over Zoom or Google Meet."
+      inviteMembers: "Invite the members to an initial meeting over Zoom or Google Meet.",
+      coordinatorUpdate: "Submit the Coordinator's update for after each weekly session:"
     },
     Tamil: {
       memberSubject: "CoC குழு ஒதுக்கீடு உறுதிப்படுத்தல்",
@@ -826,7 +829,8 @@ function getEmailLabels(language) {
       nextSteps: "அடுத்த படிகள்:",
       createWhatsApp: "ஓன்று அல்லது இரண்டு நாட்களுக்குள் மேலே உள்ள உறுப்பினர்களுடன் உங்கள் CoC படிப்பு குழுவிற்கான வாட்ஸ்அப் குழுவை உருவாக்கவும்.",
       shareResources: "வாட்ஸ்அப் குழுவின் Description-ல் பின்வரும் விவரங்களைப் பகிரவும்:",
-      inviteMembers: "Zoom அல்லது Google Meet மூலம் உறுப்பினர்களை ஆரம்ப சந்திப்பிற்கு அழைக்கவும்."
+      inviteMembers: "Zoom அல்லது Google Meet மூலம் உறுப்பினர்களை ஆரம்ப சந்திப்பிற்கு அழைக்கவும்.",
+      coordinatorUpdate: "ஒவ்வொரு வாராந்திர அமர்வுக்குப் பிறகு ஒருங்கிணைப்பாளரின் மேம்பாட்டை சமர்ப்பிக்கவும்:"
     },
     Hindi: {
       memberSubject: "CoC समूह असाइनमेंट की पुष्टि",
@@ -853,7 +857,8 @@ function getEmailLabels(language) {
       nextSteps: "अगले कदम:",
       createWhatsApp: "कृपया एक या दो दिन के भीतर उपरोक्त सदस्यों के साथ अपने CoC अध्ययन समूह के लिए एक व्हाट्सएप समूह बनाएं।",
       shareResources: "व्हाट्सएप समूह के विवरण में निम्नलिखित जानकारी साझा करें:",
-      inviteMembers: "Zoom या Google Meet के माध्यम से सदस्यों को प्रारंभिक बैठक के लिए आमंत्रित करें।"
+      inviteMembers: "Zoom या Google Meet के माध्यम से सदस्यों को प्रारंभिक बैठक के लिए आमंत्रित करें।",
+      coordinatorUpdate: "प्रत्येक साप्ताहिक सत्र के बाद समन्वयक की अपडेट जमा करें:"
     },
     Kannada: {
       memberSubject: "CoC ಗುಂಪು ನಿಯೋಜನೆ ದೃಢೀಕರಣ",
@@ -880,7 +885,8 @@ function getEmailLabels(language) {
       nextSteps: "ಮುಂದಿನ ಹಂತಗಳು:",
       createWhatsApp: "ದಯವಿಟ್ಟು ಒಂದು ಅಥವಾ ಎರಡು ದಿನಗಳಲ್ಲಿ ಮೇಲಿನ ಸದಸ್ಯರೊಂದಿಗೆ ನಿಮ್ಮ CoC ಅಧ್ಯಯನ ಗುಂಪಿಗೆ ವಾಟ್ಸಾಪ್ ಗುಂಪನ್ನು ರಚಿಸಿ.",
       shareResources: "ವಾಟ್ಸಾಪ್ ಗುಂಪಿನ ವಿವರಣೆಯಲ್ಲಿ ಈ ಕೆಳಗಿನ ವಿವರಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ:",
-      inviteMembers: "Zoom ಅಥವಾ Google Meet ಮೂಲಕ ಸದಸ್ಯರನ್ನು ಆರಂಭಿಕ ಸಭೆಗೆ ಆಹ್ವಾನಿಸಿ."
+      inviteMembers: "Zoom ಅಥವಾ Google Meet ಮೂಲಕ ಸದಸ್ಯರನ್ನು ಆರಂಭಿಕ ಸಭೆಗೆ ಆಹ್ವಾನಿಸಿ.",
+      coordinatorUpdate: "ಪ್ರತಿ ವಾರದ ಅಧಿವೇಶನದ ನಂತರ ಸಮನ್ವಯಕರ ಅಪ್‌ಡೇಟ್ ಸಲ್ಲಿಸಿ:"
     },
     Telugu: {
       memberSubject: "CoC గ్రూప్ అసైన్‌మెంట్ నిర్ధారణ",
@@ -907,7 +913,8 @@ function getEmailLabels(language) {
       nextSteps: "తదుపరి దశలు:",
       createWhatsApp: "దయచేసి ఒకటి లేదా రెండు రోజుల్లో పై సభ్యులతో మీ CoC అధ్యయన సమూహానికి వాట్సాప్ సమూహాన్ని సృష్టించండి.",
       shareResources: "వాట్సాప్ సమూహ వివరణలో క్రింది వివరాలను భాగస్వామ్యం చేయండి:",
-      inviteMembers: "Zoom లేదా Google Meet ద్వారా సభ్యులను ప్రారంభ సమావేశానికి ఆహ్వానించండి."
+      inviteMembers: "Zoom లేదా Google Meet ద్వారా సభ్యులను ప్రారంభ సమావేశానికి ఆహ్వానించండి.",
+      coordinatorUpdate: "ప్రతి వారపు సెషన్ తర్వాత సమన్వయకర్త యొక్క అపడేట్ సమర్పించండి:"
     }
   };
   
