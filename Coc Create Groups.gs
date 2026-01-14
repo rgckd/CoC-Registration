@@ -67,11 +67,19 @@ function populateParticipantsFromCustomForm() {
 
   // Group rows by email and keep only the most recent submission for each email
   const emailMap = {};
+  const emailIndices = {}; // Track all indices for each email
+  
   sData.forEach((r, index) => {
     const email = r[sIdx.Email];
     const isProcessed = r[sIdx.Processed] === true || r[sIdx.Processed] === "TRUE";
     
     if (!email || isProcessed) return;
+
+    // Track all indices for this email
+    if (!emailIndices[email]) {
+      emailIndices[email] = [];
+    }
+    emailIndices[email].push(index);
 
     const timestamp = r[sIdx.Timestamp] instanceof Date ? r[sIdx.Timestamp] : new Date(r[sIdx.Timestamp]);
     
@@ -87,7 +95,6 @@ function populateParticipantsFromCustomForm() {
   // Process only the most recent submission for each email
   Object.values(emailMap).forEach(entry => {
     const r = entry.row;
-    const index = entry.index;
     const email = r[sIdx.Email];
 
     const newRow = new Array(tHeaders.length).fill("");
@@ -113,7 +120,11 @@ function populateParticipantsFromCustomForm() {
     if (tIdx.IsActive !== undefined) newRow[tIdx.IsActive] = true;
 
     rows.push(newRow);
-    processedRowIndices.push(index + 2); // +2 because of header row and 1-based indexing
+    
+    // Mark ALL records with this email as processed (including duplicates)
+    emailIndices[email].forEach(index => {
+      processedRowIndices.push(index + 2); // +2 because of header row and 1-based indexing
+    });
   });
 
   if (rows.length) {
