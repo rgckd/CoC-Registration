@@ -311,6 +311,7 @@ function acceptGroupSuggestions(sendEmails = true) {
 
       const newRow = new Array(gHeaders.length).fill("");
       newRow[gIdx.GroupID] = getNextGroupId(gData, gIdx);
+      newRow[gIdx.GroupCreationDate] = new Date();
       newRow[gIdx.GroupName] = groupName;
       newRow[gIdx.Language] = row[pIdx.Language];
       newRow[gIdx.Day] = day;
@@ -506,6 +507,7 @@ function updateGroupsSheet() {
 
       const newRow = new Array(gHeaders.length).fill("");
       newRow[gIdx.GroupID] = getNextGroupId(gData, gIdx);
+      newRow[gIdx.GroupCreationDate] = new Date();
       newRow[gIdx.GroupName] = groupName;
       newRow[gIdx.Language] = language;
       newRow[gIdx.Day] = day;

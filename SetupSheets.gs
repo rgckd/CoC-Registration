@@ -31,6 +31,7 @@ function setupAllCoCSheets() {
       name: "Groups",
       headers: [
         "GroupID",
+        "GroupCreationDate",
         "GroupName",
         "Language",
         "Day",
