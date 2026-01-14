@@ -6,8 +6,6 @@ function onOpen() {
     .createMenu("CoC Admin")
     .addItem("Populate Participants (All Languages)", "populateParticipantsFromCustomForm")
     .addSeparator()
-    .addItem("Daily Batch Processing with Alerts", "dailyParticipantProcessingWithAlerts")
-    .addSeparator()
     .addItem("Suggest Groups – English", "suggestGroupsEnglish")
     .addItem("Suggest Groups – Tamil", "suggestGroupsTamil")
     .addItem("Suggest Groups – Hindi", "suggestGroupsHindi")
@@ -180,6 +178,9 @@ function dailyParticipantProcessingWithAlerts() {
   const rowsAfterProcessing = tgt.getLastRow() - 1;
   const newParticipantsCount = rowsAfterProcessing - rowsBeforeProcessing;
   
+  Logger.log("=== Daily Batch Processing Summary ===");
+  Logger.log(`Total new participants processed: ${newParticipantsCount}`);
+  
   // If no new participants, exit
   if (newParticipantsCount <= 0) {
     Logger.log("No new participants to process");
@@ -206,7 +207,17 @@ function dailyParticipantProcessingWithAlerts() {
   // Get language steward emails from script properties
   const props = PropertiesService.getScriptProperties();
   
+  // Log breakdown by language
+  Logger.log("Breakdown by language (unassigned only):");
+  languages.forEach(lang => {
+    const count = participantsByLanguage[lang].length;
+    Logger.log(`  ${lang}: ${count}`);
+  });
+  
   // Send emails to language stewards
+  let emailsSent = 0;
+  let emailsFailed = 0;
+  
   languages.forEach(lang => {
     const participants = participantsByLanguage[lang];
     if (participants.length === 0) return;
@@ -220,10 +231,15 @@ function dailyParticipantProcessingWithAlerts() {
     try {
       sendStewardAlertEmail(stewardEmail, lang, participants, pIdx);
       Logger.log(`Alert sent to ${lang} steward: ${stewardEmail}`);
+      emailsSent++;
     } catch (error) {
       Logger.log(`Failed to send alert to ${lang} steward: ${error.message}`);
+      emailsFailed++;
     }
   });
+  
+  Logger.log(`Emails sent: ${emailsSent}, Emails failed: ${emailsFailed}`);
+  Logger.log("=== Batch Processing Complete ===");
 }
 
 /************************************************
