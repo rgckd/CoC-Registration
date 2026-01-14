@@ -65,11 +65,30 @@ function populateParticipantsFromCustomForm() {
   let rows = [];
   let processedRowIndices = [];
 
+  // Group rows by email and keep only the most recent submission for each email
+  const emailMap = {};
   sData.forEach((r, index) => {
     const email = r[sIdx.Email];
     const isProcessed = r[sIdx.Processed] === true || r[sIdx.Processed] === "TRUE";
     
     if (!email || isProcessed) return;
+
+    const timestamp = r[sIdx.Timestamp] instanceof Date ? r[sIdx.Timestamp] : new Date(r[sIdx.Timestamp]);
+    
+    if (!emailMap[email] || timestamp > emailMap[email].timestamp) {
+      emailMap[email] = {
+        row: r,
+        index: index,
+        timestamp: timestamp
+      };
+    }
+  });
+
+  // Process only the most recent submission for each email
+  Object.values(emailMap).forEach(entry => {
+    const r = entry.row;
+    const index = entry.index;
+    const email = r[sIdx.Email];
 
     const newRow = new Array(tHeaders.length).fill("");
     newRow[tIdx.ParticipantID] = "P-" + String(nextId++).padStart(4, "0");
