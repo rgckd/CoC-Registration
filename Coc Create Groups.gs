@@ -135,6 +135,9 @@ function populateParticipantsFromCustomForm() {
     processedRowIndices.forEach(rowNum => {
       src.getRange(rowNum, sIdx.Processed + 1).setValue(true);
     });
+
+    // Refresh groups and dashboard after populating participants
+    refreshGroupsAndDashboard();
   }
 }
 
@@ -425,6 +428,9 @@ function acceptGroupSuggestions(sendEmails = true) {
     message += `Emails: Skipped (no email mode)\n`;
   }
   
+  // Refresh groups and dashboard after accepting suggestions
+  refreshGroupsAndDashboard();
+
   if (emailsFailed > 0 || errors.length > 0) {
     SpreadsheetApp.getUi().alert('⚠️ Process Completed with Issues', message, SpreadsheetApp.getUi().ButtonSet.OK);
   } else {
