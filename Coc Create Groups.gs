@@ -325,46 +325,86 @@ function suggestGroupsForLanguage(language) {
     slotGroups[firstSlot].push(p);
   });
 
+  // Build existing groups map by language, slot, and eligibility
+  const existingGroups = gData
+    .filter(g => 
+      g[gIdx.Language] === language &&
+      g[gIdx.Status] === "Active" &&
+      (g[gIdx.WeeksCompleted] || 0) <= 5 &&
+      g[gIdx.MemberCount] < 8
+    )
+    .map(g => ({
+      name: g[gIdx.GroupName],
+      day: g[gIdx.Day],
+      time: g[gIdx.Time],
+      memberCount: g[gIdx.MemberCount] || 0,
+      capacity: 8 - (g[gIdx.MemberCount] || 0)
+    }));
+
   let seq = getNextGroupSequenceByCount(gData, gIdx, language);
 
   // Process each time slot group
   Object.keys(slotGroups).forEach(slot => {
-    const group = slotGroups[slot];
+    let remainingParticipants = slotGroups[slot];
     
-    // Skip groups with less than 5 members
-    if (group.length < 5) {
+    // Parse the slot into day and time components
+    const slotParts = slot.split(" ");
+    const slotDay = slotParts[0] || "TBD";
+    const slotTime = slotParts[1] || "TBD";
+    
+    // Find existing groups that match this time slot and have capacity
+    const matchingGroups = existingGroups.filter(g => 
+      g.day === slotDay && g.time === slotTime && g.capacity > 0
+    ).sort((a, b) => a.memberCount - b.memberCount); // Fill smaller groups first
+
+    // Assign to existing groups first
+    matchingGroups.forEach(existingGroup => {
+      if (remainingParticipants.length === 0) return;
+      
+      const toAssign = remainingParticipants.slice(0, existingGroup.capacity);
+      toAssign.forEach(p => {
+        pSheet.getRange(p.row, pIdx.SuggestedGroup + 1).setValue(existingGroup.name);
+      });
+      
+      // Update capacity and remaining participants
+      existingGroup.capacity -= toAssign.length;
+      existingGroup.memberCount += toAssign.length;
+      remainingParticipants = remainingParticipants.slice(toAssign.length);
+    });
+
+    // If there are still remaining participants, create new groups
+    if (remainingParticipants.length < 5) {
+      // Not enough for a new group, skip
       return;
     }
     
-    const hasCoordinator = group.some(p => p.data[pIdx.CoordinatorWilling] === true);
-    
-    // Split large groups into subgroups of 5-8 members
+    // Split remaining participants into subgroups of 5-8 members
     const subgroups = [];
-    let remaining = group.length;
+    let remaining = remainingParticipants.length;
     let index = 0;
     
     while (remaining > 0) {
       if (remaining <= 8) {
         // Last group - take all remaining if >= 5
         if (remaining >= 5) {
-          subgroups.push(group.slice(index));
+          subgroups.push(remainingParticipants.slice(index));
         }
         break;
       } else if (remaining <= 13) {
         // Split into two groups (to avoid creating a group < 5)
         const firstGroupSize = Math.ceil(remaining / 2);
-        subgroups.push(group.slice(index, index + firstGroupSize));
-        subgroups.push(group.slice(index + firstGroupSize));
+        subgroups.push(remainingParticipants.slice(index, index + firstGroupSize));
+        subgroups.push(remainingParticipants.slice(index + firstGroupSize));
         break;
       } else {
         // Take 8 members
-        subgroups.push(group.slice(index, index + 8));
+        subgroups.push(remainingParticipants.slice(index, index + 8));
         index += 8;
         remaining -= 8;
       }
     }
 
-    // Assign same sequence to all members in each subgroup
+    // Assign to new groups
     subgroups.forEach(subgroup => {
       const groupName = `NEW → CoC-${language}-${String(seq).padStart(3, "0")} (${slot})`;
       subgroup.forEach(p => {
@@ -447,16 +487,26 @@ function acceptGroupSuggestions(sendEmails = true) {
       // Process SuggestedGroup as before
       isReassignment = true;
       
+      const suggested = row[pIdx.SuggestedGroup].trim();
+      
       // Pattern a: "NEW → CoC-Tamil-020 (Mon Morning)"
-      const newPatternMatch = row[pIdx.SuggestedGroup].match(/NEW\s*→\s*(CoC-[^-]+-\d{3})\s*\(([^)]+)\)/);
+      const newPatternMatch = suggested.match(/NEW\s*→\s*(CoC-[^-]+-\d{3})\s*\(([^)]+)\)/);
       if (newPatternMatch) {
         groupName = newPatternMatch[1];
         timing = newPatternMatch[2];
       } else {
         // Pattern b: "CoC-Tamil-020"
-        const directMatch = row[pIdx.SuggestedGroup].match(/CoC-[^-]+-\d{3}/);
+        const directMatch = suggested.match(/CoC-[^-]+-\d{3}/);
         if (directMatch) {
           groupName = directMatch[0];
+        } else {
+          // Pattern c: Any custom name with optional timing in parentheses
+          // e.g., "this-is-a-new-group (Tue evening)" or "CustomGroup"
+          const customMatch = suggested.match(/^(.+?)(?:\s*\(([^)]+)\))?$/);
+          if (customMatch) {
+            groupName = customMatch[1].trim();
+            timing = customMatch[2] || "";
+          }
         }
       }
     }
