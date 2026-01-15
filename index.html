@@ -120,6 +120,39 @@
       color: #4285f4;
       text-decoration: none;
     }
+
+    .disclaimer-section {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+
+    .disclaimer-checkbox {
+      display: flex;
+      align-items: flex-start;
+      margin-top: 10px;
+    }
+
+    .disclaimer-checkbox input[type="checkbox"] {
+      width: auto;
+      margin-top: 4px;
+      margin-right: 10px;
+      flex-shrink: 0;
+    }
+
+    .disclaimer-checkbox label {
+      margin-top: 0;
+      font-weight: normal;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .disclaimer-checkbox a {
+      color: #4285f4;
+      text-decoration: underline;
+    }
   </style>
 </head>
 
@@ -238,6 +271,15 @@
 
     <label>Comments (Optional)</label>
     <textarea name="Comments" rows="4" style="width: 100%; padding: 10px; margin-top: 6px;"></textarea>
+
+    <div class="disclaimer-section">
+      <div class="disclaimer-checkbox">
+        <input type="checkbox" id="disclaimerConsent" name="DisclaimerConsent" required>
+        <label for="disclaimerConsent" id="disclaimerLabel">
+          <span data-i18n="disclaimerConsent">I have read and agree to the Event Disclaimer and Social Media Policy, including the terms at heartfulness.org/us/terms. I confirm that I am at least 18 years of age and consent to recordings being made of this program. *</span>
+        </label>
+      </div>
+    </div>
 
     <p id="formError"></p>
 

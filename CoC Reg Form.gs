@@ -93,7 +93,8 @@ function handleRegistration(e) {
     data.Times.join(", "),         // PreferredTimes
     data.Coordinator,     // Coordinator
     "",                   // Processed (empty for new rows)
-    data.Comments || ""   // Comments
+    data.Comments || "",  // Comments
+    data.DisclaimerConsent || "No" // Disclaimer Consent
   ]);
 
   const emailBody = buildConfirmationEmail(data);
@@ -120,6 +121,7 @@ function normalizeRequest(e) {
     Language: e.parameter.Language || "English",
     EnglishAbility: sanitize(e.parameter.EnglishAbility || ""),
     Comments: sanitize(e.parameter.Comments || ""),
+    DisclaimerConsent: e.parameter.DisclaimerConsent === "on" ? "Yes" : "No",
     Times: e.parameters && e.parameters.Times
       ? [].concat(e.parameters.Times)
       : []
@@ -137,6 +139,7 @@ function validateSubmission(data) {
   if (!data.WhatsApp) missing.push("WhatsApp");
   if (!data.Center) missing.push("Center");
   if (!data.Coordinator) missing.push("Coordinator");
+  if (data.DisclaimerConsent !== "Yes") missing.push("Disclaimer Consent");
 
   if (!Array.isArray(data.Times) || data.Times.length === 0) {
     missing.push("Preferred days & times");

@@ -44,6 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!fdCheck.get("Center")) missingFields.push("Your Heartfulness Center");
     if (selectedTimes.length === 0) missingFields.push("Preferred days & times");
     if (!fdCheck.get("Coordinator")) missingFields.push("Willing to be a coordinator");
+    if (!document.getElementById("disclaimerConsent").checked) missingFields.push("Disclaimer Consent");
     
     // Check EnglishAbility only if non-English language is selected
     if (lang !== "English" && !knowsEnglish) missingFields.push("English Ability");
