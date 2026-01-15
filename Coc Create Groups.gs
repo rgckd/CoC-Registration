@@ -801,6 +801,7 @@ function updateAdminDashboard() {
     { key: "TotalGroups", label: "Total Groups" },
     { key: "ActiveGroups", label: "Active Groups" },
     { key: "InActiveGroups", label: "InActive Groups" },
+    { key: "CompletedGroups", label: "Completed Groups" },
     { key: "NoCoordinator", label: "Groups without Coordinator" },
     { key: "Assigned", label: "Assigned Participants" },
     { key: "ActiveParticipants", label: "Active Participants" },
@@ -825,6 +826,8 @@ function updateAdminDashboard() {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Active").length;
       } else if (m.key === "InActiveGroups") {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Inactive").length;
+      } else if (m.key === "CompletedGroups") {
+        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Completed").length;
       } else if (m.key === "NoCoordinator") {
         v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail]).length;
       }

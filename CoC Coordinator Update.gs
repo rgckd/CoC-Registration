@@ -90,11 +90,11 @@ function handleUpdateGroupStatus(e) {
   const membersPayload = e.parameter.members;
 
   if (!groupID || !groupName) return reject("GroupID and GroupName are required");
-  if (!status || (status !== "Active" && status !== "Inactive")) {
-    return reject("Status must be Active or Inactive");
+  if (!status || (status !== "Active" && status !== "Inactive" && status !== "Completed")) {
+    return reject("Status must be Active, Inactive, or Completed");
   }
 
-  const weeksCompleted = status === "Active" ? Number(weeksCompletedRaw || 0) : 0;
+  const weeksCompleted = (status === "Active" || status === "Completed") ? Number(weeksCompletedRaw || 0) : 0;
   if (weeksCompleted < 0 || weeksCompleted > 20 || Number.isNaN(weeksCompleted)) {
     return reject("WeeksCompleted must be between 0 and 20");
   }

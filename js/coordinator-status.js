@@ -44,7 +44,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function toggleWeeks() {
-    if (statusSel.value === "Active") {
+    if (statusSel.value === "Active" || statusSel.value === "Completed") {
       weeksRow.classList.remove("hidden");
     } else {
       weeksRow.classList.add("hidden");
@@ -193,7 +193,7 @@ document.addEventListener("DOMContentLoaded", () => {
       groupName: meta.groupName,
       coordinatorName: meta.coordinatorName,
       status: statusSel.value,
-      weeksCompleted: statusSel.value === "Active" ? weeksSel.value : "0",
+      weeksCompleted: (statusSel.value === "Active" || statusSel.value === "Completed") ? weeksSel.value : "0",
       day: daySel.value,
       time: timeInput.value.trim(),
       notes: notesEl.value.trim(),
