@@ -397,6 +397,7 @@ function acceptGroupSuggestions(sendEmails = true) {
   const gIdx = indexMap(gHeaders);
 
   const processedParticipantIDs = [];
+  const skippedParticipantIDs = [];
   let emailsSent = 0;
   let emailsFailed = 0;
   const errors = [];
@@ -405,16 +406,16 @@ function acceptGroupSuggestions(sendEmails = true) {
   
   // Count candidates for processing
   const candidateCount = pData.filter(row => 
-    row[pIdx.AcceptSuggestion] === true && row[pIdx.SuggestedGroup]
+    row[pIdx.AcceptSuggestion] === true && (row[pIdx.SuggestedGroup] || row[pIdx.AssignedGroup])
   ).length;
   
   if (candidateCount === 0) {
     SpreadsheetApp.getUi().alert(
       'No Suggestions to Accept',
-      'No participants have "Accept Suggestion" checked with a suggested group.\n\n' +
+      'No participants have "Accept Suggestion" checked with a suggested group or assigned group.\n\n' +
       'Please:\n' +
-      '1. Run "Suggest Groups" for a language\n' +
-      '2. Check the "Accept Suggestion" checkbox for participants you want to assign\n' +
+      '1. Run "Suggest Groups" for a language OR ensure participants have assigned groups\n' +
+      '2. Check the "Accept Suggestion" checkbox for participants you want to process\n' +
       '3. Then run this function again',
       SpreadsheetApp.getUi().ButtonSet.OK
     );
@@ -424,21 +425,39 @@ function acceptGroupSuggestions(sendEmails = true) {
   // Filter and extract group names
   pData.forEach((row, i) => {
     if (row[pIdx.AcceptSuggestion] !== true) return;
-    if (!row[pIdx.SuggestedGroup]) return;
+    
+    // If no suggested group, use assigned group (for re-sending emails)
+    // If both are empty, skip this row but clear the checkbox
+    if (!row[pIdx.SuggestedGroup] && !row[pIdx.AssignedGroup]) {
+      row[pIdx.AcceptSuggestion] = false;
+      pData[i] = row;
+      skippedParticipantIDs.push(row[pIdx.ParticipantID] || `Row ${i + 2}`);
+      return;
+    }
 
     let groupName = "";
     let timing = "";
+    let isReassignment = false;
 
-    // Pattern a: "NEW → CoC-Tamil-020 (Mon Morning)"
-    const newPatternMatch = row[pIdx.SuggestedGroup].match(/NEW\s*→\s*(CoC-[^-]+-\d{3})\s*\(([^)]+)\)/);
-    if (newPatternMatch) {
-      groupName = newPatternMatch[1];
-      timing = newPatternMatch[2];
+    // If SuggestedGroup is empty, use AssignedGroup (no group change, just email)
+    if (!row[pIdx.SuggestedGroup] && row[pIdx.AssignedGroup]) {
+      groupName = row[pIdx.AssignedGroup];
+      isReassignment = false; // Not changing assignment, just processing for email
     } else {
-      // Pattern b: "CoC-Tamil-020"
-      const directMatch = row[pIdx.SuggestedGroup].match(/CoC-[^-]+-\d{3}/);
-      if (directMatch) {
-        groupName = directMatch[0];
+      // Process SuggestedGroup as before
+      isReassignment = true;
+      
+      // Pattern a: "NEW → CoC-Tamil-020 (Mon Morning)"
+      const newPatternMatch = row[pIdx.SuggestedGroup].match(/NEW\s*→\s*(CoC-[^-]+-\d{3})\s*\(([^)]+)\)/);
+      if (newPatternMatch) {
+        groupName = newPatternMatch[1];
+        timing = newPatternMatch[2];
+      } else {
+        // Pattern b: "CoC-Tamil-020"
+        const directMatch = row[pIdx.SuggestedGroup].match(/CoC-[^-]+-\d{3}/);
+        if (directMatch) {
+          groupName = directMatch[0];
+        }
       }
     }
 
@@ -475,13 +494,17 @@ function acceptGroupSuggestions(sendEmails = true) {
     }
 
     // Update participant
-    row[pIdx.AssignedGroup] = groupName;
-    row[pIdx.AssignmentStatus] = "Assigned";
-    row[pIdx.SuggestedGroup] = "";
+    if (isReassignment) {
+      // Only update assignment if this is a new suggestion
+      row[pIdx.AssignedGroup] = groupName;
+      row[pIdx.AssignmentStatus] = "Assigned";
+      row[pIdx.SuggestedGroup] = "";
+    }
+    // Always clear the AcceptSuggestion checkbox after processing
     row[pIdx.AcceptSuggestion] = false;
     pData[i] = row;
 
-    // Track ParticipantID for Pass 2
+    // Track ParticipantID for Pass 2 (email sending)
     processedParticipantIDs.push(row[pIdx.ParticipantID]);
   });
 
@@ -563,16 +586,19 @@ function acceptGroupSuggestions(sendEmails = true) {
   }
   
   // Show summary
-  let message = `Participants processed: ${processedParticipantIDs.length}\n`;
+  let message = `✅ Processed: ${processedParticipantIDs.length}\n`;
+  if (skippedParticipantIDs.length > 0) {
+    message += `⚠️ Skipped (no group info): ${skippedParticipantIDs.length}\n`;
+  }
   if (sendEmails) {
-    message += `Emails sent successfully: ${emailsSent}\n`;
+    message += `📧 Emails sent successfully: ${emailsSent}\n`;
   
     if (emailsFailed > 0) {
-      message += `Emails failed: ${emailsFailed}\n\n`;
+      message += `❌ Emails failed: ${emailsFailed}\n\n`;
       message += `ERRORS:\n${errors.join('\n')}`;
     }
   } else {
-    message += `Emails: Skipped (no email mode)\n`;
+    message += `📧 Emails: Skipped (no email mode)\n`;
   }
   
   // Refresh groups and dashboard after accepting suggestions
