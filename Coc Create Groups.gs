@@ -1012,9 +1012,9 @@ function updateAdminDashboard() {
   d.getRange(1, 1, maxRows, maxCols).clearContent();
   d.getRange(1, 1, maxRows, maxCols).clearFormat();
 
-  // Add column headers at row 1
-  d.getRange(1, 1, 1, 7).setValues([["DashboardSection", "Metric", "English", "Tamil", "Hindi", "Kannada", "Telugu"]]);
-  d.getRange(1, 1, 1, 7).setFontWeight("bold").setBackground("#D3D3D3");
+  // Add column headers at row 1 (Metric + languages)
+  d.getRange(1, 1, 1, 6).setValues([["Metric", "English", "Tamil", "Hindi", "Kannada", "Telugu"]]);
+  d.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#D3D3D3");
 
   let row = 2;
   const sectionFill = "#6C8EBF";  // Soft blue/grey for section headers
@@ -1023,7 +1023,7 @@ function updateAdminDashboard() {
   const highlightFontColor = "#000000";
 
   // Groups section
-  d.getRange(row, 1, 1, 7).setValues([["GROUPS", "", "", "", "", "", ""]]);
+  d.getRange(row, 1, 1, 6).setValues([["GROUPS", "", "", "", "", ""]]);
   d.getRange(row, 1).setFontColor(sectionFontColor).setBackground(sectionFill).setFontWeight("bold");
   row++;
 
@@ -1048,7 +1048,7 @@ function updateAdminDashboard() {
         v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail]).length;
       }
       rowValues[j] = v;
-      d.getRange(row, j + 3).setValue(v);
+      d.getRange(row, j + 2).setValue(v);
     });
 
     // Apply highlight only where action is needed (non-zero values)
@@ -1056,7 +1056,7 @@ function updateAdminDashboard() {
       rowValues.forEach((v, idx) => {
         if (v > 0) {
           shouldHighlightLabel = true;
-          d.getRange(row, idx + 3).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
+          d.getRange(row, idx + 2).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
         }
       });
       if (shouldHighlightLabel) {
@@ -1069,7 +1069,7 @@ function updateAdminDashboard() {
   row++; // Blank row
 
   // Participants section
-  d.getRange(row, 1, 1, 7).setValues([["PARTICIPANTS", "", "", "", "", "", ""]]);
+  d.getRange(row, 1, 1, 6).setValues([["PARTICIPANTS", "", "", "", "", ""]]);
   d.getRange(row, 1).setFontColor(sectionFontColor).setBackground(sectionFill).setFontWeight("bold");
   row++;
 
@@ -1092,7 +1092,7 @@ function updateAdminDashboard() {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Completed").length;
       }
       rowValues[j] = v;
-      d.getRange(row, j + 3).setValue(v);
+      d.getRange(row, j + 2).setValue(v);
     });
 
     // Apply highlight only where action is needed (non-zero values)
@@ -1100,7 +1100,7 @@ function updateAdminDashboard() {
       rowValues.forEach((v, idx) => {
         if (v > 0) {
           shouldHighlightLabel = true;
-          d.getRange(row, idx + 3).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
+          d.getRange(row, idx + 2).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
         }
       });
       if (shouldHighlightLabel) {
@@ -1113,7 +1113,7 @@ function updateAdminDashboard() {
   // Center align numeric values across language columns
   const lastDataRow = row - 1;
   if (lastDataRow >= 2) {
-    d.getRange(2, 3, lastDataRow - 1, 5).setHorizontalAlignment("center");
+    d.getRange(2, 2, lastDataRow - 1, 5).setHorizontalAlignment("center");
   }
 }
 
