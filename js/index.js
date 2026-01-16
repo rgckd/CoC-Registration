@@ -12,6 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span>Submitting... Please wait';
       submitBtn.disabled = true;
+      // Disable all form inputs during submission to prevent accidental re-submission
+      form.querySelectorAll("input, select").forEach(el => el.disabled = true);
     } else {
       btn.disabled = false;
       btn.textContent = "Submit Registration";

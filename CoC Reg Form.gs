@@ -82,6 +82,10 @@ function handleRegistration(e) {
     return reject("Sheet not found");
   }
 
+  // Check for duplicate submission within 5 minutes (prevent accidental double-click)
+  const isDuplicate = checkRecentDuplicate(sheet, data.Email);
+  
+  // Append the submission regardless (maintain append-only log)
   sheet.appendRow([
     new Date(),           // Timestamp
     data.Language,        // Language
@@ -97,13 +101,16 @@ function handleRegistration(e) {
     data.DisclaimerConsent || "No" // Disclaimer Consent
   ]);
 
-  const emailBody = buildConfirmationEmail(data);
+  // Only send confirmation email if not a duplicate
+  if (!isDuplicate) {
+    const emailBody = buildConfirmationEmail(data);
 
-  MailApp.sendEmail({
-    to: data.Email,
-    subject: "CoC Registration Confirmation",
-    htmlBody: emailBody
-  });
+    MailApp.sendEmail({
+      to: data.Email,
+      subject: "CoC Registration Confirmation",
+      htmlBody: emailBody
+    });
+  }
 
   return success();
 }
@@ -152,6 +159,38 @@ function validateSubmission(data) {
   }
 
   return missing;
+}
+
+/**************************************
+ * DUPLICATE SUBMISSION DETECTION
+ **************************************/
+function checkRecentDuplicate(sheet, email) {
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const emailColIndex = headers.indexOf("Email");
+  const timestampColIndex = headers.indexOf("Timestamp");
+  
+  if (emailColIndex === -1 || timestampColIndex === -1) {
+    return false; // Can't check without these columns
+  }
+  
+  const now = new Date();
+  const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+  
+  // Check the last 10 rows for performance (recent duplicates would be near the end)
+  for (let i = Math.max(1, data.length - 10); i < data.length; i++) {
+    const rowEmail = String(data[i][emailColIndex] || "").trim();
+    const rowTimestamp = data[i][timestampColIndex];
+    
+    if (rowEmail === email && rowTimestamp instanceof Date) {
+      if (rowTimestamp >= fiveMinutesAgo) {
+        // Found a submission from the same email within 5 minutes
+        return true;
+      }
+    }
+  }
+  
+  return false;
 }
 
 /**************************************
