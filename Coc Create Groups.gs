@@ -1014,7 +1014,7 @@ function updateAdminDashboard() {
 
   // Add column headers at row 1 (Metric + languages)
   d.getRange(1, 1, 1, 6).setValues([["Metric", "English", "Tamil", "Hindi", "Kannada", "Telugu"]]);
-  d.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#D3D3D3");
+  d.getRange(1, 1, 1, 6).setFontWeight("bold").setBackground("#D3D3D3").setHorizontalAlignment("center");
 
   let row = 2;
   const sectionFill = "#6C8EBF";  // Soft blue/grey for section headers
