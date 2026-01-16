@@ -146,16 +146,16 @@ function populateParticipantsFromCustomForm() {
  * 
  * This function is designed to run daily (via time-based trigger).
  * It populates participants from CustomForm and sends alert emails
- * to language stewards when new participants need group assignment.
+ * to language admins when new participants need group assignment.
  * 
  * SETUP INSTRUCTIONS:
  * 1. Go to Apps Script Editor > Project Settings > Script Properties
- * 2. Add the following properties with steward email addresses:
- *    - STEWARD_EMAIL_ENGLISH
- *    - STEWARD_EMAIL_TAMIL
- *    - STEWARD_EMAIL_HINDI
- *    - STEWARD_EMAIL_KANNADA
- *    - STEWARD_EMAIL_TELUGU
+ * 2. Add the following properties with admin email addresses:
+ *    - ADMIN_EMAIL_ENGLISH
+ *    - ADMIN_EMAIL_TAMIL
+ *    - ADMIN_EMAIL_HINDI
+ *    - ADMIN_EMAIL_KANNADA
+ *    - ADMIN_EMAIL_TELUGU
  * 3. Set up a time-based trigger:
  *    - Go to Triggers (clock icon)
  *    - Click "+ Add Trigger"
@@ -204,7 +204,7 @@ function dailyParticipantProcessingWithAlerts() {
     );
   });
   
-  // Get language steward emails from script properties
+  // Get language admin emails from script properties
   const props = PropertiesService.getScriptProperties();
   
   // Log breakdown by language
@@ -214,7 +214,7 @@ function dailyParticipantProcessingWithAlerts() {
     Logger.log(`  ${lang}: ${count}`);
   });
   
-  // Send emails to language stewards
+  // Send emails to language admins
   let emailsSent = 0;
   let emailsFailed = 0;
   
@@ -222,18 +222,18 @@ function dailyParticipantProcessingWithAlerts() {
     const participants = participantsByLanguage[lang];
     if (participants.length === 0) return;
     
-    const stewardEmail = props.getProperty(`STEWARD_EMAIL_${lang.toUpperCase()}`);
-    if (!stewardEmail) {
-      Logger.log(`No steward email configured for ${lang}`);
+    const adminEmail = props.getProperty(`ADMIN_EMAIL_${lang.toUpperCase()}`);
+    if (!adminEmail) {
+      Logger.log(`No admin email configured for ${lang}`);
       return;
     }
     
     try {
-      sendStewardAlertEmail(stewardEmail, lang, participants, pIdx);
-      Logger.log(`Alert sent to ${lang} steward: ${stewardEmail}`);
+      sendAdminAlertEmail(adminEmail, lang, participants, pIdx);
+      Logger.log(`Alert sent to ${lang} admin: ${adminEmail}`);
       emailsSent++;
     } catch (error) {
-      Logger.log(`Failed to send alert to ${lang} steward: ${error.message}`);
+      Logger.log(`Failed to send alert to ${lang} admin: ${error.message}`);
       emailsFailed++;
     }
   });
@@ -243,9 +243,9 @@ function dailyParticipantProcessingWithAlerts() {
 }
 
 /************************************************
- * SEND ALERT EMAIL TO LANGUAGE STEWARD
+ * SEND ALERT EMAIL TO LANGUAGE ADMIN
  ************************************************/
-function sendStewardAlertEmail(email, language, participants, pIdx) {
+function sendAdminAlertEmail(email, language, participants, pIdx) {
   const subject = `CoC New Registrations Alert - ${language}`;
   
   const participantListHtml = participants.map(p => `
