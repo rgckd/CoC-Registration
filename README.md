@@ -104,24 +104,26 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | Kannada | Number | Count for Kannada language |
 | Telugu | Number | Count for Telugu language |
 
-**Metrics tracked (grouped by section):**
+**Dashboard Layout:**
 
-*Groups:*
+The dashboard is organized into two visually distinct sections: GROUPS and PARTICIPANTS. Each section has column headers followed by metrics.
+
+*Groups section:*
 - Active Groups
-- Inactive Groups
+- Inactive Groups ⚠️ (highlighted in red for action)
 - Completed Groups
 - Closed Groups
 - Terminated Groups
-- Groups without Coordinator
+- Groups without Coordinator ⚠️ (highlighted in red for action)
 
-*Participants:*
+*Participants section:*
 - Unassigned Participants
 - Assigned Participants
-- Inactive Participants
+- Inactive Participants ⚠️ (highlighted in red for action)
 - Discontinued Participants
 - Completed Participants
 
-All values are auto-computed by `updateAdminDashboard()` and should never be edited manually.
+⚠️ Red-highlighted metrics indicate action items requiring admin attention. All values are auto-computed by `updateAdminDashboard()` and should never be edited manually.
 
 ---
 

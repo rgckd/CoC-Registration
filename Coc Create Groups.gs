@@ -989,27 +989,42 @@ function updateAdminDashboard() {
   const gIdx = indexMap(gH);
 
   const langs = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
-  const metrics = [
-    // Groups section
-    { section: "Groups", key: "ActiveGroups", label: "Active Groups" },
-    { section: "Groups", key: "InactiveGroups", label: "Inactive Groups" },
-    { section: "Groups", key: "CompletedGroups", label: "Completed Groups" },
-    { section: "Groups", key: "ClosedGroups", label: "Closed Groups" },
-    { section: "Groups", key: "TerminatedGroups", label: "Terminated Groups" },
-    { section: "Groups", key: "NoCoordinator", label: "Groups without Coordinator" },
-    // Participants section
-    { section: "Participants", key: "Unassigned", label: "Unassigned Participants" },
-    { section: "Participants", key: "Assigned", label: "Assigned Participants" },
-    { section: "Participants", key: "Inactive", label: "Inactive Participants" },
-    { section: "Participants", key: "Discontinued", label: "Discontinued Participants" },
-    { section: "Participants", key: "Completed", label: "Completed Participants" }
+  const groupsMetrics = [
+    { key: "ActiveGroups", label: "Active Groups" },
+    { key: "InactiveGroups", label: "Inactive Groups", highlight: true },
+    { key: "CompletedGroups", label: "Completed Groups" },
+    { key: "ClosedGroups", label: "Closed Groups" },
+    { key: "TerminatedGroups", label: "Terminated Groups" },
+    { key: "NoCoordinator", label: "Groups without Coordinator", highlight: true }
+  ];
+  
+  const participantsMetrics = [
+    { key: "Unassigned", label: "Unassigned Participants" },
+    { key: "Assigned", label: "Assigned Participants" },
+    { key: "Inactive", label: "Inactive Participants", highlight: true },
+    { key: "Discontinued", label: "Discontinued Participants" },
+    { key: "Completed", label: "Completed Participants" }
   ];
 
-  d.getRange(2, 1, 50, 7).clearContent();
+  d.getRange(2, 1, 100, 7).clearContent();
+  d.getRange(2, 1, 100, 7).clearFormat();
 
-  metrics.forEach((m, i) => {
-    d.getRange(i + 2, 1).setValue(m.section);
-    d.getRange(i + 2, 2).setValue(m.label);
+  let row = 2;
+  const redFill = "#FF0000";
+  const redFontColor = "#FFFFFF";
+
+  // Groups section
+  d.getRange(row, 1, 1, 7).setValues([["GROUPS"]]);
+  d.getRange(row, 1).setFontColor(redFontColor).setBackground(redFill).setFontWeight("bold");
+  row++;
+
+  // Column headers
+  d.getRange(row, 1, 1, 7).setValues([["Status", "English", "Tamil", "Hindi", "Kannada", "Telugu", ""]]);
+  row++;
+
+  // Group metrics
+  groupsMetrics.forEach(m => {
+    d.getRange(row, 1).setValue(m.label);
     langs.forEach((l, j) => {
       let v = 0;
       if (m.key === "ActiveGroups") {
@@ -1024,7 +1039,34 @@ function updateAdminDashboard() {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Terminated").length;
       } else if (m.key === "NoCoordinator") {
         v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail]).length;
-      } else if (m.key === "Unassigned") {
+      }
+      d.getRange(row, j + 2).setValue(v);
+    });
+    
+    // Apply red highlight to action items
+    if (m.highlight) {
+      d.getRange(row, 1, 1, 7).setBackground(redFill).setFontColor(redFontColor).setFontWeight("bold");
+    }
+    row++;
+  });
+
+  row++; // Blank row
+
+  // Participants section
+  d.getRange(row, 1, 1, 7).setValues([["PARTICIPANTS"]]);
+  d.getRange(row, 1).setFontColor(redFontColor).setBackground(redFill).setFontWeight("bold");
+  row++;
+
+  // Column headers
+  d.getRange(row, 1, 1, 7).setValues([["Status", "English", "Tamil", "Hindi", "Kannada", "Telugu", ""]]);
+  row++;
+
+  // Participant metrics
+  participantsMetrics.forEach(m => {
+    d.getRange(row, 1).setValue(m.label);
+    langs.forEach((l, j) => {
+      let v = 0;
+      if (m.key === "Unassigned") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Unassigned").length;
       } else if (m.key === "Assigned") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Assigned").length;
@@ -1035,8 +1077,14 @@ function updateAdminDashboard() {
       } else if (m.key === "Completed") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Completed").length;
       }
-      d.getRange(i + 2, j + 3).setValue(v);
+      d.getRange(row, j + 2).setValue(v);
     });
+    
+    // Apply red highlight to action items
+    if (m.highlight) {
+      d.getRange(row, 1, 1, 7).setBackground(redFill).setFontColor(redFontColor).setFontWeight("bold");
+    }
+    row++;
   });
 }
 
