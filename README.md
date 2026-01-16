@@ -107,7 +107,6 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 **Metrics tracked (grouped by section):**
 
 *Groups:*
-- Total Groups
 - Active Groups
 - Inactive Groups
 - Completed Groups
@@ -118,6 +117,7 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 *Participants:*
 - Unassigned Participants
 - Assigned Participants
+- Inactive Participants
 - Discontinued Participants
 - Completed Participants
 

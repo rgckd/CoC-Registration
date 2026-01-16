@@ -991,7 +991,6 @@ function updateAdminDashboard() {
   const langs = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
   const metrics = [
     // Groups section
-    { section: "Groups", key: "TotalGroups", label: "Total Groups" },
     { section: "Groups", key: "ActiveGroups", label: "Active Groups" },
     { section: "Groups", key: "InactiveGroups", label: "Inactive Groups" },
     { section: "Groups", key: "CompletedGroups", label: "Completed Groups" },
@@ -1001,6 +1000,7 @@ function updateAdminDashboard() {
     // Participants section
     { section: "Participants", key: "Unassigned", label: "Unassigned Participants" },
     { section: "Participants", key: "Assigned", label: "Assigned Participants" },
+    { section: "Participants", key: "Inactive", label: "Inactive Participants" },
     { section: "Participants", key: "Discontinued", label: "Discontinued Participants" },
     { section: "Participants", key: "Completed", label: "Completed Participants" }
   ];
@@ -1012,9 +1012,7 @@ function updateAdminDashboard() {
     d.getRange(i + 2, 2).setValue(m.label);
     langs.forEach((l, j) => {
       let v = 0;
-      if (m.key === "TotalGroups") {
-        v = g.filter(r => r[gIdx.Language] === l).length;
-      } else if (m.key === "ActiveGroups") {
+      if (m.key === "ActiveGroups") {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Active").length;
       } else if (m.key === "InactiveGroups") {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Inactive").length;
@@ -1030,6 +1028,8 @@ function updateAdminDashboard() {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Unassigned").length;
       } else if (m.key === "Assigned") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Assigned").length;
+      } else if (m.key === "Inactive") {
+        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.IsActive] === false).length;
       } else if (m.key === "Discontinued") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Discontinued").length;
       } else if (m.key === "Completed") {
