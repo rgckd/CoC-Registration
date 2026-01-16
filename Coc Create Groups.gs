@@ -1017,7 +1017,7 @@ function updateAdminDashboard() {
   d.getRange(1, 1, 1, 7).setFontWeight("bold").setBackground("#D3D3D3");
 
   let row = 2;
-  const sectionFill = "#A43A3A";  // Muted red for section headers
+  const sectionFill = "#6C8EBF";  // Soft blue/grey for section headers
   const highlightFill = "#FDE2E2"; // Very light red for action items
   const sectionFontColor = "#FFFFFF";
   const highlightFontColor = "#000000";
@@ -1029,7 +1029,7 @@ function updateAdminDashboard() {
 
   // Group metrics
   groupsMetrics.forEach(m => {
-    d.getRange(row, 2).setValue(m.label);
+    d.getRange(row, 1).setValue(m.label);
     let shouldHighlightLabel = false;
     const rowValues = [];
     langs.forEach((l, j) => {
@@ -1060,7 +1060,7 @@ function updateAdminDashboard() {
         }
       });
       if (shouldHighlightLabel) {
-        d.getRange(row, 2).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
+        d.getRange(row, 1).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
       }
     }
     row++;
@@ -1075,7 +1075,7 @@ function updateAdminDashboard() {
 
   // Participant metrics
   participantsMetrics.forEach(m => {
-    d.getRange(row, 2).setValue(m.label);
+    d.getRange(row, 1).setValue(m.label);
     let shouldHighlightLabel = false;
     const rowValues = [];
     langs.forEach((l, j) => {
@@ -1104,7 +1104,7 @@ function updateAdminDashboard() {
         }
       });
       if (shouldHighlightLabel) {
-        d.getRange(row, 2).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
+        d.getRange(row, 1).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
       }
     }
     row++;
