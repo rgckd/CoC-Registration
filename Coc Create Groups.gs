@@ -467,7 +467,7 @@ function sendAdminAlertEmail(email, language, participants, pIdx) {
     <br>
     <p>Please review these registrations and assign them to appropriate groups.</p>
     <br>
-    <p>You can view all registrations here: <a href="${masterUrl || 'https://docs.google.com/spreadsheets/d/1aBJ8vJx5UHrnPEsNZ-y_REVv6F7F_sYjXPJoCw2AxvU/edit?usp=sharing'}">CoC Registrations List</a></p>
+    ${masterUrl ? `<p>You can view all registrations here: <a href="${masterUrl}">CoC Registrations List</a></p>` : ''}
     <br>
     <p>Best regards,<br>CoC Admin System</p>
   `;
