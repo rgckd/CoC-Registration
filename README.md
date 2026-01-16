@@ -106,7 +106,7 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 
 **Dashboard Layout:**
 
-The dashboard is organized into two visually distinct sections: GROUPS and PARTICIPANTS. Each section has column headers followed by metrics.
+The dashboard is completely reconstructed each time it refreshes. It includes standard column headers followed by two visually distinct sections: GROUPS and PARTICIPANTS.
 
 *Groups section:*
 - Active Groups
@@ -123,7 +123,7 @@ The dashboard is organized into two visually distinct sections: GROUPS and PARTI
 - Discontinued Participants
 - Completed Participants
 
-⚠️ Red-highlighted metrics indicate action items requiring admin attention. All values are auto-computed by `updateAdminDashboard()` and should never be edited manually.
+⚠️ Red-highlighted metrics indicate action items requiring admin attention. All values are auto-computed by `updateAdminDashboard()` and the sheet is completely cleared and rebuilt each time the dashboard is refreshed.
 
 ---
 

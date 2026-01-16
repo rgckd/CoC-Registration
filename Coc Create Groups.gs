@@ -1006,25 +1006,29 @@ function updateAdminDashboard() {
     { key: "Completed", label: "Completed Participants" }
   ];
 
-  d.getRange(2, 1, 100, 7).clearContent();
-  d.getRange(2, 1, 100, 7).clearFormat();
+  // Clear entire sheet content and format
+  const maxRows = d.getMaxRows();
+  const maxCols = d.getMaxColumns();
+  d.getRange(1, 1, maxRows, maxCols).clearContent();
+  d.getRange(1, 1, maxRows, maxCols).clearFormat();
+
+  // Add column headers at row 1
+  d.getRange(1, 1, 1, 7).setValues([["DashboardSection", "Metric", "English", "Tamil", "Hindi", "Kannada", "Telugu"]]);
+  d.getRange(1, 1, 1, 7).setFontWeight("bold").setBackground("#CCCCCC");
 
   let row = 2;
   const redFill = "#FF0000";
   const redFontColor = "#FFFFFF";
 
   // Groups section
-  d.getRange(row, 1, 1, 7).setValues([["GROUPS"]]);
+  d.getRange(row, 1, 1, 7).setValues([["GROUPS", "", "", "", "", "", ""]]);
   d.getRange(row, 1).setFontColor(redFontColor).setBackground(redFill).setFontWeight("bold");
-  row++;
-
-  // Column headers
-  d.getRange(row, 1, 1, 7).setValues([["Status", "English", "Tamil", "Hindi", "Kannada", "Telugu", ""]]);
   row++;
 
   // Group metrics
   groupsMetrics.forEach(m => {
-    d.getRange(row, 1).setValue(m.label);
+    d.getRange(row, 1).setValue("Groups");
+    d.getRange(row, 2).setValue(m.label);
     langs.forEach((l, j) => {
       let v = 0;
       if (m.key === "ActiveGroups") {
@@ -1040,7 +1044,7 @@ function updateAdminDashboard() {
       } else if (m.key === "NoCoordinator") {
         v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail]).length;
       }
-      d.getRange(row, j + 2).setValue(v);
+      d.getRange(row, j + 3).setValue(v);
     });
     
     // Apply red highlight to action items
@@ -1053,17 +1057,14 @@ function updateAdminDashboard() {
   row++; // Blank row
 
   // Participants section
-  d.getRange(row, 1, 1, 7).setValues([["PARTICIPANTS"]]);
+  d.getRange(row, 1, 1, 7).setValues([["PARTICIPANTS", "", "", "", "", "", ""]]);
   d.getRange(row, 1).setFontColor(redFontColor).setBackground(redFill).setFontWeight("bold");
-  row++;
-
-  // Column headers
-  d.getRange(row, 1, 1, 7).setValues([["Status", "English", "Tamil", "Hindi", "Kannada", "Telugu", ""]]);
   row++;
 
   // Participant metrics
   participantsMetrics.forEach(m => {
-    d.getRange(row, 1).setValue(m.label);
+    d.getRange(row, 1).setValue("Participants");
+    d.getRange(row, 2).setValue(m.label);
     langs.forEach((l, j) => {
       let v = 0;
       if (m.key === "Unassigned") {
@@ -1077,7 +1078,7 @@ function updateAdminDashboard() {
       } else if (m.key === "Completed") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Completed").length;
       }
-      d.getRange(row, j + 2).setValue(v);
+      d.getRange(row, j + 3).setValue(v);
     });
     
     // Apply red highlight to action items
