@@ -1017,8 +1017,8 @@ function updateAdminDashboard() {
   d.getRange(1, 1, 1, 7).setFontWeight("bold").setBackground("#D3D3D3");
 
   let row = 2;
-  const sectionFill = "#B32B2B";  // Softer red for section headers
-  const highlightFill = "#FFB3B3"; // Light red for action items
+  const sectionFill = "#A43A3A";  // Muted red for section headers
+  const highlightFill = "#FDE2E2"; // Very light red for action items
   const sectionFontColor = "#FFFFFF";
   const highlightFontColor = "#000000";
 
@@ -1030,6 +1030,8 @@ function updateAdminDashboard() {
   // Group metrics
   groupsMetrics.forEach(m => {
     d.getRange(row, 2).setValue(m.label);
+    let shouldHighlightLabel = false;
+    const rowValues = [];
     langs.forEach((l, j) => {
       let v = 0;
       if (m.key === "ActiveGroups") {
@@ -1045,12 +1047,21 @@ function updateAdminDashboard() {
       } else if (m.key === "NoCoordinator") {
         v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail]).length;
       }
+      rowValues[j] = v;
       d.getRange(row, j + 3).setValue(v);
     });
-    
-    // Apply highlight to action items (metric name + values)
+
+    // Apply highlight only where action is needed (non-zero values)
     if (m.highlight) {
-      d.getRange(row, 2, 1, 6).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
+      rowValues.forEach((v, idx) => {
+        if (v > 0) {
+          shouldHighlightLabel = true;
+          d.getRange(row, idx + 3).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
+        }
+      });
+      if (shouldHighlightLabel) {
+        d.getRange(row, 2).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
+      }
     }
     row++;
   });
@@ -1065,6 +1076,8 @@ function updateAdminDashboard() {
   // Participant metrics
   participantsMetrics.forEach(m => {
     d.getRange(row, 2).setValue(m.label);
+    let shouldHighlightLabel = false;
+    const rowValues = [];
     langs.forEach((l, j) => {
       let v = 0;
       if (m.key === "Unassigned") {
@@ -1078,12 +1091,21 @@ function updateAdminDashboard() {
       } else if (m.key === "Completed") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Completed").length;
       }
+      rowValues[j] = v;
       d.getRange(row, j + 3).setValue(v);
     });
-    
-    // Apply highlight to action items (metric name + values)
+
+    // Apply highlight only where action is needed (non-zero values)
     if (m.highlight) {
-      d.getRange(row, 2, 1, 6).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
+      rowValues.forEach((v, idx) => {
+        if (v > 0) {
+          shouldHighlightLabel = true;
+          d.getRange(row, idx + 3).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
+        }
+      });
+      if (shouldHighlightLabel) {
+        d.getRange(row, 2).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
+      }
     }
     row++;
   });
