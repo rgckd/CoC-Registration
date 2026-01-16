@@ -1109,6 +1109,12 @@ function updateAdminDashboard() {
     }
     row++;
   });
+
+  // Center align numeric values across language columns
+  const lastDataRow = row - 1;
+  if (lastDataRow >= 2) {
+    d.getRange(2, 3, lastDataRow - 1, 5).setHorizontalAlignment("center");
+  }
 }
 
 /************************************************
