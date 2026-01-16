@@ -243,6 +243,189 @@ function dailyParticipantProcessingWithAlerts() {
 }
 
 /************************************************
+ * WEEKLY LIFECYCLE PROCESSING
+ * - Close Completed groups -> Closed
+ * - Terminate Inactive groups -> Terminated
+ * - Discontinue inactive participants under Active groups
+ * - Send per-language admin summary email
+ ************************************************/
+function weeklyLifecycleProcessing() {
+  const ss = SpreadsheetApp.getActive();
+  const pSheet = ss.getSheetByName("Participants");
+  const gSheet = ss.getSheetByName("Groups");
+
+  const pData = pSheet.getDataRange().getValues();
+  const gData = gSheet.getDataRange().getValues();
+  const pHeaders = pData.shift();
+  const gHeaders = gData.shift();
+  const pIdx = indexMap(pHeaders);
+  const gIdx = indexMap(gHeaders);
+
+  // Build group status map by name
+  const groupStatusByName = {};
+  gData.forEach(r => {
+    if (gIdx.GroupName !== undefined && gIdx.Status !== undefined) {
+      const name = String(r[gIdx.GroupName] || "").trim();
+      if (name) groupStatusByName[name] = String(r[gIdx.Status] || "").trim();
+    }
+  });
+
+  // Track changes for admin summary
+  const summary = {
+    closed: {},        // lang -> [{groupName, count}]
+    terminated: {},    // lang -> [{groupName, count}]
+    discontinued: {}   // lang -> count
+  };
+
+  const registerClosed = (lang, groupName, count) => {
+    summary.closed[lang] = summary.closed[lang] || [];
+    summary.closed[lang].push({ groupName: groupName, count: count });
+  };
+  const registerTerminated = (lang, groupName, count) => {
+    summary.terminated[lang] = summary.terminated[lang] || [];
+    summary.terminated[lang].push({ groupName: groupName, count: count });
+  };
+  const registerDiscontinued = (lang) => {
+    summary.discontinued[lang] = (summary.discontinued[lang] || 0) + 1;
+  };
+
+  // Helpers: send lifecycle emails
+  const REG_LINK = "https://www.hcessentials.org/coc-registration-form";
+  const sendClosedEmail = (email, name, groupName, wasActive) => {
+    const subject = `CoC Group Closed - ${groupName}`;
+    const bodyActive = `Dear ${name},\n\nYour CoC group (${groupName}) is now closed as you have completed all sessions. Congratulations on successfully completing your CoC journey! If you would like to repeat with a new group, please register again at ${REG_LINK}.\n\nWith best wishes,\nCoC Admin Team`;
+    const bodyInactive = `Dear ${name},\n\nYour CoC group (${groupName}) is now closed as the group has completed all sessions. We understand you may have had other commitments or personal situations. If you would like to continue your CoC journey in the future, please register at ${REG_LINK}.\n\nWith best wishes,\nCoC Admin Team`;
+    MailApp.sendEmail({ to: email, subject, body: wasActive ? bodyActive : bodyInactive });
+  };
+  const sendTerminatedEmail = (email, name, groupName) => {
+    const subject = `CoC Group Terminated - ${groupName}`;
+    const body = `Dear ${name},\n\nYour CoC group (${groupName}) has been dissolved as it has not been functioning. We acknowledge your efforts and encourage you to register again at ${REG_LINK} if you would like to continue your CoC journey with a new group.\n\nWith best wishes,\nCoC Admin Team`;
+    MailApp.sendEmail({ to: email, subject, body });
+  };
+  const sendDiscontinuedEmail = (email, name, groupName) => {
+    const subject = `CoC Participation Discontinued - ${groupName}`;
+    const body = `Dear ${name},\n\nWe have removed your name from the CoC group (${groupName}) as you have not been joining sessions. We understand you may have other commitments or personal situations. If you would like to continue your CoC journey in the future, please register at ${REG_LINK}.\n\nWith best wishes,\nCoC Admin Team`;
+    MailApp.sendEmail({ to: email, subject, body });
+  };
+
+  // Helper to list participants for a group
+  const listGroupParticipants = (groupName) => {
+    return pData.filter(r => pIdx.AssignedGroup !== undefined && String(r[pIdx.AssignedGroup] || "").trim() === groupName);
+  };
+
+  // 1) Close Completed groups -> Closed
+  gData.forEach((gRow, gi) => {
+    const status = String(gRow[gIdx.Status] || "").trim();
+    if (status === "Completed") {
+      const groupName = String(gRow[gIdx.GroupName] || "").trim();
+      const lang = String(gRow[gIdx.Language] || "").trim();
+      const members = listGroupParticipants(groupName);
+
+      // Update group status
+      gRow[gIdx.Status] = "Closed";
+      gData[gi] = gRow;
+
+      // Update members: AssignmentStatus = Completed, IsActive = FALSE, email based on original activity
+      members.forEach((pRow, pi) => {
+        const email = String(pRow[pIdx.Email] || "").trim();
+        const name = String(pRow[pIdx.Name] || "").trim();
+        const wasActive = !!toBool(pRow[pIdx.IsActive]);
+        // set status
+        if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Completed";
+        if (pIdx.IsActive !== undefined) pRow[pIdx.IsActive] = false;
+        sendClosedEmail(email, name, groupName, wasActive);
+      });
+
+      // Register summary
+      registerClosed(lang, groupName, members.length);
+    }
+  });
+
+  // 2) Terminate Inactive groups -> Terminated
+  gData.forEach((gRow, gi) => {
+    const status = String(gRow[gIdx.Status] || "").trim();
+    if (status === "Inactive") {
+      const groupName = String(gRow[gIdx.GroupName] || "").trim();
+      const lang = String(gRow[gIdx.Language] || "").trim();
+      const members = listGroupParticipants(groupName);
+
+      // Update group status
+      gRow[gIdx.Status] = "Terminated";
+      gData[gi] = gRow;
+
+      // Update members: AssignmentStatus = Discontinued, IsActive = FALSE, email
+      members.forEach((pRow, pi) => {
+        const email = String(pRow[pIdx.Email] || "").trim();
+        const name = String(pRow[pIdx.Name] || "").trim();
+        if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Discontinued";
+        if (pIdx.IsActive !== undefined) pRow[pIdx.IsActive] = false;
+        sendTerminatedEmail(email, name, groupName);
+      });
+
+      // Register summary
+      registerTerminated(lang, groupName, members.length);
+    }
+  });
+
+  // Map group name -> language for active groups
+  const groupLangByName = {};
+  gData.forEach(r => {
+    const name = String(r[gIdx.GroupName] || "").trim();
+    const lang = String(r[gIdx.Language] || "").trim();
+    if (name) groupLangByName[name] = lang;
+  });
+
+  // 3) Discontinue inactive participants under Active groups
+  pData.forEach((pRow, pi) => {
+    const grp = String(pRow[pIdx.AssignedGroup] || "").trim();
+    if (!grp) return;
+    const grpStatus = groupStatusByName[grp];
+    const isActive = !!toBool(pRow[pIdx.IsActive]);
+    if (grpStatus === "Active" && !isActive) {
+      const email = String(pRow[pIdx.Email] || "").trim();
+      const name = String(pRow[pIdx.Name] || "").trim();
+      const lang = String(pRow[pIdx.Language] || "").trim();
+      if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Discontinued";
+      // IsActive already false
+      sendDiscontinuedEmail(email, name, grp);
+      registerDiscontinued(lang);
+    }
+  });
+
+  // Persist changes
+  gSheet.getRange(2, 1, gData.length, gHeaders.length).setValues(gData);
+  pSheet.getRange(2, 1, pData.length, pHeaders.length).setValues(pData);
+
+  // Send per-language admin summaries
+  const props = PropertiesService.getScriptProperties();
+  const languages = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
+  languages.forEach(lang => {
+    const adminEmail = props.getProperty(`ADMIN_EMAIL_${lang.toUpperCase()}`);
+    const closed = summary.closed[lang] || [];
+    const terminated = summary.terminated[lang] || [];
+    const discCount = summary.discontinued[lang] || 0;
+    const changesExist = closed.length || terminated.length || discCount;
+    if (adminEmail && changesExist) {
+      const subject = `CoC Weekly Lifecycle Summary - ${lang}`;
+      let lines = [];
+      if (closed.length) {
+        lines.push("Closed groups:");
+        closed.forEach(c => lines.push(`- ${c.groupName} (members updated: ${c.count})`));
+      }
+      if (terminated.length) {
+        lines.push("Terminated groups:");
+        terminated.forEach(t => lines.push(`- ${t.groupName} (members updated: ${t.count})`));
+      }
+      if (discCount) {
+        lines.push(`Discontinued participants under active groups: ${discCount}`);
+      }
+      const body = lines.join("\n");
+      MailApp.sendEmail({ to: adminEmail, subject, body });
+    }
+  });
+}
+
+/************************************************
  * SEND ALERT EMAIL TO LANGUAGE ADMIN
  ************************************************/
 function sendAdminAlertEmail(email, language, participants, pIdx) {

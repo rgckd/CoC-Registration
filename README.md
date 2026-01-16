@@ -90,6 +90,7 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | Sequence | Number | Language-specific sequence number |
 | WeeksCompleted | Number | Coordinator-updated weeks completed (0–20) |
 | Notes | String | Coordinator notes |
+| LastUpdated | Timestamp | Auto-recorded when coordinator updates group status |
 
 ### 3.4 AdminDashboard Sheet Columns
 
@@ -356,6 +357,36 @@ This makes UI label changes safe. If you change the UI label from "Day" to "Morn
 
 ---
 
+### 6.8 Groups Lifecycle
+
+Groups can move through the following statuses (`Groups.Status`):
+- **Active**: All groups start as Active at creation. Active groups are visible in the Coordinator update form. Participants under an Active group may be Active or Inactive (`IsActive = TRUE/FALSE`).
+- **Inactive**: Coordinators mark their groups Inactive via the update form when the group is no longer meeting. Inactive groups remain visible in the Coordinator update form. A weekly job will later mark these as Terminated (see below).
+- **Completed**: Coordinators mark groups as Completed when they finish all 20 weekly sessions. Completed groups remain visible in the Coordinator update form until the weekly job closes them.
+- **Closed**: A weekly batch job marks all Completed groups as Closed, sends emails to participants and coordinators, and updates participants to `AssignmentStatus = Completed` and `IsActive = FALSE`. Closed groups are not shown in the Coordinator update form.
+- **Terminated**: A weekly batch job marks all Inactive groups as Terminated, sends emails to participants and coordinators, and updates participants to `AssignmentStatus = Discontinued` and `IsActive = FALSE`. Terminated groups are not shown in the Coordinator update form.
+
+Weekly lifecycle processing also sends a summary email to each language admin with the status changes applied that week.
+
+### 6.9 Participants / Coordinator Lifecycle
+
+Participants (including coordinators) have two independent fields:
+- **Activity**: `IsActive = TRUE/FALSE`
+- **AssignmentStatus**: `Unassigned`, `Assigned`, `Reassign` (external), plus new `Discontinued`, `Completed`
+
+Lifecycle rules:
+- **Active**: Participants are added as Active on registration. Coordinators may mark a participant Inactive via the update form.
+- **Inactive**: Indicates the participant is not joining sessions. Coordinators set `IsActive = FALSE`.
+- **Assigned**: Set when a participant is added to a group. Independent of activity flag.
+- **Unassigned**: Default upon registration.
+- **Reassign**: For participants wanting to change groups (process handled outside the system).
+- **Discontinued**: Weekly job sets participants to Discontinued and `IsActive = FALSE` when their group is Terminated. Additionally, the weekly job identifies Inactive participants (`IsActive = FALSE`) under Active groups, sets their status to Discontinued, and sends them an email.
+- **Completed**: Weekly job sets participants to Completed when their group is Closed.
+
+Re-registration link (emails reference): https://www.hcessentials.org/coc-registration-form
+
+---
+
 ## 7. Design Philosophy
 
 - **Sheets are the UI** – no separate admin dashboard or CRM
@@ -367,7 +398,38 @@ This makes UI label changes safe. If you change the UI label from "Day" to "Morn
 
 ---
 
-## 8. Current Status
+## 8. Daily Alert Automation
+
+The system includes an optional daily batch processing function that:
+1. Processes new registrations from CustomForm to Participants
+2. Identifies unassigned participants by language
+3. Sends alert emails to language admins
+
+### Setup Instructions
+
+1. **Configure Script Properties** (Apps Script Editor → Project Settings → Script Properties):
+   - `ADMIN_EMAIL_ENGLISH` – Email for English admin
+   - `ADMIN_EMAIL_TAMIL` – Email for Tamil admin
+   - `ADMIN_EMAIL_HINDI` – Email for Hindi admin
+   - `ADMIN_EMAIL_KANNADA` – Email for Kannada admin
+   - `ADMIN_EMAIL_TELUGU` – Email for Telugu admin
+
+2. **Set up Time-Based Trigger** (Apps Script Editor → Triggers):
+   - Function: `dailyParticipantProcessingWithAlerts`
+   - Event source: Time-driven
+   - Type: Day timer
+   - Time of day: Choose preferred time (e.g., 9am to 10am)
+
+### Alert Email Contents
+
+Each language admin receives an email when there are new unassigned participants:
+- Subject: `CoC New Registrations Alert - [Language]`
+- Participant details table (ID, Name, Email, WhatsApp, Preferred Slots, Willing to Coordinate)
+- Link to CoC Registrations spreadsheet: https://docs.google.com/spreadsheets/d/1aBJ8vJx5UHrnPEsNZ-y_REVv6F7F_sYjXPJoCw2AxvU/edit?usp=sharing
+
+---
+
+## 9. Current Status
 
 | Feature | Status |
 |---------|--------|
@@ -380,7 +442,7 @@ This makes UI label changes safe. If you change the UI label from "Day" to "Morn
 
 ---
 
-## 9. Notes for LLMs / Contributors
+## 10. Notes for LLMs / Contributors
 
 When modifying this system:
 
@@ -394,7 +456,7 @@ When modifying this system:
 
 ---
 
-## 10. Future Enhancements (Out of Scope)
+## 11. Future Enhancements (Out of Scope)
 
 - One-click accept group suggestions
 - Coordinator/member bulk email tools

@@ -24,7 +24,7 @@ function handleQueryCoordinatorGroups(e) {
   const rows = ensured || gData;
 
   const payload = rows
-    .filter(r => r[gIdx.Language] === language)
+    .filter(r => r[gIdx.Language] === language && r[gIdx.Status] !== "Closed" && r[gIdx.Status] !== "Terminated")
     .map(r => ({
       groupID: r[gIdx.GroupID],
       groupName: r[gIdx.GroupName],
