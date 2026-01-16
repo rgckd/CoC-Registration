@@ -385,6 +385,10 @@ Lifecycle rules:
 
 Re-registration link (emails reference): https://www.hcessentials.org/coc-registration-form
 
+Coordinator UI behavior:
+- Hides groups in `Closed` and `Terminated` status
+- Hides participants with `AssignmentStatus = Discontinued`
+
 ---
 
 ## 7. Design Philosophy

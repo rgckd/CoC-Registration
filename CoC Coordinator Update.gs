@@ -59,7 +59,7 @@ function handleGetGroupMembers(e) {
   }
 
   const members = pData
-    .filter(r => r[pIdx.AssignedGroup] === groupName)
+    .filter(r => r[pIdx.AssignedGroup] === groupName && (pIdx.AssignmentStatus === undefined || String(r[pIdx.AssignmentStatus] || "").trim() !== "Discontinued"))
     .map(r => ({
       participantID: r[pIdx.ParticipantID],
       name: r[pIdx.Name],
