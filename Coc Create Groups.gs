@@ -277,6 +277,8 @@ function weeklyLifecycleProcessing() {
     discontinued: {}   // lang -> count
   };
 
+  const emailFailures = [];
+
   const registerClosed = (lang, groupName, count) => {
     summary.closed[lang] = summary.closed[lang] || [];
     summary.closed[lang].push({ groupName: groupName, count: count });
@@ -333,7 +335,11 @@ function weeklyLifecycleProcessing() {
         // set status
         if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Completed";
         if (pIdx.IsActive !== undefined) pRow[pIdx.IsActive] = false;
-        sendClosedEmail(email, name, groupName, wasActive);
+        try {
+          sendClosedEmail(email, name, groupName, wasActive);
+        } catch (err) {
+          emailFailures.push({ type: "Closed group email", lang, group: groupName, email, name, reason: err.message });
+        }
       });
 
       // Register summary
@@ -359,7 +365,11 @@ function weeklyLifecycleProcessing() {
         const name = String(pRow[pIdx.Name] || "").trim();
         if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Discontinued";
         if (pIdx.IsActive !== undefined) pRow[pIdx.IsActive] = false;
-        sendTerminatedEmail(email, name, groupName);
+        try {
+          sendTerminatedEmail(email, name, groupName);
+        } catch (err) {
+          emailFailures.push({ type: "Terminated group email", lang, group: groupName, email, name, reason: err.message });
+        }
       });
 
       // Register summary
@@ -387,7 +397,11 @@ function weeklyLifecycleProcessing() {
       const lang = String(pRow[pIdx.Language] || "").trim();
       if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Discontinued";
       // IsActive already false
-      sendDiscontinuedEmail(email, name, grp);
+      try {
+        sendDiscontinuedEmail(email, name, grp);
+      } catch (err) {
+        emailFailures.push({ type: "Discontinued participant email", lang, group: grp, email, name, reason: err.message });
+      }
       registerDiscontinued(lang);
     }
   });
@@ -405,7 +419,8 @@ function weeklyLifecycleProcessing() {
     const closed = summary.closed[lang] || [];
     const terminated = summary.terminated[lang] || [];
     const discCount = summary.discontinued[lang] || 0;
-    const changesExist = closed.length || terminated.length || discCount;
+    const failuresForLang = emailFailures.filter(f => f.lang === lang);
+    const changesExist = closed.length || terminated.length || discCount || failuresForLang.length;
     if (adminEmail && changesExist) {
       const subject = `CoC Weekly Lifecycle Summary - ${lang}`;
       let lines = [];
@@ -420,14 +435,37 @@ function weeklyLifecycleProcessing() {
       if (discCount) {
         lines.push(`Discontinued participants under active groups: ${discCount}`);
       }
+      if (failuresForLang.length) {
+        lines.push("");
+        lines.push("Email delivery issues:");
+        failuresForLang.forEach(f => {
+          const who = [f.name, f.email].filter(Boolean).join(" | ") || "Unknown";
+          const grp = f.group ? ` [${f.group}]` : "";
+          lines.push(`- ${f.type}${grp}: ${who} – ${f.reason}`);
+        });
+      }
       if (masterUrl) {
         lines.push("");
         lines.push(`CoC Master sheet: ${masterUrl}`);
       }
       const body = lines.join("\n");
-      MailApp.sendEmail({ to: adminEmail, subject, body });
+      try {
+        MailApp.sendEmail({ to: adminEmail, subject, body });
+      } catch (err) {
+        emailFailures.push({ type: "Admin summary email", lang, email: adminEmail, reason: err.message });
+      }
     }
   });
+
+  if (emailFailures.length) {
+    Logger.log("Email send failures during weeklyLifecycleProcessing:");
+    emailFailures.forEach(f => {
+      const grp = f.group ? ` [${f.group}]` : "";
+      Logger.log(`- ${f.lang}: ${f.type}${grp} -> ${f.email || "(no email)"} (${f.reason})`);
+    });
+  } else {
+    Logger.log("No email send failures during weeklyLifecycleProcessing.");
+  }
 }
 
 /************************************************
@@ -992,10 +1030,10 @@ function updateAdminDashboard() {
   const groupsMetrics = [
     { key: "ActiveGroups", label: "Active Groups" },
     { key: "InactiveGroups", label: "Inactive Groups", highlight: true },
+    { key: "NoCoordinator", label: "Groups without Coordinator", highlight: true },
     { key: "CompletedGroups", label: "Completed Groups" },
     { key: "ClosedGroups", label: "Closed Groups" },
-    { key: "TerminatedGroups", label: "Terminated Groups" },
-    { key: "NoCoordinator", label: "Groups without Coordinator", highlight: true }
+    { key: "TerminatedGroups", label: "Terminated Groups" }
   ];
   
   const participantsMetrics = [
