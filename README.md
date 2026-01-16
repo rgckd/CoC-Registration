@@ -106,24 +106,24 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 
 **Dashboard Layout:**
 
-The dashboard is completely reconstructed each time it refreshes. It includes standard column headers followed by two visually distinct sections: GROUPS and PARTICIPANTS.
+The dashboard is completely reconstructed each time it refreshes. Column headers are in gray, followed by two visually distinct sections: GROUPS and PARTICIPANTS with darker section headers. Action items are highlighted with a softer red background.
 
 *Groups section:*
 - Active Groups
-- Inactive Groups ⚠️ (highlighted in red for action)
+- Inactive Groups ⚠️ (highlighted for action)
 - Completed Groups
 - Closed Groups
 - Terminated Groups
-- Groups without Coordinator ⚠️ (highlighted in red for action)
+- Groups without Coordinator ⚠️ (highlighted for action)
 
 *Participants section:*
 - Unassigned Participants
 - Assigned Participants
-- Inactive Participants ⚠️ (highlighted in red for action)
+- Inactive Participants ⚠️ (highlighted for action)
 - Discontinued Participants
 - Completed Participants
 
-⚠️ Red-highlighted metrics indicate action items requiring admin attention. All values are auto-computed by `updateAdminDashboard()` and the sheet is completely cleared and rebuilt each time the dashboard is refreshed.
+⚠️ Highlighted metrics indicate action items requiring admin attention. The DashboardSection column shows the section name only in section headers, not repeated in data rows. All values are auto-computed by `updateAdminDashboard()` and the sheet is completely cleared and rebuilt each time the dashboard is refreshed.
 
 ---
 

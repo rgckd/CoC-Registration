@@ -1014,20 +1014,21 @@ function updateAdminDashboard() {
 
   // Add column headers at row 1
   d.getRange(1, 1, 1, 7).setValues([["DashboardSection", "Metric", "English", "Tamil", "Hindi", "Kannada", "Telugu"]]);
-  d.getRange(1, 1, 1, 7).setFontWeight("bold").setBackground("#CCCCCC");
+  d.getRange(1, 1, 1, 7).setFontWeight("bold").setBackground("#D3D3D3");
 
   let row = 2;
-  const redFill = "#FF0000";
-  const redFontColor = "#FFFFFF";
+  const sectionFill = "#B32B2B";  // Softer red for section headers
+  const highlightFill = "#FFB3B3"; // Light red for action items
+  const sectionFontColor = "#FFFFFF";
+  const highlightFontColor = "#000000";
 
   // Groups section
   d.getRange(row, 1, 1, 7).setValues([["GROUPS", "", "", "", "", "", ""]]);
-  d.getRange(row, 1).setFontColor(redFontColor).setBackground(redFill).setFontWeight("bold");
+  d.getRange(row, 1).setFontColor(sectionFontColor).setBackground(sectionFill).setFontWeight("bold");
   row++;
 
   // Group metrics
   groupsMetrics.forEach(m => {
-    d.getRange(row, 1).setValue("Groups");
     d.getRange(row, 2).setValue(m.label);
     langs.forEach((l, j) => {
       let v = 0;
@@ -1047,9 +1048,9 @@ function updateAdminDashboard() {
       d.getRange(row, j + 3).setValue(v);
     });
     
-    // Apply red highlight to action items
+    // Apply highlight to action items (metric name + values)
     if (m.highlight) {
-      d.getRange(row, 1, 1, 7).setBackground(redFill).setFontColor(redFontColor).setFontWeight("bold");
+      d.getRange(row, 2, 1, 6).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
     }
     row++;
   });
@@ -1058,12 +1059,11 @@ function updateAdminDashboard() {
 
   // Participants section
   d.getRange(row, 1, 1, 7).setValues([["PARTICIPANTS", "", "", "", "", "", ""]]);
-  d.getRange(row, 1).setFontColor(redFontColor).setBackground(redFill).setFontWeight("bold");
+  d.getRange(row, 1).setFontColor(sectionFontColor).setBackground(sectionFill).setFontWeight("bold");
   row++;
 
   // Participant metrics
   participantsMetrics.forEach(m => {
-    d.getRange(row, 1).setValue("Participants");
     d.getRange(row, 2).setValue(m.label);
     langs.forEach((l, j) => {
       let v = 0;
@@ -1081,9 +1081,9 @@ function updateAdminDashboard() {
       d.getRange(row, j + 3).setValue(v);
     });
     
-    // Apply red highlight to action items
+    // Apply highlight to action items (metric name + values)
     if (m.highlight) {
-      d.getRange(row, 1, 1, 7).setBackground(redFill).setFontColor(redFontColor).setFontWeight("bold");
+      d.getRange(row, 2, 1, 6).setBackground(highlightFill).setFontColor(highlightFontColor).setFontWeight("bold");
     }
     row++;
   });
