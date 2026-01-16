@@ -96,19 +96,30 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 
 | Column | Type | Notes |
 |--------|------|-------|
-| Metric | String | Label of metric (e.g., "Unassigned Participants", "Total Groups") |
+| DashboardSection | String | Section grouping (Groups, Participants) |
+| Metric | String | Label of metric (e.g., "Active Groups", "Unassigned Participants") |
 | English | Number | Count for English language |
 | Tamil | Number | Count for Tamil language |
 | Hindi | Number | Count for Hindi language |
 | Kannada | Number | Count for Kannada language |
 | Telugu | Number | Count for Telugu language |
 
-**Metrics tracked:**
-- Unassigned Participants
-- Assigned Participants
+**Metrics tracked (grouped by section):**
+
+*Groups:*
 - Total Groups
 - Active Groups
+- Inactive Groups
+- Completed Groups
+- Closed Groups
+- Terminated Groups
 - Groups without Coordinator
+
+*Participants:*
+- Unassigned Participants
+- Assigned Participants
+- Discontinued Participants
+- Completed Participants
 
 All values are auto-computed by `updateAdminDashboard()` and should never be edited manually.
 

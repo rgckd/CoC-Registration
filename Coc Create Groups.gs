@@ -990,40 +990,52 @@ function updateAdminDashboard() {
 
   const langs = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
   const metrics = [
-    { key: "TotalGroups", label: "Total Groups" },
-    { key: "ActiveGroups", label: "Active Groups" },
-    { key: "InActiveGroups", label: "InActive Groups" },
-    { key: "CompletedGroups", label: "Completed Groups" },
-    { key: "NoCoordinator", label: "Groups without Coordinator" },
-    { key: "Assigned", label: "Assigned Participants" },
-    { key: "ActiveParticipants", label: "Active Participants" },
-    { key: "Unassigned", label: "Unassigned Participants" }
+    // Groups section
+    { section: "Groups", key: "TotalGroups", label: "Total Groups" },
+    { section: "Groups", key: "ActiveGroups", label: "Active Groups" },
+    { section: "Groups", key: "InactiveGroups", label: "Inactive Groups" },
+    { section: "Groups", key: "CompletedGroups", label: "Completed Groups" },
+    { section: "Groups", key: "ClosedGroups", label: "Closed Groups" },
+    { section: "Groups", key: "TerminatedGroups", label: "Terminated Groups" },
+    { section: "Groups", key: "NoCoordinator", label: "Groups without Coordinator" },
+    // Participants section
+    { section: "Participants", key: "Unassigned", label: "Unassigned Participants" },
+    { section: "Participants", key: "Assigned", label: "Assigned Participants" },
+    { section: "Participants", key: "Discontinued", label: "Discontinued Participants" },
+    { section: "Participants", key: "Completed", label: "Completed Participants" }
   ];
 
-  d.getRange(2, 1, 50, 10).clearContent();
+  d.getRange(2, 1, 50, 7).clearContent();
 
   metrics.forEach((m, i) => {
-    d.getRange(i + 2, 1).setValue(m.label);
+    d.getRange(i + 2, 1).setValue(m.section);
+    d.getRange(i + 2, 2).setValue(m.label);
     langs.forEach((l, j) => {
       let v = 0;
-      if (m.key === "ActiveParticipants") {
-        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.IsActive] === true).length;
+      if (m.key === "TotalGroups") {
+        v = g.filter(r => r[gIdx.Language] === l).length;
+      } else if (m.key === "ActiveGroups") {
+        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Active").length;
+      } else if (m.key === "InactiveGroups") {
+        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Inactive").length;
+      } else if (m.key === "CompletedGroups") {
+        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Completed").length;
+      } else if (m.key === "ClosedGroups") {
+        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Closed").length;
+      } else if (m.key === "TerminatedGroups") {
+        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Terminated").length;
+      } else if (m.key === "NoCoordinator") {
+        v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail]).length;
       } else if (m.key === "Unassigned") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Unassigned").length;
       } else if (m.key === "Assigned") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Assigned").length;
-      } else if (m.key === "TotalGroups") {
-        v = g.filter(r => r[gIdx.Language] === l).length;
-      } else if (m.key === "ActiveGroups") {
-        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Active").length;
-      } else if (m.key === "InActiveGroups") {
-        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Inactive").length;
-      } else if (m.key === "CompletedGroups") {
-        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Completed").length;
-      } else if (m.key === "NoCoordinator") {
-        v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail]).length;
+      } else if (m.key === "Discontinued") {
+        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Discontinued").length;
+      } else if (m.key === "Completed") {
+        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Completed").length;
       }
-      d.getRange(i + 2, j + 2).setValue(v);
+      d.getRange(i + 2, j + 3).setValue(v);
     });
   });
 }
