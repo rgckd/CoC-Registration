@@ -434,6 +434,8 @@ function weeklyLifecycleProcessing() {
  * SEND ALERT EMAIL TO LANGUAGE ADMIN
  ************************************************/
 function sendAdminAlertEmail(email, language, participants, pIdx) {
+  const props = PropertiesService.getScriptProperties();
+  const masterUrl = String(props.getProperty('MASTER_SHEET_URL') || '').trim();
   const subject = `CoC New Registrations Alert - ${language}`;
   
   const participantListHtml = participants.map(p => `
@@ -465,7 +467,7 @@ function sendAdminAlertEmail(email, language, participants, pIdx) {
     <br>
     <p>Please review these registrations and assign them to appropriate groups.</p>
     <br>
-    <p>You can view all registrations here: <a href="https://docs.google.com/spreadsheets/d/1aBJ8vJx5UHrnPEsNZ-y_REVv6F7F_sYjXPJoCw2AxvU/edit?usp=sharing">CoC Registrations List</a></p>
+    <p>You can view all registrations here: <a href="${masterUrl || 'https://docs.google.com/spreadsheets/d/1aBJ8vJx5UHrnPEsNZ-y_REVv6F7F_sYjXPJoCw2AxvU/edit?usp=sharing'}">CoC Registrations List</a></p>
     <br>
     <p>Best regards,<br>CoC Admin System</p>
   `;
