@@ -119,7 +119,8 @@ The dashboard is completely reconstructed each time it refreshes. Column headers
 *Participants section:*
 - Unassigned Participants
 - Assigned Participants
-- Inactive Participants ⚠️ (highlighted for action)
+- Active Participants (Assigned AND IsActive = true)
+- Inactive Participants (IsActive = false, excluding Discontinued and Completed) ⚠️ (highlighted for action)
 - Discontinued Participants
 - Completed Participants
 
@@ -379,7 +380,7 @@ Groups can move through the following statuses (`Groups.Status`):
 - **Closed**: A weekly batch job marks all Completed groups as Closed, sends emails to participants and coordinators, and updates participants to `AssignmentStatus = Completed` and `IsActive = FALSE`. Closed groups are not shown in the Coordinator update form.
 - **Terminated**: A weekly batch job marks all Inactive groups as Terminated, sends emails to participants and coordinators, and updates participants to `AssignmentStatus = Discontinued` and `IsActive = FALSE`. Terminated groups are not shown in the Coordinator update form.
 
-Weekly lifecycle processing also sends a summary email to each language admin with the status changes applied that week.
+Weekly lifecycle processing also updates the AdminDashboard and sends a summary email to each language admin with the status changes applied that week.
 
 Setup note:
 - To include the CoC Master sheet link in the weekly summary email, set the script property `MASTER_SHEET_URL` (Apps Script → Project Settings → Script Properties).
@@ -388,15 +389,15 @@ Setup note:
 
 Participants (including coordinators) have two independent fields:
 - **Activity**: `IsActive = TRUE/FALSE`
-- **AssignmentStatus**: `Unassigned`, `Assigned`, `Reassign` (external), plus new `Discontinued`, `Completed`
+- **AssignmentStatus**: `Unassigned`, `Assigned`, `Reassign` (external), plus `Discontinued`, `Completed`
 
 Lifecycle rules:
 - **Active**: Participants are added as Active on registration. Coordinators may mark a participant Inactive via the update form.
-- **Inactive**: Indicates the participant is not joining sessions. Coordinators set `IsActive = FALSE`.
+- **Inactive**: Indicates the participant is not joining sessions. Coordinators set `IsActive = FALSE`. The AdminDashboard reports only Inactive participants who are not already Discontinued or Completed.
 - **Assigned**: Set when a participant is added to a group. Independent of activity flag.
 - **Unassigned**: Default upon registration.
 - **Reassign**: For participants wanting to change groups (process handled outside the system).
-- **Discontinued**: Weekly job sets participants to Discontinued and `IsActive = FALSE` when their group is Terminated. Additionally, the weekly job identifies Inactive participants (`IsActive = FALSE`) under Active groups, sets their status to Discontinued, and sends them an email.
+- **Discontinued**: Weekly job sets participants to Discontinued and `IsActive = FALSE` when their group is Terminated.
 - **Completed**: Weekly job sets participants to Completed when their group is Closed.
 
 Re-registration link (emails reference): https://www.hcessentials.org/coc-registration-form

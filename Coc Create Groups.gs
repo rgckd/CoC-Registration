@@ -246,7 +246,6 @@ function dailyParticipantProcessingWithAlerts() {
  * WEEKLY LIFECYCLE PROCESSING
  * - Close Completed groups -> Closed
  * - Terminate Inactive groups -> Terminated
- * - Discontinue inactive participants under Active groups
  * - Send per-language admin summary email
  ************************************************/
 function weeklyLifecycleProcessing() {
@@ -376,6 +375,7 @@ function weeklyLifecycleProcessing() {
         } catch (err) {
           emailFailures.push({ type: "Terminated group email", lang, group: groupName, email, name, reason: err.message });
         }
+        registerDiscontinued(memberLang);
       });
 
       // Register summary
@@ -383,38 +383,14 @@ function weeklyLifecycleProcessing() {
     }
   });
 
-  // Map group name -> language for active groups
-  const groupLangByName = {};
-  gData.forEach(r => {
-    const name = String(r[gIdx.GroupName] || "").trim();
-    const lang = String(r[gIdx.Language] || "").trim();
-    if (name) groupLangByName[name] = lang;
-  });
 
-  // 3) Discontinue inactive participants under Active groups
-  pData.forEach((pRow, pi) => {
-    const grp = String(pRow[pIdx.AssignedGroup] || "").trim();
-    if (!grp) return;
-    const grpStatus = groupStatusByName[grp];
-    const isActive = !!toBool(pRow[pIdx.IsActive]);
-    if (grpStatus === "Active" && !isActive) {
-      const email = String(pRow[pIdx.Email] || "").trim();
-      const name = String(pRow[pIdx.Name] || "").trim();
-      const lang = String(pRow[pIdx.Language] || "").trim();
-      if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Discontinued";
-      // IsActive already false
-      try {
-        sendDiscontinuedEmail(email, name, grp, lang);
-      } catch (err) {
-        emailFailures.push({ type: "Discontinued participant email", lang, group: grp, email, name, reason: err.message });
-      }
-      registerDiscontinued(lang);
-    }
-  });
 
   // Persist changes
   gSheet.getRange(2, 1, gData.length, gHeaders.length).setValues(gData);
   pSheet.getRange(2, 1, pData.length, pHeaders.length).setValues(pData);
+
+  // Update Groups and Dashboard before sending emails
+  updateAdminDashboard();
 
   // Send per-language admin summaries
   const props = PropertiesService.getScriptProperties();
@@ -439,7 +415,7 @@ function weeklyLifecycleProcessing() {
         terminated.forEach(t => lines.push(`- ${t.groupName} (members updated: ${t.count})`));
       }
       if (discCount) {
-        lines.push(`Discontinued participants under active groups: ${discCount}`);
+        lines.push(`Discontinued participants: ${discCount}`);
       }
       if (failuresForLang.length) {
         lines.push("");
@@ -1045,6 +1021,7 @@ function updateAdminDashboard() {
   const participantsMetrics = [
     { key: "Unassigned", label: "Unassigned Participants" },
     { key: "Assigned", label: "Assigned Participants" },
+    { key: "Active", label: "Active Participants" },
     { key: "Inactive", label: "Inactive Participants", highlight: true },
     { key: "Discontinued", label: "Discontinued Participants" },
     { key: "Completed", label: "Completed Participants" }
@@ -1128,8 +1105,10 @@ function updateAdminDashboard() {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Unassigned").length;
       } else if (m.key === "Assigned") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Assigned").length;
+      } else if (m.key === "Active") {
+        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Assigned" && r[pIdx.IsActive] === true).length;
       } else if (m.key === "Inactive") {
-        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.IsActive] === false).length;
+        v = p.filter(r => r[pIdx.Language] === l && r[pIdx.IsActive] === false && r[pIdx.AssignmentStatus] !== "Discontinued" && r[pIdx.AssignmentStatus] !== "Completed").length;
       } else if (m.key === "Discontinued") {
         v = p.filter(r => r[pIdx.Language] === l && r[pIdx.AssignmentStatus] === "Discontinued").length;
       } else if (m.key === "Completed") {
