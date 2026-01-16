@@ -368,6 +368,9 @@ Groups can move through the following statuses (`Groups.Status`):
 
 Weekly lifecycle processing also sends a summary email to each language admin with the status changes applied that week.
 
+Setup note:
+- To include the CoC Master sheet link in the weekly summary email, set the script property `MASTER_SHEET_URL` (Apps Script → Project Settings → Script Properties).
+
 ### 6.9 Participants / Coordinator Lifecycle
 
 Participants (including coordinators) have two independent fields:

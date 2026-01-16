@@ -398,6 +398,7 @@ function weeklyLifecycleProcessing() {
 
   // Send per-language admin summaries
   const props = PropertiesService.getScriptProperties();
+  const masterUrl = String(props.getProperty('MASTER_SHEET_URL') || '').trim();
   const languages = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
   languages.forEach(lang => {
     const adminEmail = props.getProperty(`ADMIN_EMAIL_${lang.toUpperCase()}`);
@@ -418,6 +419,10 @@ function weeklyLifecycleProcessing() {
       }
       if (discCount) {
         lines.push(`Discontinued participants under active groups: ${discCount}`);
+      }
+      if (masterUrl) {
+        lines.push("");
+        lines.push(`CoC Master sheet: ${masterUrl}`);
       }
       const body = lines.join("\n");
       MailApp.sendEmail({ to: adminEmail, subject, body });
