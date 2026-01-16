@@ -260,7 +260,7 @@ function sendStewardAlertEmail(email, language, participants, pIdx) {
   `).join('');
   
   const htmlBody = `
-    <p>Dear ${language} Steward,</p>
+    <p>Dear ${language} Admin,</p>
     <p>There are <strong>${participants.length}</strong> new participant(s) registered for ${language} CoC groups who need to be assigned to groups.</p>
     <br>
     <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse;">
@@ -276,6 +276,8 @@ function sendStewardAlertEmail(email, language, participants, pIdx) {
     </table>
     <br>
     <p>Please review these registrations and assign them to appropriate groups.</p>
+    <br>
+    <p>You can view all registrations here: <a href="https://docs.google.com/spreadsheets/d/1aBJ8vJx5UHrnPEsNZ-y_REVv6F7F_sYjXPJoCw2AxvU/edit?usp=sharing">CoC Registrations List</a></p>
     <br>
     <p>Best regards,<br>CoC Admin System</p>
   `;
