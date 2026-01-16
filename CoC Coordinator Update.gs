@@ -146,6 +146,9 @@ function handleUpdateGroupStatus(e) {
     const newNote = notes ? `${today} - ${notes}` : `${today}`;
     groupRow[gIdx.Notes] = existingNotes ? `${existingNotes}\n${newNote}` : newNote;
   }
+  if (gIdx.LastUpdated !== undefined) {
+    groupRow[gIdx.LastUpdated] = new Date();
+  }
   gData[groupRowIndex] = groupRow;
 
   // Update participant activity

@@ -42,7 +42,8 @@ function setupAllCoCSheets() {
         "Status",
         "Sequence",
         "WeeksCompleted",
-        "Notes"
+        "Notes",
+        "LastUpdated"
       ]
     },
     {
