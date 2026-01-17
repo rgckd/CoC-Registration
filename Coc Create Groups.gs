@@ -528,8 +528,9 @@ function suggestGroupsForLanguage(language) {
 
   // Track summary counts
   const totalCandidates = participants.length;
-  let suggestedCount = 0;
-  let unsuggestedCount = 0;
+  let suggestedExistingCount = 0; // suggested into existing active groups
+  let suggestedNewCount = 0;      // suggested into newly proposed groups (NEW → ...)
+  let unsuggestedCount = 0;       // leftover participants not suggested (e.g., <5 in a slot)
 
   // If nothing to suggest, show a quick notice
   if (totalCandidates === 0) {
@@ -593,7 +594,7 @@ function suggestGroupsForLanguage(language) {
         pSheet.getRange(p.row, pIdx.SuggestedGroup + 1).setValue(existingGroup.name);
       });
       // Count suggestions to existing groups
-      suggestedCount += toAssign.length;
+      suggestedExistingCount += toAssign.length;
       
       // Update capacity and remaining participants
       existingGroup.capacity -= toAssign.length;
@@ -641,15 +642,20 @@ function suggestGroupsForLanguage(language) {
         pSheet.getRange(p.row, pIdx.SuggestedGroup + 1).setValue(groupName);
       });
       // Count suggestions to new groups
-      suggestedCount += subgroup.length;
+      suggestedNewCount += subgroup.length;
       seq++; // Increment for next group
     });
   });
 
   // Show summary confirmation
+  const totalSuggested = suggestedExistingCount + suggestedNewCount;
   SpreadsheetApp.getUi().alert(
     `Suggest Groups Summary – ${language}`,
-    `Participants considered: ${totalCandidates}\nSuggested: ${suggestedCount}\nCould not be suggested: ${unsuggestedCount}`,
+    `Participants considered: ${totalCandidates}` +
+    `\nSuggested (existing groups): ${suggestedExistingCount}` +
+    `\nSuggested (new groups): ${suggestedNewCount}` +
+    `\nTotal suggested: ${totalSuggested}` +
+    `\nCould not be suggested: ${unsuggestedCount}`,
     SpreadsheetApp.getUi().ButtonSet.OK
   );
 }
