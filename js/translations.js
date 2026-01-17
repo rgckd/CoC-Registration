@@ -33,7 +33,7 @@ const translations = {
     submitUpdate: "Submit Update",
     noGroups: "No groups for this language",
     optional: "optional",
-    commentsHelper: "Use the comments for your specific requirements such as including in a particular CoC group etc. We will accommodate if possible.",
+    commentsHelper: "Mention your specific requirements, if any, such as including in a particular CoC group etc. We will accommodate if possible.",
     disclaimerConsent: "I have read and agree to the [LINK]Event Disclaimer and Social Media Policy[/LINK], including the terms at [TERMS]heartfulness.org/us/terms[/TERMS]. I confirm that I am at least 18 years of age and consent to recordings being made of this program. *"
   },
   Tamil: {
@@ -70,7 +70,7 @@ const translations = {
     submitUpdate: "புதுப்பிப்பை சமர்ப்பிக்கவும்",
     noGroups: "இந்த மொழிக்கு குழுக்கள் இல்லை",
     optional: "optional",
-    commentsHelper: "உங்கள் குறிப்பிட்ட தேவைகளுக்கு கருத்துக்களைப் பயன்படுத்தவும் (குறிப்பிட்ட CoC குழுவில் சேர்வது போன்ற). சாத்தியமாக இருந்தால் நாங்கள் பூர்த்தி செய்வோம்.",
+    commentsHelper: "உங்களுக்கு இருந்தால், குறிப்பிட்ட CoC குழுவில் சேர்வது போன்ற உங்கள் குறிப்பிட்ட தேவைகளைக் குறிப்பிடவும். சாத்தியமாக இருந்தால் நாங்கள் பூர்த்தி செய்வோம்.",
     disclaimerConsent: "நான் [LINK]Event Disclaimer and Social Media Policy[/LINK] மற்றும் [TERMS]heartfulness.org/us/terms[/TERMS] இல் உள்ள விதிமுறைகளை படித்து ஒப்புக்கொள்கிறேன். நான் குறைந்தது 18 வயது நிரம்பியவர் என்பதை உறுதிப்படுத்துகிறேன் மற்றும் இந்த நிகழ்ச்சியின் பதிவுகள் செய்யப்படுவதற்கு சம்மதிக்கிறேன். *"
   },
   Hindi: {
@@ -107,7 +107,7 @@ const translations = {
     submitUpdate: "अपडेट जमा करें",
     noGroups: "इस भाषा के लिए समूह नहीं",
     optional: "optional",
-    commentsHelper: "आपकी विशिष्ट आवश्यकताओं के लिए टिप्पणियों का उपयोग करें जैसे किसी विशेष CoC समूह में शामिल होना आदि। यदि संभव हो तो हम पूरा करेंगे।",
+    commentsHelper: "यदि कोई हो तो अपनी विशिष्ट आवश्यकताओं का उल्लेख करें, जैसे किसी विशेष CoC समूह में शामिल होना आदि। यदि संभव हो तो हम पूरा करेंगे।",
     disclaimerConsent: "मैंने [LINK]Event Disclaimer and Social Media Policy[/LINK] और [TERMS]heartfulness.org/us/terms[/TERMS] पर दी गई शर्तों को पढ़ लिया है और सहमत हूं। मैं पुष्टि करता/करती हूं कि मैं कम से कम 18 वर्ष का/की हूं और इस कार्यक्रम की रिकॉर्डिंग के लिए सहमति देता/देती हूं। *"
   },
   Kannada: {
@@ -144,7 +144,7 @@ const translations = {
     submitUpdate: "ನವೀಕರಣ ಸಲ್ಲಿಸಿ",
     noGroups: "ಈ ಭಾಷೆಗೆ ಗುಂಪುಗಳಿಲ್ಲ",
     optional: "optional",
-    commentsHelper: "ನಿರ್ದಿಷ್ಟ CoC ಗುಂಪಿನಲ್ಲಿ ಸೇರ್ಪಡೆಯಂತಹ ಅವಶ್ಯಕತೆಗಳಿಗಾಗಿ ಕಾಮೆಂಟ್‌ಗಳನ್ನು ಬಳಸಿ. ಸಾಧ್ಯವಾದರೆ ನಾವು ಪೂರೈಸುತ್ತೇವೆ.",
+    commentsHelper: "ಯಾವುದೇ ಇದ್ದರೆ, ನಿರ್ದಿಷ್ಟ CoC ಗುಂಪಿನಲ್ಲಿ ಸೇರ್ಪಡೆಯಂತಹ ನಿರ್ದಿಷ್ಟ ಅವಶ್ಯಕತೆಗಳನ್ನು ಹೇಳಿ. ಸಾಧ್ಯವಾದರೆ ನಾವು ಪೂರೈಸುತ್ತೇವೆ.",
     disclaimerConsent: "ನಾನು [LINK]Event Disclaimer and Social Media Policy[/LINK] ಮತ್ತು [TERMS]heartfulness.org/us/terms[/TERMS] ನಲ್ಲಿನ ನಿಯಮಗಳನ್ನು ಓದಿದ್ದೇನೆ ಮತ್ತು ಒಪ್ಪುತ್ತೇನೆ. ನಾನು ಕನಿಷ್ಠ 18 ವರ್ಷ ವಯಸ್ಸನ್ನು ತಲುಪಿದ್ದೇನೆ ಎಂದು ದೃಢೀಕರಿಸುತ್ತೇನೆ ಮತ್ತು ಈ ಕಾರ್ಯಕ್ರಮದ ರೆಕಾರ್ಡಿಂಗ್‌ಗಳನ್ನು ಮಾಡಲು ಒಪ್ಪುತ್ತೇನೆ. *"
   },
   Telugu: {
@@ -181,7 +181,7 @@ const translations = {
     submitUpdate: "అప్‌డేట్ సమర్పించండి",
     noGroups: "ఈ भाషకు గుంపులు లేవు",
     optional: "optional",
-    commentsHelper: "నిర్దిష్ట CoC గ్రూపుకు చేర్చడం వంటి ఏదైనా నిర్దిష్ట అవసరాల కోసం వ్యాఖ్యలను ఉపయోగించండి. సాధ్యమైతే మేము అందిస్తాము.",
+    commentsHelper: "ఉన్నట్లయితే, నిర్దిష్ట CoC గ్రూపుకు చేర్చడం వంటి నిర్దిష్ట అవసరాలను తెలియజేయండి. సాధ్యమైతే మేము అందిస్తాము.",
     disclaimerConsent: "నేను [LINK]Event Disclaimer and Social Media Policy[/LINK] మరియు [TERMS]heartfulness.org/us/terms[/TERMS] వద్ద ఉన్న నిబంధనలను చదివాను మరియు అంగీకరిస్తున్నాను. నేను కనీసం 18 సంవత్సరాల వయస్సు కలిగి ఉన్నానని నిర్ధారిస్తున్నాను మరియు ఈ కార్యక్రమం యొక్క రికార్డింగ్‌లు చేయడానికి అంగీకరిస్తున్నాను. *"
   }
 };
