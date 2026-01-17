@@ -591,7 +591,9 @@ function suggestGroupsForLanguage(language) {
       
       const toAssign = remainingParticipants.slice(0, existingGroup.capacity);
       toAssign.forEach(p => {
-        pSheet.getRange(p.row, pIdx.SuggestedGroup + 1).setValue(existingGroup.name);
+        const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
+        cell.setValue(existingGroup.name);
+        cell.setBackground("#FFF2CC"); // light yellow highlight for suggested cells
       });
       // Count suggestions to existing groups
       suggestedExistingCount += toAssign.length;
@@ -639,7 +641,9 @@ function suggestGroupsForLanguage(language) {
     subgroups.forEach(subgroup => {
       const groupName = `NEW → CoC-${language}-${String(seq).padStart(3, "0")} (${slot})`;
       subgroup.forEach(p => {
-        pSheet.getRange(p.row, pIdx.SuggestedGroup + 1).setValue(groupName);
+        const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
+        cell.setValue(groupName);
+        cell.setBackground("#FFF2CC"); // light yellow highlight for suggested cells
       });
       // Count suggestions to new groups
       suggestedNewCount += subgroup.length;
@@ -794,6 +798,9 @@ function acceptGroupSuggestions(sendEmails = true) {
       row[pIdx.AssignedGroup] = groupName;
       row[pIdx.AssignmentStatus] = "Assigned";
       row[pIdx.SuggestedGroup] = "";
+      // Clear highlight on SuggestedGroup cell after acceptance
+      const suggestedCell = pSheet.getRange(i + 2, pIdx.SuggestedGroup + 1);
+      suggestedCell.setBackground(null);
     }
     // Always clear the AcceptSuggestion checkbox after processing
     row[pIdx.AcceptSuggestion] = false;
