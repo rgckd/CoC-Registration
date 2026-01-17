@@ -1053,8 +1053,7 @@ function updateAdminDashboard() {
     { key: "ActiveGroups", label: "Active Groups" },
     { key: "InactiveGroups", label: "Inactive Groups", highlight: true },
     { key: "NoCoordinator", label: "Groups without Coordinator", highlight: true },
-    { key: "CompletedGroups", label: "Completed Groups" },
-    { key: "ClosedGroups", label: "Closed Groups" },
+    { key: "CompletedClosedGroups", label: "Completed/Closed Groups" },
     { key: "TerminatedGroups", label: "Terminated Groups" }
   ];
   
@@ -1099,10 +1098,8 @@ function updateAdminDashboard() {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Active").length;
       } else if (m.key === "InactiveGroups") {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Inactive").length;
-      } else if (m.key === "CompletedGroups") {
-        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Completed").length;
-      } else if (m.key === "ClosedGroups") {
-        v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Closed").length;
+      } else if (m.key === "CompletedClosedGroups") {
+        v = g.filter(r => r[gIdx.Language] === l && (r[gIdx.Status] === "Completed" || r[gIdx.Status] === "Closed")).length;
       } else if (m.key === "TerminatedGroups") {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Terminated").length;
       } else if (m.key === "NoCoordinator") {
