@@ -526,6 +526,21 @@ function suggestGroupsForLanguage(language) {
       !p.data[pIdx.SuggestedGroup]
     );
 
+  // Track summary counts
+  const totalCandidates = participants.length;
+  let suggestedCount = 0;
+  let unsuggestedCount = 0;
+
+  // If nothing to suggest, show a quick notice
+  if (totalCandidates === 0) {
+    SpreadsheetApp.getUi().alert(
+      `Suggest Groups – ${language}`,
+      `No unassigned participants found for ${language}.`,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    return;
+  }
+
   // Group participants by first preferred time slot
   const slotGroups = {};
   participants.forEach(p => {
@@ -577,6 +592,8 @@ function suggestGroupsForLanguage(language) {
       toAssign.forEach(p => {
         pSheet.getRange(p.row, pIdx.SuggestedGroup + 1).setValue(existingGroup.name);
       });
+      // Count suggestions to existing groups
+      suggestedCount += toAssign.length;
       
       // Update capacity and remaining participants
       existingGroup.capacity -= toAssign.length;
@@ -586,7 +603,8 @@ function suggestGroupsForLanguage(language) {
 
     // If there are still remaining participants, create new groups
     if (remainingParticipants.length < 5) {
-      // Not enough for a new group, skip
+      // Not enough for a new group, mark as unsuggested for this slot
+      unsuggestedCount += remainingParticipants.length;
       return;
     }
     
@@ -622,9 +640,18 @@ function suggestGroupsForLanguage(language) {
       subgroup.forEach(p => {
         pSheet.getRange(p.row, pIdx.SuggestedGroup + 1).setValue(groupName);
       });
+      // Count suggestions to new groups
+      suggestedCount += subgroup.length;
       seq++; // Increment for next group
     });
   });
+
+  // Show summary confirmation
+  SpreadsheetApp.getUi().alert(
+    `Suggest Groups Summary – ${language}`,
+    `Participants considered: ${totalCandidates}\nSuggested: ${suggestedCount}\nCould not be suggested: ${unsuggestedCount}`,
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
 }
 
 /************************************************
