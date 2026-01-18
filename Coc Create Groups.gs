@@ -501,6 +501,12 @@ function sendAdminAlertEmail(email, language, participants, pIdx) {
 
 /************************************************
  * SUGGEST GROUPS (LANGUAGE SCOPED)
+ * 
+ * OPTIMIZATIONS APPLIED:
+ * 1. Bin Packing: Sorts slots by participant count for better distribution
+ * 2. Coordinator-First: Prioritizes coordinator-willing participants
+ * 3. Multi-Slot Flexibility: Tries all preferred slots, not just first
+ * 4. Fixed Split Logic: Handles 1-4 remaining participants properly
  ************************************************/
 function suggestGroupsForLanguage(language) {
   const ss = SpreadsheetApp.getActive();
@@ -542,17 +548,6 @@ function suggestGroupsForLanguage(language) {
     return;
   }
 
-  // Group participants by first preferred time slot
-  const slotGroups = {};
-  participants.forEach(p => {
-    const slots = splitSlots(p.data[pIdx.PreferredSlots]);
-    const firstSlot = slots[0] || "TBD";
-    if (!slotGroups[firstSlot]) {
-      slotGroups[firstSlot] = [];
-    }
-    slotGroups[firstSlot].push(p);
-  });
-
   // Build existing groups map by language, slot, and eligibility
   const existingGroups = gData
     .filter(g => 
@@ -563,82 +558,159 @@ function suggestGroupsForLanguage(language) {
     )
     .map(g => ({
       name: g[gIdx.GroupName],
-      day: g[gIdx.Day],
-      time: g[gIdx.Time],
+      day: normalizeDay(g[gIdx.Day]),
+      time: normalizeTime(g[gIdx.Time]),
       memberCount: g[gIdx.MemberCount] || 0,
       capacity: 8 - (g[gIdx.MemberCount] || 0)
     }));
 
+  // OPTIMIZATION #4: Multi-Slot Flexibility
+  // Try to assign participants to existing groups using ANY of their preferred slots
+  const assignedToExisting = new Set();
+  
+  participants.forEach(p => {
+    if (assignedToExisting.has(p.row)) return;
+    
+    const slots = splitSlots(p.data[pIdx.PreferredSlots]);
+    
+    // Try each preferred slot
+    for (const slot of slots) {
+      const slotParts = slot.split(" ");
+      const slotDay = normalizeDay(slotParts[0] || "TBD");
+      const slotTime = normalizeTime(slotParts[1] || "TBD");
+      
+      // Find matching group with capacity
+      const matchingGroup = existingGroups.find(g => 
+        g.day === slotDay && g.time === slotTime && g.capacity > 0
+      );
+      
+      if (matchingGroup) {
+        const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
+        cell.setValue(matchingGroup.name);
+        cell.setBackground("#FFF2CC");
+        
+        suggestedExistingCount++;
+        matchingGroup.capacity--;
+        matchingGroup.memberCount++;
+        assignedToExisting.add(p.row);
+        break; // Assigned, move to next participant
+      }
+    }
+  });
+
+  // Get remaining unassigned participants
+  const unassignedParticipants = participants.filter(p => !assignedToExisting.has(p.row));
+
+  // OPTIMIZATION #1: Bin Packing - Group by first slot and sort by count (descending)
+  const slotGroups = {};
+  unassignedParticipants.forEach(p => {
+    const slots = splitSlots(p.data[pIdx.PreferredSlots]);
+    const firstSlot = slots[0] || "TBD";
+    if (!slotGroups[firstSlot]) {
+      slotGroups[firstSlot] = [];
+    }
+    slotGroups[firstSlot].push(p);
+  });
+
+  // Sort slots by participant count (descending) for better bin packing
+  const sortedSlots = Object.keys(slotGroups).sort((a, b) => 
+    slotGroups[b].length - slotGroups[a].length
+  );
+
   let seq = getNextGroupSequenceByCount(gData, gIdx, language);
 
-  // Process each time slot group
-  Object.keys(slotGroups).forEach(slot => {
+  // Process each time slot group (in descending order of size)
+  sortedSlots.forEach(slot => {
     let remainingParticipants = slotGroups[slot];
     
-    // Parse the slot into day and time components
-    const slotParts = slot.split(" ");
-    const slotDay = slotParts[0] || "TBD";
-    const slotTime = slotParts[1] || "TBD";
-    
-    // Find existing groups that match this time slot and have capacity
-    const matchingGroups = existingGroups.filter(g => 
-      g.day === slotDay && g.time === slotTime && g.capacity > 0
-    ).sort((a, b) => a.memberCount - b.memberCount); // Fill smaller groups first
+    if (remainingParticipants.length === 0) return;
 
-    // Assign to existing groups first
-    matchingGroups.forEach(existingGroup => {
-      if (remainingParticipants.length === 0) return;
-      
-      const toAssign = remainingParticipants.slice(0, existingGroup.capacity);
-      toAssign.forEach(p => {
-        const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
-        cell.setValue(existingGroup.name);
-        cell.setBackground("#FFF2CC"); // light yellow highlight for suggested cells
-      });
-      // Count suggestions to existing groups
-      suggestedExistingCount += toAssign.length;
-      
-      // Update capacity and remaining participants
-      existingGroup.capacity -= toAssign.length;
-      existingGroup.memberCount += toAssign.length;
-      remainingParticipants = remainingParticipants.slice(toAssign.length);
+    // OPTIMIZATION #2: Coordinator-First Allocation
+    // Separate coordinators from regular members
+    const coordinators = remainingParticipants.filter(p => 
+      p.data[pIdx.CoordinatorWilling] === true || 
+      p.data[pIdx.CoordinatorWilling] === "TRUE" ||
+      p.data[pIdx.CoordinatorWilling] === "true"
+    );
+    
+    const members = remainingParticipants.filter(p => 
+      p.data[pIdx.CoordinatorWilling] !== true && 
+      p.data[pIdx.CoordinatorWilling] !== "TRUE" &&
+      p.data[pIdx.CoordinatorWilling] !== "true"
+    );
+
+    // CRITICAL FIX #3: Improved group split logic with proper remainder handling
+    const subgroups = [];
+    
+    // Strategy: Build groups around coordinators first
+    coordinators.forEach(coord => {
+      if (members.length === 0 && subgroups.length > 0) {
+        // No more members, add coordinator to last group if space available
+        if (subgroups[subgroups.length - 1].length < 8) {
+          subgroups[subgroups.length - 1].push(coord);
+        } else {
+          // Create solo coordinator group (will be merged later if too small)
+          subgroups.push([coord]);
+        }
+      } else {
+        // Create group with coordinator + up to 7 members
+        const groupSize = Math.min(7, members.length);
+        const groupMembers = members.splice(0, groupSize);
+        subgroups.push([coord, ...groupMembers]);
+      }
     });
 
-    // If there are still remaining participants, create new groups
-    if (remainingParticipants.length < 5) {
-      // Not enough for a new group, mark as unsuggested for this slot
-      unsuggestedCount += remainingParticipants.length;
-      return;
-    }
-    
-    // Split remaining participants into subgroups of 5-8 members
-    const subgroups = [];
-    let remaining = remainingParticipants.length;
+    // Handle remaining members (no coordinator available)
+    let remaining = members.length;
     let index = 0;
     
     while (remaining > 0) {
       if (remaining <= 8) {
-        // Last group - take all remaining if >= 5
         if (remaining >= 5) {
-          subgroups.push(remainingParticipants.slice(index));
+          // Create final group
+          subgroups.push(members.slice(index));
+        } else if (remaining >= 1) {
+          // CRITICAL FIX: Handle 1-4 remaining participants
+          if (subgroups.length > 0 && subgroups[subgroups.length - 1].length + remaining <= 8) {
+            // Merge with last group if it won't exceed 8
+            subgroups[subgroups.length - 1] = subgroups[subgroups.length - 1].concat(members.slice(index));
+          } else {
+            // Can't merge, mark as unsuggested for manual review
+            unsuggestedCount += remaining;
+          }
         }
         break;
       } else if (remaining <= 13) {
-        // Split into two groups (to avoid creating a group < 5)
+        // Split into two balanced groups (to avoid creating a group < 5)
         const firstGroupSize = Math.ceil(remaining / 2);
-        subgroups.push(remainingParticipants.slice(index, index + firstGroupSize));
-        subgroups.push(remainingParticipants.slice(index + firstGroupSize));
+        subgroups.push(members.slice(index, index + firstGroupSize));
+        subgroups.push(members.slice(index + firstGroupSize));
         break;
       } else {
-        // Take 8 members
-        subgroups.push(remainingParticipants.slice(index, index + 8));
-        index += 8;
-        remaining -= 8;
+        // Take optimal group size (prefer 7 for better balance)
+        const groupSize = remaining >= 15 ? 7 : 8;
+        subgroups.push(members.slice(index, index + groupSize));
+        index += groupSize;
+        remaining -= groupSize;
       }
     }
 
-    // Assign to new groups
-    subgroups.forEach(subgroup => {
+    // Filter out groups that are too small (< 5 members)
+    const validSubgroups = subgroups.filter(sg => sg.length >= 5);
+    const invalidSubgroups = subgroups.filter(sg => sg.length < 5);
+    
+    // CRITICAL: Mark unsuggested participants for admin visibility
+    invalidSubgroups.forEach(sg => {
+      sg.forEach(p => {
+        const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
+        cell.setValue(`⚠️ NEEDS_MANUAL_REVIEW (${slot} - insufficient participants)`);
+        cell.setBackground("#FFE6E6"); // Light red to highlight manual review needed
+        unsuggestedCount++;
+      });
+    });
+
+    // Assign valid subgroups to new groups
+    validSubgroups.forEach(subgroup => {
       const groupName = `NEW → CoC-${language}-${String(seq).padStart(3, "0")} (${slot})`;
       subgroup.forEach(p => {
         const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
@@ -653,13 +725,27 @@ function suggestGroupsForLanguage(language) {
 
   // Show summary confirmation
   const totalSuggested = suggestedExistingCount + suggestedNewCount;
-  SpreadsheetApp.getUi().alert(
-    `Suggest Groups Summary – ${language}`,
+  let summaryMessage = 
     `Participants considered: ${totalCandidates}` +
     `\nSuggested (existing groups): ${suggestedExistingCount}` +
     `\nSuggested (new groups): ${suggestedNewCount}` +
     `\nTotal suggested: ${totalSuggested}` +
-    `\nCould not be suggested: ${unsuggestedCount}`,
+    `\nCould not be suggested: ${unsuggestedCount}`;
+  
+  if (unsuggestedCount > 0) {
+    summaryMessage += 
+      `\n\n⚠️ ATTENTION: ${unsuggestedCount} participant(s) marked as "NEEDS_MANUAL_REVIEW"` +
+      `\n\nThese participants are highlighted in LIGHT RED in the SuggestedGroup column.` +
+      `\n\nActions you can take:` +
+      `\n• Manually assign them to existing groups with space` +
+      `\n• Combine multiple small time slots` +
+      `\n• Create custom groups of 4-5 if needed` +
+      `\n• Contact participants about alternative time slots`;
+  }
+  
+  SpreadsheetApp.getUi().alert(
+    `Suggest Groups Summary – ${language}`,
+    summaryMessage,
     SpreadsheetApp.getUi().ButtonSet.OK
   );
 }
@@ -1196,6 +1282,29 @@ function normalizeLanguage(v) {
   const m = { english: "English", tamil: "Tamil", hindi: "Hindi", kannada: "Kannada", telugu: "Telugu" };
   const k = String(v || "").toLowerCase().trim();
   return m[k] || v;
+}
+function normalizeDay(d) {
+  const dayMap = {
+    'mon': 'Mon', 'monday': 'Mon',
+    'tue': 'Tue', 'tues': 'Tue', 'tuesday': 'Tue',
+    'wed': 'Wed', 'wednesday': 'Wed',
+    'thu': 'Thu', 'thur': 'Thu', 'thurs': 'Thu', 'thursday': 'Thu',
+    'fri': 'Fri', 'friday': 'Fri',
+    'sat': 'Sat', 'saturday': 'Sat',
+    'sun': 'Sun', 'sunday': 'Sun'
+  };
+  const normalized = String(d || "").toLowerCase().trim();
+  return dayMap[normalized] || String(d || "TBD").trim();
+}
+function normalizeTime(t) {
+  const timeMap = {
+    'morning': 'Morning', 'morn': 'Morning', 'am': 'Morning',
+    'afternoon': 'Afternoon', 'aft': 'Afternoon', 'noon': 'Afternoon',
+    'evening': 'Evening', 'eve': 'Evening', 'pm': 'Evening',
+    'night': 'Night'
+  };
+  const normalized = String(t || "").toLowerCase().trim();
+  return timeMap[normalized] || String(t || "TBD").trim();
 }
 function getNextParticipantIdStart(sh, idx) {
   const d = sh.getDataRange().getValues(); let m = 0;
