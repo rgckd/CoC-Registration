@@ -1,6 +1,7 @@
 const translations = {
   English: {
     email: "Email *",
+    emailHelper: "IMPORTANT: All future communication regarding this program will be sent to this email address only.",
     name: "Your Name *",
     whatsapp: "WhatsApp Number *",
     center: "Your Heartfulness Center *",
@@ -38,6 +39,7 @@ const translations = {
   },
   Tamil: {
     email: "மின்னஞ்சல் *",
+    emailHelper: "முக்கியம்: இந்த திட்டம் தொடர்பான அனைத்து எதிர்கால தொடர்பாடல் இந்த மின்னஞ்சல் முகவரிக்கு மட்டுமே அனுப்பப்படும்.",
     name: "உங்கள் பெயர் *",
     whatsapp: "வாட்ஸ்அப் எண் *",
     center: "உங்கள் ஹார்ட்ஃபுல்னெஸ் சென்டர் *",
@@ -75,6 +77,7 @@ const translations = {
   },
   Hindi: {
     email: "ईमेल *",
+    emailHelper: "महत्वपूर्ण: इस कार्यक्रम से संबंधित सभी भविष्य के संचार केवल इसी ईमेल पते पर भेजे जाएंगे।",
     name: "आपका नाम *",
     whatsapp: "व्हाट्सएप नंबर *",
     center: "आपका Heartfulness केंद्र *",
@@ -112,6 +115,7 @@ const translations = {
   },
   Kannada: {
     email: "ಇಮೇಲ್ *",
+    emailHelper: "ಪ್ರಮುಖ: ಈ ಕಾರ್ಯಕ್ರಮಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಎಲ್ಲಾ ಭವಿಷ್ಯತ್ತು ಸಂವಹನ ಈ ಇಮೇಲ್ ವಿಳಾಸಕ್ಕೆ ಮಾತ್ರ ಕಳುಹಿಸಲಾಗುವುದು.",
     name: "ನಿಮ್ಮ ಹೆಸರು *",
     whatsapp: "ವಾಟ್ಸ್ಅಪ್ ಸಂಖ್ಯೆ *",
     center: "ನಿಮ್ಮ Heartfulness ಕೇಂದ್ರ *",
@@ -149,6 +153,7 @@ const translations = {
   },
   Telugu: {
     email: "ఈమెయిల్ *",
+    emailHelper: "ముఖ్యం: ఈ కార్యక్రమానికి సంబంధించిన అన్ని భవిష్యత్ సంప్రదింపులు ఈ ఈమెయిల్ చిరునామాకు మాత్రమే పంపబడతాయి.",
     name: "మీ పేరు *",
     whatsapp: "WhatsApp నంబర్ *",
     center: "మీ Heartfulness కేంద్రం *",
