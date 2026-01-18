@@ -871,12 +871,22 @@ function acceptGroupSuggestions(sendEmails = true) {
           .map(r => ({
             name: r[pIdxFresh.Name],
             email: r[pIdxFresh.Email],
-            whatsapp: r[pIdxFresh.WhatsApp]
+            whatsapp: r[pIdxFresh.WhatsApp],
+            center: r[pIdxFresh.Center]
           }));
         sendCoordinatorAssignmentEmail(participantRow[pIdxFresh.Email], participantRow[pIdxFresh.Name], participantRow[pIdxFresh.Language], groupInfo, members);
       } else {
         // Send member email with coordinator info
-        sendMemberAssignmentEmail(participantRow[pIdxFresh.Email], participantRow[pIdxFresh.Name], participantRow[pIdxFresh.Language], groupInfo);
+        sendMemberAssignmentEmail(
+          participantRow[pIdxFresh.Email],
+          participantRow[pIdxFresh.Name],
+          participantRow[pIdxFresh.Language],
+          groupInfo,
+          {
+            whatsapp: participantRow[pIdxFresh.WhatsApp],
+            center: participantRow[pIdxFresh.Center]
+          }
+        );
       }
       
       emailsSent++;
@@ -1229,12 +1239,14 @@ function ensureGroupIds(d, idx) {
 /************************************************
  * EMAIL NOTIFICATIONS FOR GROUP ASSIGNMENTS
  ************************************************/
-function sendMemberAssignmentEmail(email, name, language, groupInfo) {
+function sendMemberAssignmentEmail(email, name, language, groupInfo, memberInfo = {}) {
   if (!email || !email.trim()) {
     throw new Error(`Invalid email address for ${name}`);
   }
   
   const labels = getEmailLabels(language);
+  const memberWhatsapp = memberInfo.whatsapp || labels.notProvided;
+  const memberCenter = memberInfo.center || labels.notProvided;
   
   const subject = labels.memberSubject;
   const htmlBody = `
@@ -1247,8 +1259,15 @@ function sendMemberAssignmentEmail(email, name, language, groupInfo) {
     <p><strong>${labels.name}:</strong> ${groupInfo.coordinatorName}</p>
     <p><strong>${labels.email}:</strong> ${groupInfo.coordinatorEmail}</p>
     <p><strong>${labels.whatsapp}:</strong> ${groupInfo.coordinatorWhatsApp}</p>
-    <br>
     <p>${labels.memberClosing}</p>
+    <br>
+    <p><strong>${labels.memberDetailsTitle}</strong></p>
+    <p><strong>${labels.name}:</strong> ${name}</p>
+    <p><strong>${labels.email}:</strong> ${email}</p>
+    <p><strong>${labels.whatsapp}:</strong> ${memberWhatsapp}</p>
+    <p><strong>${labels.center}:</strong> ${memberCenter}</p>
+    <br>
+    <p>${labels.memberUseWhatsappNote}</p>
     <br>
     <p><strong>${labels.resourcesTitle}</strong></p>
     <p><strong>${labels.cocOverview}</strong> - <a href="https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link">https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link</a></p>
@@ -1292,6 +1311,7 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
       <td>${m.name}</td>
       <td>${m.email}</td>
       <td>${m.whatsapp}</td>
+      <td>${m.center || labels.notProvided}</td>
     </tr>
   `).join('');
   
@@ -1308,9 +1328,12 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
         <th>${labels.name}</th>
         <th>${labels.email}</th>
         <th>${labels.whatsapp}</th>
+        <th>${labels.center}</th>
       </tr>
       ${memberListHtml}
     </table>
+    <br>
+    <p>${labels.useDetailsNote}</p>
     <br>
     <p>${labels.coordinatorClosing}</p>
     <br>
@@ -1359,6 +1382,11 @@ function getEmailLabels(language) {
       name: "Name",
       email: "Email",
       whatsapp: "WhatsApp",
+      center: "Center",
+      memberDetailsTitle: "Your details (for coordinator reference)",
+      notProvided: "Not provided",
+      useDetailsNote: "Use the WhatsApp numbers above to add members to the group promptly.",
+      memberUseWhatsappNote: "Use the WhatsApp number above to add the member to your group promptly.",
       memberClosing: "Your coordinator will reach out to you soon with further details.",
       coordinatorClosing: "Please reach out to your group members to schedule the first session.",
       regards: "Best regards,<br>CoC Team",
@@ -1387,6 +1415,11 @@ function getEmailLabels(language) {
       name: "பெயர்",
       email: "மின்னஞ்சல்",
       whatsapp: "வாட்ஸாப்",
+      center: "மையம்",
+      memberDetailsTitle: "உங்கள் விவரங்கள் (ஒருங்கிணைப்பாளர் குறிப்புக்கு)",
+      notProvided: "வழங்கப்படவில்லை",
+      useDetailsNote: "மேலே உள்ள வாட்ஸ்அப் விவரங்களைப் பயன்படுத்தி உறுப்பினர்களை உடனே குழுவில் சேர்க்கவும்.",
+      memberUseWhatsappNote: "மேலே உள்ள வாட்ஸ்அப் எண்ணைப் பயன்படுத்தி உறுப்பினரை உடனே உங்கள் குழுவில் சேர்க்கவும்.",
       memberClosing: "உங்கள் ஒருங்கிணைப்பாளர் விரைவில் மேலும் விவரங்களுடன் உங்களை தொடர்பு கொள்வார்.",
       coordinatorClosing: "முதல் அமர்வை திட்டமிட உங்கள் குழு உறுப்பினர்களை தொடர்பு கொள்ளவும்.",
       regards: "நன்றி,<br>CoC குழு",
@@ -1415,6 +1448,11 @@ function getEmailLabels(language) {
       name: "नाम",
       email: "ईमेल",
       whatsapp: "व्हाट्सएप",
+      center: "केंद्र",
+      memberDetailsTitle: "आपकी जानकारी (समन्वयक संदर्भ हेतु)",
+      notProvided: "उपलब्ध नहीं",
+      useDetailsNote: "ऊपर दिए गए व्हाट्सएप विवरण का उपयोग करके सदस्यों को तुरंत समूह में जोड़ें।",
+      memberUseWhatsappNote: "ऊपर दिए गए व्हाट्सएप नंबर का उपयोग करके सदस्य को तुरंत अपने समूह में जोड़ें।",
       memberClosing: "आपके समन्वयक जल्द ही अधिक विवरण के साथ आपसे संपर्क करेंगे।",
       coordinatorClosing: "कृपया पहला सत्र निर्धारित करने के लिए अपने समूह सदस्यों से संपर्क करें।",
       regards: "सादर,<br>CoC टीम",
@@ -1443,6 +1481,11 @@ function getEmailLabels(language) {
       name: "ಹೆಸರು",
       email: "ಇಮೇಲ್",
       whatsapp: "ವಾಟ್ಸಾಪ್",
+      center: "ಕೇಂದ್ರ",
+      memberDetailsTitle: "ನಿಮ್ಮ ವಿವರಗಳು (ಸಮನ್ವಯಕರ ಉಲ್ಲೇಖಕ್ಕಾಗಿ)",
+      notProvided: "ಲಭ್ಯವಿಲ್ಲ",
+      useDetailsNote: "ಮೇಲಿನ ವಾಟ್ಸಾಪ್ ವಿವರಗಳನ್ನು ಬಳಸಿ ಸದಸ್ಯರನ್ನು ಶೀಘ್ರವಾಗಿ ಗುಂಪಿಗೆ ಸೇರಿಸಿ.",
+      memberUseWhatsappNote: "ಮೇಲಿನ ವಾಟ್ಸಾಪ್ ಸಂಖ್ಯೆಯನ್ನು ಬಳಸಿ ಸದಸ್ಯರನ್ನು ತ್ವರಿತವಾಗಿ ನಿಮ್ಮ ಗುಂಪಿಗೆ ಸೇರಿಸಿ.",
       memberClosing: "ನಿಮ್ಮ ಸಮನ್ವಯಕ ಶೀಘ್ರದಲ್ಲೇ ಹೆಚ್ಚಿನ ವಿವರಗಳೊಂದಿಗೆ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತಾರೆ.",
       coordinatorClosing: "ಮೊದಲ ಅಧಿವೇಶನವನ್ನು ನಿಗದಿಪಡಿಸಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಗುಂಪು ಸದಸ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
       regards: "ಧನ್ಯವಾದಗಳು,<br>CoC ತಂಡ",
@@ -1471,6 +1514,11 @@ function getEmailLabels(language) {
       name: "పేరు",
       email: "ఇమెయిల్",
       whatsapp: "వాట్సాప్",
+      center: "కేంద్రం",
+      memberDetailsTitle: "మీ వివరాలు (సమన్వయకర్త సూచన కోసం)",
+      notProvided: "లభ్యం కాదు",
+      useDetailsNote: "పైనున్న వాట్సాప్ వివరాలను ఉపయోగించి సభ్యులను వెంటనే గ్రూప్‌లో చేర్చండి.",
+      memberUseWhatsappNote: "పైనున్న వాట్సాప్ నంబర్‌ను ఉపయోగించి సభ్యుడిని వెంటనే మీ గ్రూప్‌లో చేర్చండి.",
       memberClosing: "మీ సమన్వయకర్త త్వరలో మరిన్ని వివరాలతో మిమ్మల్ని సంప్రదిస్తారు.",
       coordinatorClosing: "దయచేసి మొదటి సెషన్‌ను షెడ్యూల్ చేయడానికి మీ సమూహ సభ్యులను సంప్రదించండి.",
       regards: "శుభాకాంక్షలు,<br>CoC బృందం",
