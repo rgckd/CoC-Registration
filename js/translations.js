@@ -1,7 +1,7 @@
 const translations = {
   English: {
     email: "Email *",
-    emailHelper: "IMPORTANT: All future communication regarding this program will be sent to this email address only.",
+    emailHelper: "IMPORTANT: All future communication regarding this program will be only sent to this email address and not Whatsapp. Please check this email regularly.",
     name: "Your Name *",
     whatsapp: "WhatsApp Number *",
     center: "Your Heartfulness Center *",
@@ -39,7 +39,7 @@ const translations = {
   },
   Tamil: {
     email: "மின்னஞ்சல் *",
-    emailHelper: "முக்கியம்: இந்த திட்டம் தொடர்பான அனைத்து எதிர்கால தொடர்பாடல் இந்த மின்னஞ்சல் முகவரிக்கு மட்டுமே அனுப்பப்படும்.",
+    emailHelper: "முக்கியம்: இந்த திட்டம் தொடர்பான அனைத்து எதிர்காலத் தொடர்பாடல் இந்த ஈமெயில் முகவரிக்கு மட்டுமே அனுப்பப்படும், வாட்ஸ்அப்பிற்கு அல்ல. தயவுசெய்து இந்த மின்னஞ்சலை தொடர்ந்து சரிபார்க்கவும்.",
     name: "உங்கள் பெயர் *",
     whatsapp: "வாட்ஸ்அப் எண் *",
     center: "உங்கள் ஹார்ட்ஃபுல்னெஸ் சென்டர் *",
@@ -77,7 +77,7 @@ const translations = {
   },
   Hindi: {
     email: "ईमेल *",
-    emailHelper: "महत्वपूर्ण: इस कार्यक्रम से संबंधित सभी भविष्य के संचार केवल इसी ईमेल पते पर भेजे जाएंगे।",
+    emailHelper: "महत्वपूर्ण: इस कार्यक्रम से संबंधित सभी भविष्य के संचार केवल इस ईमेल पते पर भेजे जाएंगे, व्हाट्सएप पर नहीं। कृपया इस ईमेल को नियमित रूप से जांचें।",
     name: "आपका नाम *",
     whatsapp: "व्हाट्सएप नंबर *",
     center: "आपका Heartfulness केंद्र *",
@@ -115,7 +115,7 @@ const translations = {
   },
   Kannada: {
     email: "ಇಮೇಲ್ *",
-    emailHelper: "ಪ್ರಮುಖ: ಈ ಕಾರ್ಯಕ್ರಮಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಎಲ್ಲಾ ಭವಿಷ್ಯತ್ತು ಸಂವಹನ ಈ ಇಮೇಲ್ ವಿಳಾಸಕ್ಕೆ ಮಾತ್ರ ಕಳುಹಿಸಲಾಗುವುದು.",
+    emailHelper: "ಪ್ರಮುಖ: ಈ ಕಾರ್ಯಕ್ರಮಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಎಲ್ಲಾ ಭವಿಷ್ಯತ್ತ ಸಂವಹನ ಈ ಇಮೇಲ್ ವಿಳಾಸಕ್ಕೆ ಮಾತ್ರ ಕಳುಹಿಸಲಾಗುವುದು, ವಾಟ್ಸ್ಅಪ್ಗೆ ಅಲ್ಲ. ದಯವಿಟ್ಟು ಈ ಈಮೇಲ್ ಅನ್ನು ನಿಯಮಿತವಾಗಿ ಪರಿಶೀಲಿಸಿ।",
     name: "ನಿಮ್ಮ ಹೆಸರು *",
     whatsapp: "ವಾಟ್ಸ್ಅಪ್ ಸಂಖ್ಯೆ *",
     center: "ನಿಮ್ಮ Heartfulness ಕೇಂದ್ರ *",
@@ -153,7 +153,7 @@ const translations = {
   },
   Telugu: {
     email: "ఈమెయిల్ *",
-    emailHelper: "ముఖ్యం: ఈ కార్యక్రమానికి సంబంధించిన అన్ని భవిష్యత్ సంప్రదింపులు ఈ ఈమెయిల్ చిరునామాకు మాత్రమే పంపబడతాయి.",
+    emailHelper: "ముఖ్యం: ఈ కార్యక్రమానికి సంబంధించిన అన్ని భవిష్యత్ సంపర్కింపులు ఈ ఈమెయిల్ చిరునామాకు మాత్రమే పంపబడతాయి, వాట్సాప్‌కు కాదు. దయచేసి ఈ ఈమెయిల్‌ను నియమితంగా చెక్ చేయండి।",
     name: "మీ పేరు *",
     whatsapp: "WhatsApp నంబర్ *",
     center: "మీ Heartfulness కేంద్రం *",
