@@ -864,6 +864,7 @@ function acceptGroupSuggestions(sendEmails = true) {
   const gIdx = indexMap(gHeaders);
 
   const processedParticipantIDs = [];
+  const discontinuedCompletedParticipantIDs = [];
   const skippedParticipantIDs = [];
   let emailsSent = 0;
   let emailsFailed = 0;
@@ -892,6 +893,19 @@ function acceptGroupSuggestions(sendEmails = true) {
   // Filter and extract group names
   pData.forEach((row, i) => {
     if (row[pIdx.AcceptSuggestion] !== true) return;
+    
+    // Check if participant is discontinued or completed
+    const assignmentStatus = pIdx.AssignmentStatus !== undefined
+      ? String(row[pIdx.AssignmentStatus] || "").trim().toLowerCase()
+      : "";
+    if (assignmentStatus === "discontinued" || assignmentStatus === "completed") {
+      // Clear suggestion and checkbox, track for lifecycle email
+      row[pIdx.Suggestions] = "";
+      row[pIdx.AcceptSuggestion] = false;
+      pData[i] = row;
+      discontinuedCompletedParticipantIDs.push(row[pIdx.ParticipantID]);
+      return;
+    }
     
     // If no suggested group, use assigned group (for re-sending emails)
     // If both are empty, skip this row but clear the checkbox
@@ -1073,10 +1087,54 @@ function acceptGroupSuggestions(sendEmails = true) {
       errors.push(`❌ ${participantID}: ${error.message}`);
     }
     });
+
+    // ============ PASS 2B: SEND LIFECYCLE EMAILS FOR DISCONTINUED/COMPLETED ============
+    discontinuedCompletedParticipantIDs.forEach(participantID => {
+      try {
+        const participantRow = pDataFresh.find(r => r[pIdxFresh.ParticipantID] === participantID);
+        if (!participantRow) {
+          emailsFailed++;
+          errors.push(`❌ ${participantID}: Not found in fresh data for lifecycle email`);
+          return;
+        }
+
+        const name = participantRow[pIdxFresh.Name];
+        const email = participantRow[pIdxFresh.Email];
+        const language = participantRow[pIdxFresh.Language];
+        const groupName = participantRow[pIdxFresh.AssignedGroup] || "";
+        const status = pIdxFresh.AssignmentStatus !== undefined
+          ? String(participantRow[pIdxFresh.AssignmentStatus] || "").trim()
+          : "";
+
+        const labels = getLifecycleEmailLabels(language);
+        const REG_LINK = "https://www.hcessentials.org/coc-registration-form";
+
+        if (status === "Discontinued") {
+          const subject = labels.discontinuedSubject.replace('{groupName}', groupName);
+          const body = labels.discontinuedBody.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK);
+          MailApp.sendEmail({ to: email, subject, body });
+        } else if (status === "Completed") {
+          const wasActive = participantRow[pIdxFresh.IsActive] === true || participantRow[pIdxFresh.IsActive] === "TRUE";
+          const subject = labels.closedSubject.replace('{groupName}', groupName);
+          const body = wasActive
+            ? labels.closedBodyActive.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK)
+            : labels.closedBodyInactive.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK);
+          MailApp.sendEmail({ to: email, subject, body });
+        }
+
+        emailsSent++;
+      } catch (error) {
+        emailsFailed++;
+        errors.push(`❌ ${participantID}: ${error.message}`);
+      }
+    });
   }
   
   // Show summary
-  let message = `✅ Processed: ${processedParticipantIDs.length}\n`;
+  let message = `✅ Processed: ${processedParticipantIDs.length + discontinuedCompletedParticipantIDs.length}\n`;
+  if (discontinuedCompletedParticipantIDs.length > 0) {
+    message += `📧 Discontinued/Completed: ${discontinuedCompletedParticipantIDs.length}\n`;
+  }
   if (skippedParticipantIDs.length > 0) {
     message += `⚠️ Skipped (no group info): ${skippedParticipantIDs.length}\n`;
   }
