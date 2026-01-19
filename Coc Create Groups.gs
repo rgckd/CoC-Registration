@@ -936,17 +936,24 @@ function acceptGroupSuggestions(sendEmails = true) {
         groupName = newPatternMatch[1];
         timing = newPatternMatch[2];
       } else {
-        // Pattern b: "CoC-Tamil-020"
-        const directMatch = suggested.match(/CoC-[^-]+-\d{3}/);
-        if (directMatch) {
-          groupName = directMatch[0];
+        // Pattern b: "CoC-Tamil-020 (Mon Morning)" - with timing
+        const cocWithTimingMatch = suggested.match(/(CoC-[^-]+-\d{3})\s*\(([^)]+)\)/);
+        if (cocWithTimingMatch) {
+          groupName = cocWithTimingMatch[1];
+          timing = cocWithTimingMatch[2];
         } else {
-          // Pattern c: Any custom name with optional timing in parentheses
-          // e.g., "this-is-a-new-group (Tue evening)" or "CustomGroup"
-          const customMatch = suggested.match(/^(.+?)(?:\s*\(([^)]+)\))?$/);
-          if (customMatch) {
-            groupName = customMatch[1].trim();
-            timing = customMatch[2] || "";
+          // Pattern c: "CoC-Tamil-020" - without timing
+          const directMatch = suggested.match(/CoC-[^-]+-\d{3}/);
+          if (directMatch) {
+            groupName = directMatch[0];
+          } else {
+            // Pattern d: Any custom name with optional timing in parentheses
+            // e.g., "this-is-a-new-group (Tue evening)" or "CustomGroup"
+            const customMatch = suggested.match(/^(.+?)(?:\s*\(([^)]+)\))?$/);
+            if (customMatch) {
+              groupName = customMatch[1].trim();
+              timing = customMatch[2] || "";
+            }
           }
         }
       }
