@@ -12,8 +12,8 @@ function onOpen() {
     .addItem("Suggest Groups – Kannada", "suggestGroupsKannada")
     .addItem("Suggest Groups – Telugu", "suggestGroupsTelugu")
     .addSeparator()
-    .addItem("Accept Group Suggestions", "acceptGroupSuggestions")
-    .addItem("Accept Group Suggestions Without Emailing", "acceptGroupSuggestionsNoEmail")
+    .addItem("Accept Suggestions and Email", "acceptGroupSuggestions")
+    .addItem("Accept Suggestions Without Email", "acceptGroupSuggestionsNoEmail")
     .addSeparator()
     .addItem("Refresh Groups and Dashboard", "refreshGroupsAndDashboard")
     .addToUi();
