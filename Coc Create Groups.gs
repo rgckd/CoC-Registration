@@ -762,7 +762,13 @@ function suggestGroupsForLanguage(language) {
             subgroups[subgroups.length - 1] = subgroups[subgroups.length - 1].concat(members.slice(index));
           } else {
             // Can't merge, mark as unsuggested for manual review
-            unsuggestedCount += remaining;
+            const uns = members.slice(index);
+            uns.forEach(p => {
+              const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
+              cell.setValue(`⚠️ NEEDS_MANUAL_REVIEW (${slot} - insufficient participants)`);
+              cell.setBackground("#FFE6E6");
+            });
+            unsuggestedCount += uns.length;
           }
         }
         break;
