@@ -187,6 +187,49 @@ function debugLogAdminEmails() {
   Object.keys(map).forEach(k => Logger.log(`${k} -> ${map[k]}`));
 }
 
+/**
+ * RESOURCE LINKS LOOKUP (from MASTER sheet)
+ * Returns language-specific links for CoC Overview, Weekly Schedule,
+ * Downloadable books and Purchase link.
+ */
+function getMasterResourceLinks(language) {
+  const ss = SpreadsheetApp.getActive();
+  const master = ss.getSheetByName("MASTER");
+  if (!master) return {};
+  const data = master.getDataRange().getValues();
+  if (!data || data.length < 2) return {};
+
+  const headers = data[0].map(h => String(h || "").trim());
+  const want = String(language || "").trim().toLowerCase();
+  let langCol = headers.findIndex(h => String(h || "").trim().toLowerCase() === want);
+  if (langCol < 0) {
+    langCol = headers.findIndex(h => String(h || "").trim().toLowerCase() === "english");
+  }
+  if (langCol < 0) langCol = 2; // default fallback (column C)
+
+  const rowFor = (recordType) => {
+    const rt = String(recordType || "").trim().toLowerCase();
+    return data.find(r => String(r[0] || "").trim().toLowerCase() === rt);
+  };
+
+  const overviewRow = rowFor("CocOverview");
+  const scheduleRow = rowFor("CoCWeek1-20");
+  const booksRow = rowFor("CoCBooks");
+  const purchaseRow = rowFor("CoCPurchaseLink");
+
+  return {
+    overview: overviewRow ? String(overviewRow[langCol] || "").trim() : "",
+    schedule: scheduleRow ? String(scheduleRow[langCol] || "").trim() : "",
+    books: booksRow ? String(booksRow[langCol] || "").trim() : "",
+    purchase: purchaseRow ? String(purchaseRow[langCol] || "").trim() : ""
+  };
+}
+
+function getDownloadableBooksLabel(language) {
+  const lang = String(language || "English").trim();
+  return `${lang} and English Downloadable Books (link valid for 3 days only)`;
+}
+
 /************************************************
  * DAILY BATCH PROCESSING WITH ALERTS
  * 
@@ -1402,6 +1445,8 @@ function sendMemberAssignmentEmail(email, name, language, groupInfo, memberInfo 
   const memberCenter = memberInfo.center || labels.notProvided;
   
   const subject = labels.memberSubject;
+  const links = getMasterResourceLinks(language);
+  const booksLabel = getDownloadableBooksLabel(language);
   const htmlBody = `
     <p>Dear ${name},</p>
     <p>${labels.memberIntro}</p>
@@ -1423,11 +1468,11 @@ function sendMemberAssignmentEmail(email, name, language, groupInfo, memberInfo 
     <p>${labels.memberUseWhatsappNote}</p>
     <br>
     <p><strong>${labels.resourcesTitle}</strong></p>
-    <p><strong>${labels.cocOverview}</strong> - <a href="https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link">https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link</a></p>
-    <p><strong>${labels.cocSchedule}</strong> - <a href="https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link">https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link</a></p>
-    <p><strong>${labels.downloadableBooks}</strong> - <a href="https://drive.google.com/drive/folders/1YBA3bXMdivoN3oPslCK5gBw_chjPRDYQ?usp=drive_link">https://drive.google.com/drive/folders/1YBA3bXMdivoN3oPslCK5gBw_chjPRDYQ?usp=drive_link</a></p>
+    ${links.overview ? `<p><strong>${labels.cocOverview}</strong> - <a href="${links.overview}">${links.overview}</a></p>` : ""}
+    ${links.schedule ? `<p><strong>${labels.cocSchedule}</strong> - <a href="${links.schedule}">${links.schedule}</a></p>` : ""}
+    ${links.books ? `<p><strong>${booksLabel}</strong> - <a href="${links.books}">${links.books}</a></p>` : ""}
     <p><strong>${labels.nvcBook}</strong><br>
-    ${labels.bookPurchase} <a href="https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295">https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295</a></p>
+    ${labels.bookPurchase} ${links.purchase ? `<a href="${links.purchase}">${links.purchase}</a>` : ""}</p>
     <br>
     <p>${labels.whatsappNote}</p>
     <br>
@@ -1469,6 +1514,8 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
   `).join('');
   
   const subject = labels.coordinatorSubject;
+  const links = getMasterResourceLinks(language);
+  const booksLabel = getDownloadableBooksLabel(language);
   const htmlBody = `
     <p>Dear ${name},</p>
     <p>${labels.coordinatorIntro}</p>
@@ -1497,11 +1544,11 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
       <li>${labels.createWhatsApp}</li>
       <li>${labels.shareResources}
         <ul style="margin-top: 10px;">
-          <li><strong>${labels.cocOverview}</strong> - <a href="https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link">https://drive.google.com/file/d/1tqpRafvnAnHK9DHa89iMkbQSiFb7N10Z/view?usp=drive_link</a></li>
-          <li><strong>${labels.cocSchedule}</strong> - <a href="https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link">https://docs.google.com/document/d/1vBFe13jNDRNRZgBYCN0Z8eUzmsn1IPM_IMQlIvkPHVE/edit?usp=drive_link</a></li>
-          <li><strong>${labels.downloadableBooks}</strong> - <a href="https://drive.google.com/drive/folders/1YBA3bXMdivoN3oPslCK5gBw_chjPRDYQ?usp=drive_link">https://drive.google.com/drive/folders/1YBA3bXMdivoN3oPslCK5gBw_chjPRDYQ?usp=drive_link</a></li>
+          ${links.overview ? `<li><strong>${labels.cocOverview}</strong> - <a href="${links.overview}">${links.overview}</a></li>` : ""}
+          ${links.schedule ? `<li><strong>${labels.cocSchedule}</strong> - <a href="${links.schedule}">${links.schedule}</a></li>` : ""}
+          ${links.books ? `<li><strong>${booksLabel}</strong> - <a href="${links.books}">${links.books}</a></li>` : ""}
           <li><strong>${labels.nvcBook}</strong><br>
-          ${labels.bookPurchase} <a href="https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295">https://www.flipkart.com/nonviolent-communication/p/itma4a783fae0a37?pid=9789382400295</a></li>
+          ${labels.bookPurchase} ${links.purchase ? `<a href="${links.purchase}">${links.purchase}</a>` : ""}</li>
         </ul>
       </li>
       <li>${labels.inviteMembers}</li>
