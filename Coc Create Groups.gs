@@ -226,8 +226,7 @@ function getMasterResourceLinks(language) {
 }
 
 function getDownloadableBooksLabel(language) {
-  const lang = String(language || "English").trim();
-  return `${lang} and English Downloadable Books (link valid for 3 days only)`;
+  return "Downloadable Books (link valid for 3 days only)";
 }
 
 /************************************************
