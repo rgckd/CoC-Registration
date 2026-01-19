@@ -980,7 +980,7 @@ function acceptGroupSuggestions(sendEmails = true) {
 
       const newRow = new Array(gHeaders.length).fill("");
       newRow[gIdx.GroupID] = getNextGroupId(gData, gIdx);
-      newRow[gIdx.GroupCreationDate] = new Date();
+      if (gIdx.GroupCreationDate !== undefined) newRow[gIdx.GroupCreationDate] = new Date();
       newRow[gIdx.GroupName] = groupName;
       newRow[gIdx.Language] = row[pIdx.Language];
       newRow[gIdx.Day] = day;
@@ -994,6 +994,7 @@ function acceptGroupSuggestions(sendEmails = true) {
       if (gIdx.Notes !== undefined) newRow[gIdx.Notes] = "";
 
       gSheet.getRange(gSheet.getLastRow() + 1, 1, 1, newRow.length).setValues([newRow]);
+      SpreadsheetApp.flush();
       gData.push(newRow);
     }
 
