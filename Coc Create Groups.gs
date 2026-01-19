@@ -400,7 +400,7 @@ function weeklyLifecycleProcessing() {
 
   // Helper to list participants for a group (case-insensitive)
   const listGroupParticipants = (groupName) => {
-    const normalizedGroupName = groupName.toLowerCase();
+    const normalizedGroupName = groupName.trim().toLowerCase();
     return pData.filter(r => pIdx.AssignedGroup !== undefined && String(r[pIdx.AssignedGroup] || "").trim().toLowerCase() === normalizedGroupName);
   };
 
@@ -934,26 +934,26 @@ function acceptGroupSuggestions(sendEmails = true) {
       // Pattern a: "NEW → CoC-Tamil-020 (Mon Morning)"
       const newPatternMatch = suggested.match(/NEW\s*→\s*(CoC-[^-]+-\d{3})\s*\(([^)]+)\)/);
       if (newPatternMatch) {
-        groupName = newPatternMatch[1];
-        timing = newPatternMatch[2];
+        groupName = newPatternMatch[1].trim();
+        timing = newPatternMatch[2].trim();
       } else {
         // Pattern b: "CoC-Tamil-020 (Mon Morning)" - with timing
         const cocWithTimingMatch = suggested.match(/(CoC-[^-]+-\d{3})\s*\(([^)]+)\)/);
         if (cocWithTimingMatch) {
-          groupName = cocWithTimingMatch[1];
-          timing = cocWithTimingMatch[2];
+          groupName = cocWithTimingMatch[1].trim();
+          timing = cocWithTimingMatch[2].trim();
         } else {
           // Pattern c: "CoC-Tamil-020" - without timing
           const directMatch = suggested.match(/CoC-[^-]+-\d{3}/);
           if (directMatch) {
-            groupName = directMatch[0];
+            groupName = directMatch[0].trim();
           } else {
             // Pattern d: Any custom name with optional timing in parentheses
             // e.g., "this-is-a-new-group (Tue evening)" or "CustomGroup"
             const customMatch = suggested.match(/^(.+?)(?:\s*\(([^)]+)\))?$/);
             if (customMatch) {
               groupName = customMatch[1].trim();
-              timing = customMatch[2] || "";
+              timing = (customMatch[2] || "").trim();
             }
           }
         }
@@ -962,8 +962,12 @@ function acceptGroupSuggestions(sendEmails = true) {
 
     if (!groupName) return;
 
+    // Trim whitespace from group name
+    groupName = groupName.trim();
+    if (!groupName) return;
+
     // Create group if doesn't exist (case-insensitive check)
-    const existingGroup = gData.find(g => String(g[gIdx.GroupName] || "").toLowerCase() === groupName.toLowerCase());
+    const existingGroup = gData.find(g => String(g[gIdx.GroupName] || "").trim().toLowerCase() === groupName.toLowerCase());
     if (!existingGroup) {
       let day = "TBD";
       let time = "TBD";
@@ -1048,8 +1052,8 @@ function acceptGroupSuggestions(sendEmails = true) {
         return;
       }
 
-      const groupName = participantRow[pIdxFresh.AssignedGroup];
-      const groupRow = gDataFresh.find(g => String(g[gIdxFresh.GroupName] || "").toLowerCase() === groupName.toLowerCase());
+      const groupName = String(participantRow[pIdxFresh.AssignedGroup] || "").trim();
+      const groupRow = gDataFresh.find(g => String(g[gIdxFresh.GroupName] || "").trim().toLowerCase() === groupName.toLowerCase());
       if (!groupRow) {
         emailsFailed++;
         errors.push(`❌ ${participantID} (${participantRow[pIdxFresh.Name]}): Group "${groupName}" not found`);
@@ -1069,7 +1073,7 @@ function acceptGroupSuggestions(sendEmails = true) {
 
       if (isCoordinator) {
         // Send coordinator email with all members
-        const members = pDataFresh.filter(r => String(r[pIdxFresh.AssignedGroup] || "").toLowerCase() === groupName.toLowerCase())
+        const members = pDataFresh.filter(r => String(r[pIdxFresh.AssignedGroup] || "").trim().toLowerCase() === groupName.toLowerCase())
           .map(r => ({
             name: r[pIdxFresh.Name],
             email: r[pIdxFresh.Email],
@@ -1206,7 +1210,8 @@ function updateGroupsSheet() {
       : "";
     if (assignmentStatus === "discontinued") return;
 
-    const groupName = String(r[pIdx.AssignedGroup]).trim();
+    const groupName = String(r[pIdx.AssignedGroup] || "").trim();
+    if (!groupName) return;
     const groupNameKey = groupName.toLowerCase();
     
     if (!members[groupNameKey]) {
@@ -1284,7 +1289,7 @@ function updateGroupsSheet() {
 
   // Update all groups with member count and coordinator
   gData.forEach(r => {
-    const groupNameKey = String(r[gIdx.GroupName] || "").toLowerCase();
+    const groupNameKey = String(r[gIdx.GroupName] || "").trim().toLowerCase();
     const m = members[groupNameKey] || [];
     r[gIdx.MemberCount] = m.length;
 

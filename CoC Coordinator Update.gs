@@ -81,7 +81,7 @@ function handleGetGroupMembers(e) {
   const data = pSheet.getRange(2, minCol, lastRow - 1, width).getValues();
 
   const members = data
-    .filter(r => String(r[pIdx.AssignedGroup] || "").toLowerCase() === groupName.toLowerCase() && (pIdx.AssignmentStatus === undefined || String(r[pIdx.AssignmentStatus] || "").trim() !== "Discontinued"))
+    .filter(r => String(r[pIdx.AssignedGroup] || "").trim().toLowerCase() === groupName.trim().toLowerCase() && (pIdx.AssignmentStatus === undefined || String(r[pIdx.AssignmentStatus] || "").trim() !== "Discontinued"))
     .map(r => ({
       participantID: r[pIdx.ParticipantID],
       name: r[pIdx.Name],
