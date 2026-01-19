@@ -398,9 +398,10 @@ function weeklyLifecycleProcessing() {
     MailApp.sendEmail({ to: email, subject, body });
   };
 
-  // Helper to list participants for a group
+  // Helper to list participants for a group (case-insensitive)
   const listGroupParticipants = (groupName) => {
-    return pData.filter(r => pIdx.AssignedGroup !== undefined && String(r[pIdx.AssignedGroup] || "").trim() === groupName);
+    const normalizedGroupName = groupName.toLowerCase();
+    return pData.filter(r => pIdx.AssignedGroup !== undefined && String(r[pIdx.AssignedGroup] || "").trim().toLowerCase() === normalizedGroupName);
   };
 
   // 1) Close Completed groups -> Closed
@@ -961,8 +962,9 @@ function acceptGroupSuggestions(sendEmails = true) {
 
     if (!groupName) return;
 
-    // Create group if doesn't exist
-    if (!gData.some(g => g[gIdx.GroupName] === groupName)) {
+    // Create group if doesn't exist (case-insensitive check)
+    const existingGroup = gData.find(g => String(g[gIdx.GroupName] || "").toLowerCase() === groupName.toLowerCase());
+    if (!existingGroup) {
       let day = "TBD";
       let time = "TBD";
       
@@ -994,7 +996,8 @@ function acceptGroupSuggestions(sendEmails = true) {
     // Update participant
     if (isReassignment) {
       // Only update assignment if this is a new suggestion
-      row[pIdx.AssignedGroup] = groupName;
+      // Use existing group's case if found, otherwise use entered case
+      row[pIdx.AssignedGroup] = existingGroup ? existingGroup[gIdx.GroupName] : groupName;
       row[pIdx.AssignmentStatus] = "Assigned";
       row[pIdx.Suggestions] = "";
       // Clear highlight on Suggestions cell after acceptance
@@ -1046,7 +1049,7 @@ function acceptGroupSuggestions(sendEmails = true) {
       }
 
       const groupName = participantRow[pIdxFresh.AssignedGroup];
-      const groupRow = gDataFresh.find(g => g[gIdxFresh.GroupName] === groupName);
+      const groupRow = gDataFresh.find(g => String(g[gIdxFresh.GroupName] || "").toLowerCase() === groupName.toLowerCase());
       if (!groupRow) {
         emailsFailed++;
         errors.push(`❌ ${participantID} (${participantRow[pIdxFresh.Name]}): Group "${groupName}" not found`);
@@ -1066,7 +1069,7 @@ function acceptGroupSuggestions(sendEmails = true) {
 
       if (isCoordinator) {
         // Send coordinator email with all members
-        const members = pDataFresh.filter(r => r[pIdxFresh.AssignedGroup] === groupName)
+        const members = pDataFresh.filter(r => String(r[pIdxFresh.AssignedGroup] || "").toLowerCase() === groupName.toLowerCase())
           .map(r => ({
             name: r[pIdxFresh.Name],
             email: r[pIdxFresh.Email],
@@ -1192,7 +1195,9 @@ function updateGroupsSheet() {
   const gIdx = indexMap(gHeaders);
 
   // Build member map (ignore discontinued so counts reflect active members)
+  // Use lowercase keys for case-insensitive matching
   const members = {};
+  const groupNameMap = {}; // Maps lowercase to original case
   pData.forEach(r => {
     if (!r[pIdx.AssignedGroup]) return;
 
@@ -1201,21 +1206,26 @@ function updateGroupsSheet() {
       : "";
     if (assignmentStatus === "discontinued") return;
 
-    if (!members[r[pIdx.AssignedGroup]]) {
-      members[r[pIdx.AssignedGroup]] = [];
+    const groupName = String(r[pIdx.AssignedGroup]).trim();
+    const groupNameKey = groupName.toLowerCase();
+    
+    if (!members[groupNameKey]) {
+      members[groupNameKey] = [];
+      groupNameMap[groupNameKey] = groupName; // Store first occurrence's case
     }
 
-    members[r[pIdx.AssignedGroup]].push(r);
+    members[groupNameKey].push(r);
   });
 
-  // Find existing group names
-  const existingGroups = new Set(gData.map(r => r[gIdx.GroupName]).filter(Boolean));
+  // Find existing group names (case-insensitive)
+  const existingGroups = new Set(gData.map(r => String(r[gIdx.GroupName] || "").toLowerCase()).filter(Boolean));
 
   // Create missing groups
   const newGroups = [];
-  Object.keys(members).forEach(groupName => {
-    if (!existingGroups.has(groupName)) {
-      const firstMember = members[groupName][0];
+  Object.keys(members).forEach(groupNameKey => {
+    if (!existingGroups.has(groupNameKey)) {
+      const groupName = groupNameMap[groupNameKey]; // Use original case
+      const firstMember = members[groupNameKey][0];
       const language = firstMember[pIdx.Language];
       
       // Parse day/time from group name or use first member's slot
@@ -1232,7 +1242,7 @@ function updateGroupsSheet() {
       const seq = seqMatch ? parseInt(seqMatch[1], 10) : gData.filter(r => r[gIdx.Language] === language).length + 1;
 
       // Find coordinator in the group members
-      const coordinator = members[groupName].find(m => {
+      const coordinator = members[groupNameKey].find(m => {
         const val = m[pIdx.IsGroupCoordinator];
         return val === true || val === "TRUE" || val === "true";
       });
@@ -1256,7 +1266,7 @@ function updateGroupsSheet() {
 
       newGroups.push(newRow);
 
-      existingGroups.add(groupName);
+      existingGroups.add(groupNameKey);
     }
   });
 
@@ -1274,7 +1284,8 @@ function updateGroupsSheet() {
 
   // Update all groups with member count and coordinator
   gData.forEach(r => {
-    const m = members[r[gIdx.GroupName]] || [];
+    const groupNameKey = String(r[gIdx.GroupName] || "").toLowerCase();
+    const m = members[groupNameKey] || [];
     r[gIdx.MemberCount] = m.length;
 
     // Find coordinator (checkbox can be true, TRUE, or "TRUE")
