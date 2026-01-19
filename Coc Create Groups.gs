@@ -772,11 +772,11 @@ function suggestGroupsForLanguage(language) {
     
     while (remaining > 0) {
       if (remaining <= 8) {
-        if (remaining >= 5) {
+        if (remaining >= 4) {
           // Create final group
           subgroups.push(members.slice(index));
         } else if (remaining >= 1) {
-          // CRITICAL FIX: Handle 1-4 remaining participants
+          // CRITICAL FIX: Handle 1-3 remaining participants
           if (subgroups.length > 0 && subgroups[subgroups.length - 1].length + remaining <= 8) {
             // Merge with last group if it won't exceed 8
             subgroups[subgroups.length - 1] = subgroups[subgroups.length - 1].concat(members.slice(index));
@@ -793,7 +793,7 @@ function suggestGroupsForLanguage(language) {
         }
         break;
       } else if (remaining <= 13) {
-        // Split into two balanced groups (to avoid creating a group < 5)
+        // Split into two balanced groups (to avoid creating a group < 4)
         const firstGroupSize = Math.ceil(remaining / 2);
         subgroups.push(members.slice(index, index + firstGroupSize));
         subgroups.push(members.slice(index + firstGroupSize));
@@ -807,9 +807,9 @@ function suggestGroupsForLanguage(language) {
       }
     }
 
-    // Filter out groups that are too small (< 5 members)
-    const validSubgroups = subgroups.filter(sg => sg.length >= 5);
-    const invalidSubgroups = subgroups.filter(sg => sg.length < 5);
+    // Filter out groups that are too small (< 4 members)
+    const validSubgroups = subgroups.filter(sg => sg.length >= 4);
+    const invalidSubgroups = subgroups.filter(sg => sg.length < 4);
     
     // CRITICAL: Mark unsuggested participants for admin visibility
     invalidSubgroups.forEach(sg => {
