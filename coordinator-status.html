@@ -48,14 +48,18 @@
   <h2>Coordinator Group Status Update</h2>
     <div id="todayLine" style="text-align:center; margin-bottom:10px; color:#555;"></div>
 
-  <label for="language">CoC Language</label>
-  <select id="language">
+  <label for="langSelect">CoC Language</label>
+  <select id="langSelect" required>
+    <option value="">Select</option>
     <option value="English">English</option>
     <option value="Tamil">Tamil</option>
     <option value="Hindi">Hindi</option>
     <option value="Kannada">Kannada</option>
     <option value="Telugu">Telugu</option>
   </select>
+  <input type="hidden" id="language" value="">
+
+  <label for="groupSelect" data-i18n="coordinatorGroup">Coordinator / Group</label>
 
   <label for="groupSelect" data-i18n="coordinatorGroup">Coordinator / Group</label>
   <select id="groupSelect">

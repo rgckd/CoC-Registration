@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const today = new Date().toISOString().slice(0, 10);
   const SITE_KEY = "6Ld11zssAAAAAMa8hkYJHz1AWvXuUh_WIfad0zbT";
 
+  const langSelect = document.getElementById("langSelect");
   const language = document.getElementById("language");
   const groupSelect = document.getElementById("groupSelect");
   const statusSel = document.getElementById("status");
@@ -219,9 +220,13 @@ document.addEventListener("DOMContentLoaded", () => {
   toggleWeeks();
   applyLanguage(language.value);
 
-  language.addEventListener("change", () => {
-    applyLanguage(language.value);
-    loadGroups();
+  langSelect.addEventListener("change", function () {
+    const lang = this.value;
+    language.value = lang;
+    if (lang) {
+      applyLanguage(lang);
+      loadGroups();
+    }
   });
   groupSelect.addEventListener("change", loadMembersForSelection);
   statusSel.addEventListener("change", toggleWeeks);

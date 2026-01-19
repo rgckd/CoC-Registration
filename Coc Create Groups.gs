@@ -1354,7 +1354,7 @@ function updateAdminDashboard() {
       } else if (m.key === "TerminatedGroups") {
         v = g.filter(r => r[gIdx.Language] === l && r[gIdx.Status] === "Terminated").length;
       } else if (m.key === "NoCoordinator") {
-        v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail]).length;
+        v = g.filter(r => r[gIdx.Language] === l && !r[gIdx.CoordinatorEmail] && r[gIdx.Status] !== "Terminated" && r[gIdx.Status] !== "Closed").length;
       }
       rowValues[j] = v;
       d.getRange(row, j + 2).setValue(v);
