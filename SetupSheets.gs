@@ -22,7 +22,7 @@ function setupAllCoCSheets() {
         "AssignmentStatus",
         "IsGroupCoordinator",
         "AcceptSuggestion",
-        "SuggestedGroup",
+        "Suggestions",
         "Notes",
         "IsActive"
       ]

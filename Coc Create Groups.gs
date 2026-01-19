@@ -113,7 +113,7 @@ function populateParticipantsFromCustomForm() {
     newRow[tIdx.AssignmentStatus] = "Unassigned";
     newRow[tIdx.IsGroupCoordinator] = false;
     newRow[tIdx.AcceptSuggestion] = false;
-    newRow[tIdx.SuggestedGroup] = "";
+    newRow[tIdx.Suggestions] = "";
     if (tIdx.Comments !== undefined && sIdx.Comments !== undefined) {
       newRow[tIdx.Comments] = r[sIdx.Comments] || "";
     }
@@ -615,7 +615,7 @@ function suggestGroupsForLanguage(language) {
     .filter(p =>
       p.data[pIdx.Language] === language &&
       p.data[pIdx.AssignmentStatus] === "Unassigned" &&
-      !p.data[pIdx.SuggestedGroup]
+      !p.data[pIdx.Suggestions]
     );
 
   // Track summary counts
@@ -671,7 +671,7 @@ function suggestGroupsForLanguage(language) {
       );
       
       if (matchingGroup) {
-        const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
+        const cell = pSheet.getRange(p.row, pIdx.Suggestions + 1);
         cell.setValue(matchingGroup.name);
         cell.setBackground("#FFF2CC");
         
@@ -764,7 +764,7 @@ function suggestGroupsForLanguage(language) {
             // Can't merge, mark as unsuggested for manual review
             const uns = members.slice(index);
             uns.forEach(p => {
-              const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
+              const cell = pSheet.getRange(p.row, pIdx.Suggestions + 1);
               cell.setValue(`⚠️ NEEDS_MANUAL_REVIEW (${slot} - insufficient participants)`);
               cell.setBackground("#FFE6E6");
             });
@@ -794,7 +794,7 @@ function suggestGroupsForLanguage(language) {
     // CRITICAL: Mark unsuggested participants for admin visibility
     invalidSubgroups.forEach(sg => {
       sg.forEach(p => {
-        const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
+        const cell = pSheet.getRange(p.row, pIdx.Suggestions + 1);
         cell.setValue(`⚠️ NEEDS_MANUAL_REVIEW (${slot} - insufficient participants)`);
         cell.setBackground("#FFE6E6"); // Light red to highlight manual review needed
         unsuggestedCount++;
@@ -805,7 +805,7 @@ function suggestGroupsForLanguage(language) {
     validSubgroups.forEach(subgroup => {
       const groupName = `NEW → CoC-${language}-${String(seq).padStart(3, "0")} (${slot})`;
       subgroup.forEach(p => {
-        const cell = pSheet.getRange(p.row, pIdx.SuggestedGroup + 1);
+        const cell = pSheet.getRange(p.row, pIdx.Suggestions + 1);
         cell.setValue(groupName);
         cell.setBackground("#FFF2CC"); // light yellow highlight for suggested cells
       });
@@ -827,7 +827,7 @@ function suggestGroupsForLanguage(language) {
   if (unsuggestedCount > 0) {
     summaryMessage += 
       `\n\n⚠️ ATTENTION: ${unsuggestedCount} participant(s) marked as "NEEDS_MANUAL_REVIEW"` +
-      `\n\nThese participants are highlighted in LIGHT RED in the SuggestedGroup column.` +
+      `\n\nThese participants are highlighted in LIGHT RED in the Suggestions column.` +
       `\n\nActions you can take:` +
       `\n• Manually assign them to existing groups with space` +
       `\n• Combine multiple small time slots` +
@@ -873,7 +873,7 @@ function acceptGroupSuggestions(sendEmails = true) {
   
   // Count candidates for processing
   const candidateCount = pData.filter(row => 
-    row[pIdx.AcceptSuggestion] === true && (row[pIdx.SuggestedGroup] || row[pIdx.AssignedGroup])
+    row[pIdx.AcceptSuggestion] === true && (row[pIdx.Suggestions] || row[pIdx.AssignedGroup])
   ).length;
   
   if (candidateCount === 0) {
@@ -895,7 +895,7 @@ function acceptGroupSuggestions(sendEmails = true) {
     
     // If no suggested group, use assigned group (for re-sending emails)
     // If both are empty, skip this row but clear the checkbox
-    if (!row[pIdx.SuggestedGroup] && !row[pIdx.AssignedGroup]) {
+    if (!row[pIdx.Suggestions] && !row[pIdx.AssignedGroup]) {
       row[pIdx.AcceptSuggestion] = false;
       pData[i] = row;
       skippedParticipantIDs.push(row[pIdx.ParticipantID] || `Row ${i + 2}`);
@@ -906,15 +906,15 @@ function acceptGroupSuggestions(sendEmails = true) {
     let timing = "";
     let isReassignment = false;
 
-    // If SuggestedGroup is empty, use AssignedGroup (no group change, just email)
-    if (!row[pIdx.SuggestedGroup] && row[pIdx.AssignedGroup]) {
+    // If Suggestions is empty, use AssignedGroup (no group change, just email)
+    if (!row[pIdx.Suggestions] && row[pIdx.AssignedGroup]) {
       groupName = row[pIdx.AssignedGroup];
       isReassignment = false; // Not changing assignment, just processing for email
     } else {
-      // Process SuggestedGroup as before
+      // Process Suggestions as before
       isReassignment = true;
       
-      const suggested = row[pIdx.SuggestedGroup].trim();
+      const suggested = row[pIdx.Suggestions].trim();
       
       // Pattern a: "NEW → CoC-Tamil-020 (Mon Morning)"
       const newPatternMatch = suggested.match(/NEW\s*→\s*(CoC-[^-]+-\d{3})\s*\(([^)]+)\)/);
@@ -975,9 +975,9 @@ function acceptGroupSuggestions(sendEmails = true) {
       // Only update assignment if this is a new suggestion
       row[pIdx.AssignedGroup] = groupName;
       row[pIdx.AssignmentStatus] = "Assigned";
-      row[pIdx.SuggestedGroup] = "";
-      // Clear highlight on SuggestedGroup cell after acceptance
-      const suggestedCell = pSheet.getRange(i + 2, pIdx.SuggestedGroup + 1);
+      row[pIdx.Suggestions] = "";
+      // Clear highlight on Suggestions cell after acceptance
+      const suggestedCell = pSheet.getRange(i + 2, pIdx.Suggestions + 1);
       suggestedCell.setBackground(null);
     }
     // Always clear the AcceptSuggestion checkbox after processing
