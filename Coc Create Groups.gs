@@ -993,7 +993,7 @@ function acceptGroupSuggestions(sendEmails = true) {
       if (gIdx.WeeksCompleted !== undefined) newRow[gIdx.WeeksCompleted] = 0;
       if (gIdx.Notes !== undefined) newRow[gIdx.Notes] = "";
 
-      gSheet.appendRow(newRow);
+      gSheet.getRange(gSheet.getLastRow() + 1, 1, 1, newRow.length).setValues([newRow]);
       gData.push(newRow);
     }
 
