@@ -50,21 +50,43 @@ function handleGetGroupMembers(e) {
   if (!groupName) return reject("GroupName is required");
 
   const pSheet = getSheet("Participants");
-  const pData = pSheet.getDataRange().getValues();
-  const pHeaders = pData.shift();
-  const pIdx = indexMap(pHeaders);
-
-  if (pIdx.AssignedGroup === undefined || pIdx.ParticipantID === undefined || pIdx.Name === undefined) {
-    return reject("Participants sheet missing required columns");
+  const lastRow = pSheet.getLastRow();
+  const lastCol = pSheet.getLastColumn();
+  if (lastRow < 2) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ result: "success", members: [] }))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 
-  const members = pData
+  // Read headers once, then fetch only the column slice we need
+  const fullHeaders = pSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const idxFull = indexMap(fullHeaders);
+  const required = ["AssignedGroup", "ParticipantID", "Name"];
+  for (const k of required) {
+    if (idxFull[k] === undefined) return reject("Participants sheet missing required columns");
+  }
+
+  const optional = ["Center", "IsActive", "AssignmentStatus"];
+  const colsNeeded = required.concat(optional)
+    .map(k => idxFull[k])
+    .filter(v => v !== undefined);
+
+  const minCol = Math.min.apply(null, colsNeeded) + 1; // 1-based
+  const maxCol = Math.max.apply(null, colsNeeded) + 1;
+  const width = maxCol - minCol + 1;
+
+  const headers = fullHeaders.slice(minCol - 1, minCol - 1 + width);
+  const pIdx = indexMap(headers);
+
+  const data = pSheet.getRange(2, minCol, lastRow - 1, width).getValues();
+
+  const members = data
     .filter(r => r[pIdx.AssignedGroup] === groupName && (pIdx.AssignmentStatus === undefined || String(r[pIdx.AssignmentStatus] || "").trim() !== "Discontinued"))
     .map(r => ({
       participantID: r[pIdx.ParticipantID],
       name: r[pIdx.Name],
       center: pIdx.Center !== undefined ? (r[pIdx.Center] || "") : "",
-      isActive: toBool(r[pIdx.IsActive])
+      isActive: pIdx.IsActive !== undefined ? toBool(r[pIdx.IsActive]) : true
     }));
 
   return ContentService
