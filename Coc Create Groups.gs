@@ -596,6 +596,9 @@ function sendAdminAlertEmail(email, language, participants, pIdx) {
  * 4. Fixed Split Logic: Handles 1-4 remaining participants properly
  ************************************************/
 function suggestGroupsForLanguage(language) {
+  const MIN_GROUP_SIZE = 4;
+  const MAX_GROUP_SIZE = 8;
+  const TWO_GROUP_THRESHOLD = MAX_GROUP_SIZE + MIN_GROUP_SIZE; // e.g., 8 + 4 = 12
   const ss = SpreadsheetApp.getActive();
   const pSheet = ss.getSheetByName("Participants");
   const gSheet = ss.getSheetByName("Groups");
@@ -641,14 +644,14 @@ function suggestGroupsForLanguage(language) {
       g[gIdx.Language] === language &&
       g[gIdx.Status] === "Active" &&
       (g[gIdx.WeeksCompleted] || 0) <= 5 &&
-      g[gIdx.MemberCount] < 8
+      g[gIdx.MemberCount] < MAX_GROUP_SIZE
     )
     .map(g => ({
       name: g[gIdx.GroupName],
       day: normalizeDay(g[gIdx.Day]),
       time: normalizeTime(g[gIdx.Time]),
       memberCount: g[gIdx.MemberCount] || 0,
-      capacity: 8 - (g[gIdx.MemberCount] || 0)
+      capacity: MAX_GROUP_SIZE - (g[gIdx.MemberCount] || 0)
     }));
 
   // OPTIMIZATION #4: Multi-Slot Flexibility
@@ -771,13 +774,13 @@ function suggestGroupsForLanguage(language) {
     let index = 0;
     
     while (remaining > 0) {
-      if (remaining <= 8) {
+      if (remaining <= MAX_GROUP_SIZE) {
         if (remaining >= 4) {
           // Create final group
           subgroups.push(members.slice(index));
         } else if (remaining >= 1) {
           // CRITICAL FIX: Handle 1-3 remaining participants
-          if (subgroups.length > 0 && subgroups[subgroups.length - 1].length + remaining <= 8) {
+          if (subgroups.length > 0 && subgroups[subgroups.length - 1].length + remaining <= MAX_GROUP_SIZE) {
             // Merge with last group if it won't exceed 8
             subgroups[subgroups.length - 1] = subgroups[subgroups.length - 1].concat(members.slice(index));
           } else {
@@ -792,24 +795,25 @@ function suggestGroupsForLanguage(language) {
           }
         }
         break;
-      } else if (remaining <= 13) {
-        // Split into two balanced groups (to avoid creating a group < 4)
+      } else if (remaining <= TWO_GROUP_THRESHOLD) {
+        // Split into two balanced groups (to avoid creating a group < MIN_GROUP_SIZE)
         const firstGroupSize = Math.ceil(remaining / 2);
         subgroups.push(members.slice(index, index + firstGroupSize));
         subgroups.push(members.slice(index + firstGroupSize));
         break;
       } else {
         // Take optimal group size (prefer 7 for better balance)
-        const groupSize = remaining >= 15 ? 7 : 8;
+        const preferredSize = Math.max(MIN_GROUP_SIZE, MAX_GROUP_SIZE - 1);
+        const groupSize = remaining >= (MAX_GROUP_SIZE + preferredSize) ? preferredSize : MAX_GROUP_SIZE;
         subgroups.push(members.slice(index, index + groupSize));
         index += groupSize;
         remaining -= groupSize;
       }
     }
 
-    // Filter out groups that are too small (< 4 members)
-    const validSubgroups = subgroups.filter(sg => sg.length >= 4);
-    const invalidSubgroups = subgroups.filter(sg => sg.length < 4);
+    // Filter out groups that are too small (< MIN_GROUP_SIZE members)
+    const validSubgroups = subgroups.filter(sg => sg.length >= MIN_GROUP_SIZE);
+    const invalidSubgroups = subgroups.filter(sg => sg.length < MIN_GROUP_SIZE);
     
     // CRITICAL: Mark unsuggested participants for admin visibility
     invalidSubgroups.forEach(sg => {
