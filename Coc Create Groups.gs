@@ -141,6 +141,52 @@ function populateParticipantsFromCustomForm() {
   }
 }
 
+/**
+ * ADMIN EMAIL LOOKUP (from MASTER sheet)
+ * Reads the row with RecordType = "AdminEmail" in the MASTER sheet and
+ * returns a map of { LanguageName -> adminEmail } based on language headers.
+ */
+function getAdminEmailMapFromMaster() {
+  const ss = SpreadsheetApp.getActive();
+  const master = ss.getSheetByName("MASTER");
+  if (!master) {
+    Logger.log("MASTER sheet not found. Admin emails cannot be resolved.");
+    return {};
+  }
+  const data = master.getDataRange().getValues();
+  if (!data || data.length < 2) return {};
+
+  const headers = data[0].map(h => String(h || "").trim());
+  const recordRow = data.find(r => String(r[0] || "").trim().toLowerCase() === "adminemail");
+  if (!recordRow) return {};
+
+  // Try to detect the first language column (defaults to index 2: column C)
+  let langStartIdx = headers.findIndex(h => h.toLowerCase() === "english");
+  if (langStartIdx < 0) langStartIdx = 2;
+
+  const map = {};
+  for (let c = langStartIdx; c < headers.length; c++) {
+    const lang = headers[c];
+    if (!lang) continue;
+    const email = String(recordRow[c] || "").trim();
+    if (email) map[lang] = email;
+  }
+  return map;
+}
+
+function getAdminEmailForLanguage(language) {
+  const map = getAdminEmailMapFromMaster();
+  const want = String(language || "").trim().toLowerCase();
+  const key = Object.keys(map).find(k => k.toLowerCase() === want);
+  return key ? map[key] : "";
+}
+
+// Quick verification helper to inspect resolved admin emails in logs
+function debugLogAdminEmails() {
+  const map = getAdminEmailMapFromMaster();
+  Object.keys(map).forEach(k => Logger.log(`${k} -> ${map[k]}`));
+}
+
 /************************************************
  * DAILY BATCH PROCESSING WITH ALERTS
  * 
@@ -149,13 +195,10 @@ function populateParticipantsFromCustomForm() {
  * to language admins when new participants need group assignment.
  * 
  * SETUP INSTRUCTIONS:
- * 1. Go to Apps Script Editor > Project Settings > Script Properties
- * 2. Add the following properties with admin email addresses:
- *    - ADMIN_EMAIL_ENGLISH
- *    - ADMIN_EMAIL_TAMIL
- *    - ADMIN_EMAIL_HINDI
- *    - ADMIN_EMAIL_KANNADA
- *    - ADMIN_EMAIL_TELUGU
+ * 1. Ensure the spreadsheet has a sheet named "MASTER".
+ * 2. In MASTER, add a row with RecordType = "AdminEmail"; language
+ *    columns (e.g., English, Tamil, Hindi, Telugu, Kannada) must hold
+ *    the admin email for each language.
  * 3. Set up a time-based trigger:
  *    - Go to Triggers (clock icon)
  *    - Click "+ Add Trigger"
@@ -204,8 +247,8 @@ function dailyParticipantProcessingWithAlerts() {
     );
   });
   
-  // Get language admin emails from script properties
-  const props = PropertiesService.getScriptProperties();
+  // Get language admin emails from MASTER sheet
+  const adminEmailMap = getAdminEmailMapFromMaster();
   
   // Log breakdown by language
   Logger.log("Breakdown by language (unassigned only):");
@@ -222,7 +265,7 @@ function dailyParticipantProcessingWithAlerts() {
     const participants = participantsByLanguage[lang];
     if (participants.length === 0) return;
     
-    const adminEmail = props.getProperty(`ADMIN_EMAIL_${lang.toUpperCase()}`);
+    const adminEmail = adminEmailMap[lang] || getAdminEmailForLanguage(lang);
     if (!adminEmail) {
       Logger.log(`No admin email configured for ${lang}`);
       return;
@@ -396,8 +439,9 @@ function weeklyLifecycleProcessing() {
   const props = PropertiesService.getScriptProperties();
   const masterUrl = String(props.getProperty('MASTER_SHEET_URL') || '').trim();
   const languages = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
+  const adminEmailMap = getAdminEmailMapFromMaster();
   languages.forEach(lang => {
-    const adminEmail = props.getProperty(`ADMIN_EMAIL_${lang.toUpperCase()}`);
+    const adminEmail = adminEmailMap[lang] || getAdminEmailForLanguage(lang);
     const closed = summary.closed[lang] || [];
     const terminated = summary.terminated[lang] || [];
     const discCount = summary.discontinued[lang] || 0;

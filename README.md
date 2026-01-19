@@ -428,12 +428,11 @@ The system includes an optional daily batch processing function that:
 
 ### Setup Instructions
 
-1. **Configure Script Properties** (Apps Script Editor → Project Settings → Script Properties):
-   - `ADMIN_EMAIL_ENGLISH` – Email for English admin
-   - `ADMIN_EMAIL_TAMIL` – Email for Tamil admin
-   - `ADMIN_EMAIL_HINDI` – Email for Hindi admin
-   - `ADMIN_EMAIL_KANNADA` – Email for Kannada admin
-   - `ADMIN_EMAIL_TELUGU` – Email for Telugu admin
+1. **Add admin emails in MASTER sheet** (same spreadsheet):
+  - Create/ensure a sheet named `MASTER`.
+  - Use headers: `RecordType`, `Description`, then one column per language (e.g., `English`, `Tamil`, `Hindi`, `Kannada`, `Telugu`).
+  - Add a row with `RecordType = AdminEmail`; put each language admin’s email under its language column.
+  - The script reads these values and no longer uses script properties for admin emails.
 
 2. **Set up Time-Based Trigger** (Apps Script Editor → Triggers):
    - Function: `dailyParticipantProcessingWithAlerts`
