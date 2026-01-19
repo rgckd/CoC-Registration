@@ -1543,16 +1543,10 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
       ${memberListHtml}
     </table>
     <br>
-    <p>${labels.useDetailsNote}</p>
-    <br>
-    <p>${labels.coordinatorClosing}</p>
-    <br>
-    <p>${labels.coordinatorUpdate} <a href="https://www.hcessentials.org/coc-coordinator-update">https://www.hcessentials.org/coc-coordinator-update</a></p>
-    <br>
     <p><strong>${labels.nextSteps}</strong></p>
     <ol>
       <li>${labels.createWhatsApp}</li>
-      <li>${labels.shareResources}
+      <li>${labels.updateWhatsApp}
         <ul style="margin-top: 10px;">
           ${links.overview ? `<li><strong>${labels.cocOverview}</strong> - <a href="${links.overview}">${links.overview}</a></li>` : ""}
           ${links.schedule ? `<li><strong>${labels.cocSchedule}</strong> - <a href="${links.schedule}">${links.schedule}</a></li>` : ""}
@@ -1561,7 +1555,10 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
           ${labels.bookPurchase} ${links.purchase ? `<a href="${links.purchase}">${links.purchase}</a>` : ""}</li>
         </ul>
       </li>
-      <li>${labels.inviteMembers}</li>
+      <li>${labels.publishMeetingLink}</li>
+      <li>${labels.coordinatorUpdate} <a href="https://www.hcessentials.org/coc-coordinator-update">https://www.hcessentials.org/coc-coordinator-update</a>
+        <br><em>${labels.coordinatorUpdateNote}</em>
+      </li>
     </ol>
     <br>
     <p>${labels.regards}</p>
@@ -1607,10 +1604,11 @@ function getEmailLabels(language) {
       bookPurchase: "Book can be purchased at:",
       whatsappNote: "Your Coordinator will add you to your CoC WhatsApp group within a day or two. If you have not been added, you may directly reach out to your coordinator whose contact details are above.",
       nextSteps: "Next Steps:",
-      createWhatsApp: "Please create a WhatsApp group for your CoC Study Group with the above members within a day or two.",
-      shareResources: "Share the following details in the WhatsApp Group's description:",
-      inviteMembers: "Invite the members to an initial meeting over Zoom or Google Meet.",
-      coordinatorUpdate: "Submit the Coordinator's update for after each weekly session:"
+      createWhatsApp: "Create a WhatsApp group for your CoC Study Group with the above members if you haven't already.",
+      updateWhatsApp: "Update the following details in the WhatsApp Group's description:",
+      publishMeetingLink: "Publish the Zoom or Google Meet link for your initial and weekly meetings in the WhatsApp group.",
+      coordinatorUpdate: "Submit the Coordinator's update for after each weekly session:",
+      coordinatorUpdateNote: "Mark only the members who regularly attend your sessions. Missing 1-2 sessions here and there is okay."
     },
     Tamil: {
       memberSubject: "CoC குழு ஒதுக்கீடு உறுதிப்படுத்தல்",
@@ -1639,10 +1637,11 @@ function getEmailLabels(language) {
       bookPurchase: "புத்தகத்தை வாங்க:",
       whatsappNote: "உங்கள் ஒருங்கிணைப்பாளர் ஒரு அல்லது இரண்டு நாட்களுக்குள் உங்களை CoC வாட்ஸ்அப் குழுவில் சேர்ப்பார். நீங்கள் சேர்க்கப்படவில்லை என்றால், மேலே உள்ள தொடர்பு விவரங்களைப் பயன்படுத்தி நேரடியாக உங்கள் ஒருங்கிணைப்பாளரைத் தொடர்பு கொள்ளலாம்.",
       nextSteps: "அடுத்த படிகள்:",
-      createWhatsApp: "ஓன்று அல்லது இரண்டு நாட்களுக்குள் மேலே உள்ள உறுப்பினர்களுடன் உங்கள் CoC படிப்பு குழுவிற்கான வாட்ஸ்அப் குழுவை உருவாக்கவும்.",
-      shareResources: "வாட்ஸ்அப் குழுவின் Description-ல் பின்வரும் விவரங்களைப் பகிரவும்:",
-      inviteMembers: "Zoom அல்லது Google Meet மூலம் உறுப்பினர்களை ஆரம்ப சந்திப்பிற்கு அழைக்கவும்.",
-      coordinatorUpdate: "ஒவ்வொரு வாராந்திர அமர்வுக்குப் பிறகு ஒருங்கிணைப்பாளரின் மேம்பாட்டை சமர்ப்பிக்கவும்:"
+      createWhatsApp: "ஏற்கனவே இல்லாவிட்டால், மேலே உள்ள உறுப்பினர்களுடன் உங்கள் CoC படிப்பு குழுவிற்கான வாட்ஸ்அப் குழுவை உருவாக்கவும்.",
+      updateWhatsApp: "வாட்ஸ்அப் குழுவின் Description-ல் பின்வரும் விவரங்களைப் புதுப்பிக்கவும்:",
+      publishMeetingLink: "வாட்ஸ்அப் குழுவில் உங்கள் ஆரம்ப மற்றும் வாராந்திர கூட்டங்களுக்கான Zoom அல்லது Google Meet இணைப்பை வெளியிடவும்.",
+      coordinatorUpdate: "ஒவ்வொரு வாராந்திர அமர்வுக்குப் பிறகு ஒருங்கிணைப்பாளரின் மேம்பாட்டை சமர்ப்பிக்கவும்:",
+      coordinatorUpdateNote: "தொடர்ந்து கலந்துகொள்ளும் உறுப்பினர்களை மட்டுமே குறிக்கவும். 1-2 அமர்வுகளை தவறவிடுவது சரிதான்."
     },
     Hindi: {
       memberSubject: "CoC समूह असाइनमेंट की पुष्टि",
@@ -1671,10 +1670,11 @@ function getEmailLabels(language) {
       bookPurchase: "पुस्तक यहाँ से खरीदी जा सकती है:",
       whatsappNote: "आपके समन्वयक एक या दो दिन में आपको CoC व्हाट्सएप समूह में जोड़ेंगे। यदि आपको नहीं जोड़ा गया है, तो आप ऊपर दिए गए संपर्क विवरण का उपयोग करके सीधे अपने समन्वयक से संपर्क कर सकते हैं।",
       nextSteps: "अगले कदम:",
-      createWhatsApp: "कृपया एक या दो दिन के भीतर उपरोक्त सदस्यों के साथ अपने CoC अध्ययन समूह के लिए एक व्हाट्सएप समूह बनाएं।",
-      shareResources: "व्हाट्सएप समूह के विवरण में निम्नलिखित जानकारी साझा करें:",
-      inviteMembers: "Zoom या Google Meet के माध्यम से सदस्यों को प्रारंभिक बैठक के लिए आमंत्रित करें।",
-      coordinatorUpdate: "प्रत्येक साप्ताहिक सत्र के बाद समन्वयक की अपडेट जमा करें:"
+      createWhatsApp: "यदि आपने अभी तक उपरोक्त सदस्यों के साथ अपने CoC अध्ययन समूह के लिए व्हाट्सएप समूह नहीं बनाया है तो बनाएं।",
+      updateWhatsApp: "व्हाट्सएप समूह के विवरण में निम्नलिखित जानकारी अपडेट करें:",
+      publishMeetingLink: "व्हाट्सएप समूह में अपनी प्रारंभिक और साप्ताहिक बैठकों के लिए Zoom या Google Meet लिंक प्रकाशित करें।",
+      coordinatorUpdate: "प्रत्येक साप्ताहिक सत्र के बाद समन्वयक की अपडेट जमा करें:",
+      coordinatorUpdateNote: "केवल उन सदस्यों को चिह्नित करें जो नियमित रूप से आपके सत्रों में भाग लेते हैं। 1-2 सत्र यहाँ और वहाँ मिस करना ठीक है।"
     },
     Kannada: {
       memberSubject: "CoC ಗುಂಪು ನಿಯೋಜನೆ ದೃಢೀಕರಣ",
@@ -1703,10 +1703,11 @@ function getEmailLabels(language) {
       bookPurchase: "ಪುಸ್ತಕವನ್ನು ಇಲ್ಲಿ ಖರೀದಿಸಬಹುದು:",
       whatsappNote: "ನಿಮ್ಮ ಸಮನ್ವಯಕರು ಒಂದು ಅಥವಾ ಎರಡು ದಿನಗಳಲ್ಲಿ ನಿಮ್ಮನ್ನು CoC ವಾಟ್ಸಾಪ್ ಗುಂಪಿಗೆ ಸೇರಿಸುತ್ತಾರೆ. ನೀವು ಸೇರಿಸದಿದ್ದರೆ, ಮೇಲೆ ನೀಡಲಾದ ಸಂಪರ್ಕ ವಿವರಗಳನ್ನು ಬಳಸಿಕೊಂಡು ನೀವು ನೇರವಾಗಿ ನಿಮ್ಮ ಸಮನ್ವಯಕರನ್ನು ಸಂಪರ್ಕಿಸಬಹುದು.",
       nextSteps: "ಮುಂದಿನ ಹಂತಗಳು:",
-      createWhatsApp: "ದಯವಿಟ್ಟು ಒಂದು ಅಥವಾ ಎರಡು ದಿನಗಳಲ್ಲಿ ಮೇಲಿನ ಸದಸ್ಯರೊಂದಿಗೆ ನಿಮ್ಮ CoC ಅಧ್ಯಯನ ಗುಂಪಿಗೆ ವಾಟ್ಸಾಪ್ ಗುಂಪನ್ನು ರಚಿಸಿ.",
-      shareResources: "ವಾಟ್ಸಾಪ್ ಗುಂಪಿನ ವಿವರಣೆಯಲ್ಲಿ ಈ ಕೆಳಗಿನ ವಿವರಗಳನ್ನು ಹಂಚಿಕೊಳ್ಳಿ:",
-      inviteMembers: "Zoom ಅಥವಾ Google Meet ಮೂಲಕ ಸದಸ್ಯರನ್ನು ಆರಂಭಿಕ ಸಭೆಗೆ ಆಹ್ವಾನಿಸಿ.",
-      coordinatorUpdate: "ಪ್ರತಿ ವಾರದ ಅಧಿವೇಶನದ ನಂತರ ಸಮನ್ವಯಕರ ಅಪ್‌ಡೇಟ್ ಸಲ್ಲಿಸಿ:"
+      createWhatsApp: "ನೀವು ಇಂದುವರೆಗೆ ಮೇಲಿನ ಸದಸ್ಯರೊಂದಿಗೆ ನಿಮ್ಮ CoC ಅಧ್ಯಯನ ಗುಂಪಿಗೆ ವಾಟ್ಸಾಪ್ ಗುಂಪನ್ನು ರಚಿಸದಿದ್ದರೆ ರಚಿಸಿ।",
+      updateWhatsApp: "ವಾಟ್ಸಾಪ್ ಗುಂಪಿನ ವಿವರಣೆಯಲ್ಲಿ ಈ ಕೆಳಗಿನ ವಿವರಗಳನ್ನು ಅಪ್‌ಡೇಟ್ ಮಾಡಿ:",
+      publishMeetingLink: "ವಾಟ್ಸಾಪ್ ಗುಂಪಿನಲ್ಲಿ ನಿಮ್ಮ ಆರಂಭಿಕ ಮತ್ತು ವಾರಾಂತ್ಯ ಸಭೆಗಳಿಗೆ Zoom ಅಥವಾ Google Meet ಲಿಂಕ್ ಪ್ರಕಾಶಿಸಿ।",
+      coordinatorUpdate: "ಪ್ರತಿ ವಾರದ ಅಧಿವೇಶನದ ನಂತರ ಸಮನ್ವಯಕರ ಅಪ್‌ಡೇಟ್ ಸಲ್ಲಿಸಿ:",
+      coordinatorUpdateNote: "ನಿয়ಮಿತವಾಗಿ ನಿಮ್ಮ ಸೆಷನ್‌ಗಳಿಗೆ ಹಾಜರಿರುವ ಸದಸ್ಯರನ್ನು ಮಾತ್ರ ಗುರುತಿಸಿ। ಇಲ್ಲಿ ಮತ್ತು ಅಲ್ಲಿ 1-2 ಸೆಷನ್‌ಗಳನ್ನು ಮಿಸ್ ಮಾಡುವುದು ಠಿಕ್ಕಾಗಿದೆ."
     },
     Telugu: {
       memberSubject: "CoC గ్రూప్ అసైన్‌మెంట్ నిర్ధారణ",
@@ -1735,10 +1736,11 @@ function getEmailLabels(language) {
       bookPurchase: "పుస్తకాన్ని ఇక్కడ కొనుగోలు చేయవచ్చు:",
       whatsappNote: "మీ సమన్వయకర్త ఒకటి లేదా రెండు రోజుల్లో మిమ్మల్ని CoC వాట్సాప్ సమూహంలో చేర్చుతారు. మీరు చేర్చబడకపోతే, పైన ఇచ్చిన సంప్రదింపు వివరాలను ఉపయోగించి మీరు నేరుగా మీ సమన్వయకర్తను సంప్రదించవచ్చు.",
       nextSteps: "తదుపరి దశలు:",
-      createWhatsApp: "దయచేసి ఒకటి లేదా రెండు రోజుల్లో పై సభ్యులతో మీ CoC అధ్యయన సమూహానికి వాట్సాప్ సమూహాన్ని సృష్టించండి.",
-      shareResources: "వాట్సాప్ సమూహ వివరణలో క్రింది వివరాలను భాగస్వామ్యం చేయండి:",
-      inviteMembers: "Zoom లేదా Google Meet ద్వారా సభ్యులను ప్రారంభ సమావేశానికి ఆహ్వానించండి.",
-      coordinatorUpdate: "ప్రతి వారపు సెషన్ తర్వాత సమన్వయకర్త యొక్క అపడేట్ సమర్పించండి:"
+      createWhatsApp: "మీరు ఇంకా పై సభ్యులతో మీ CoC అధ్యయన సమూహానికి వాట్సాప్ సమూహాన్ని సృష్టించనట్లయితే సృష్టించండి।",
+      updateWhatsApp: "వాట్సాప్ సమూహ వివరణలో క్రింది వివరాలను అపడేట్ చేయండి:",
+      publishMeetingLink: "వాట్సాప్ సమూహంలో మీ ప్రారంభ మరియు వారపు సమావేశాల కోసం Zoom లేదా Google Meet లింక్‌ను ప్రచురించండి.",
+      coordinatorUpdate: "ప్రతి వారపు సెషన్ తర్వాత సమన్వయకర్త యొక్క అపడేట్ సమర్పించండి:",
+      coordinatorUpdateNote: "మీ సెషన్‌లకు సాధారణంగా హాజరుకాని సభ్యులను మాత్రమే గుర్తించండి. ఇక్కడ మరియు అక్కడ 1-2 సెషన్‌లను కోల్పోవడం సరిగ్గా ఉంది."
     }
   };
   
