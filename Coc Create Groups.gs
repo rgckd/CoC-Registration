@@ -1126,10 +1126,15 @@ function updateGroupsSheet() {
   const pIdx = indexMap(pHeaders);
   const gIdx = indexMap(gHeaders);
 
-  // Build member map
+  // Build member map (ignore discontinued so counts reflect active members)
   const members = {};
   pData.forEach(r => {
     if (!r[pIdx.AssignedGroup]) return;
+
+    const assignmentStatus = pIdx.AssignmentStatus !== undefined
+      ? String(r[pIdx.AssignmentStatus] || "").trim().toLowerCase()
+      : "";
+    if (assignmentStatus === "discontinued") return;
 
     if (!members[r[pIdx.AssignedGroup]]) {
       members[r[pIdx.AssignedGroup]] = [];
