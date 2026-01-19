@@ -688,15 +688,34 @@ function suggestGroupsForLanguage(language) {
   // Get remaining unassigned participants
   const unassignedParticipants = participants.filter(p => !assignedToExisting.has(p.row));
 
-  // OPTIMIZATION #1: Bin Packing - Group by first slot and sort by count (descending)
+  // OPTIMIZATION #1: Bin Packing - Choose the densest preferred slot per participant
+  // Build frequency map across ALL preferred slots, then assign each participant to
+  // the slot (among their preferences) with the highest demand. This prevents missing
+  // obvious groups when the first preferred slot is sparsely chosen.
+  const slotCounts = {};
+  unassignedParticipants.forEach(p => {
+    const slots = splitSlots(p.data[pIdx.PreferredSlots]);
+    slots.forEach(s => {
+      slotCounts[s] = (slotCounts[s] || 0) + 1;
+    });
+  });
+
   const slotGroups = {};
   unassignedParticipants.forEach(p => {
     const slots = splitSlots(p.data[pIdx.PreferredSlots]);
-    const firstSlot = slots[0] || "TBD";
-    if (!slotGroups[firstSlot]) {
-      slotGroups[firstSlot] = [];
-    }
-    slotGroups[firstSlot].push(p);
+    // Pick the slot with the highest overall count among this participant's options
+    let bestSlot = slots[0] || "TBD";
+    let bestCount = slotCounts[bestSlot] || 0;
+    slots.forEach(s => {
+      const c = slotCounts[s] || 0;
+      if (c > bestCount) {
+        bestSlot = s;
+        bestCount = c;
+      }
+    });
+
+    if (!slotGroups[bestSlot]) slotGroups[bestSlot] = [];
+    slotGroups[bestSlot].push(p);
   });
 
   // Sort slots by participant count (descending) for better bin packing
