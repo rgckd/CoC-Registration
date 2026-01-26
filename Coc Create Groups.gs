@@ -1157,18 +1157,11 @@ function acceptGroupSuggestions(sendEmails = true) {
         const REG_LINK = "https://www.hcessentials.org/coc-registration-form";
 
         if (status === "Discontinued") {
-          const subject = labels.discontinuedSubject.replace('{groupName}', groupName);
-          const body = labels.discontinuedBody.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK);
-          
           // Get coordinator email from Groups sheet
           const groupRow = gDataFresh.find(g => String(g[gIdxFresh.GroupName] || "").trim().toLowerCase() === groupName.toLowerCase());
           const coordinatorEmail = groupRow && gIdxFresh.CoordinatorEmail !== undefined ? String(groupRow[gIdxFresh.CoordinatorEmail] || "").trim() : "";
           
-          const emailOptions = { to: email, subject, body };
-          if (coordinatorEmail) {
-            emailOptions.cc = coordinatorEmail;
-          }
-          MailApp.sendEmail(emailOptions);
+          sendDiscontinuedEmail(email, name, groupName, language, coordinatorEmail);
         } else if (status === "Completed") {
           const wasActive = participantRow[pIdxFresh.IsActive] === true || participantRow[pIdxFresh.IsActive] === "TRUE";
           const subject = labels.closedSubject.replace('{groupName}', groupName);
