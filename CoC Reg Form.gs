@@ -210,6 +210,7 @@ function buildConfirmationEmail(data) {
       coordinator: "Willing to be a coordinator",
       comments: "Comments",
       overviewIntro: "Please go through this link to learn more about CoC:",
+      disclaimer: "You agreed to the disclaimer shown on the registration screen.",
       footer: "We will contact you soon."
     },
     Tamil: {
@@ -224,6 +225,7 @@ function buildConfirmationEmail(data) {
       coordinator: "ஒருங்கிணைப்பாளராக இருக்க தயாரா",
       comments: "கருத்துக்கள்",
       overviewIntro: "CoC பற்றி மேலும் அறிய இந்த இணைப்பைப் பார்க்கவும்:",
+      disclaimer: "பதிவுத் திரையில் காணப்பட்ட Disclaimer-ஐ நீங்கள் ஒப்புக்கொண்டுள்ளீர்கள்.",
       footer: "விரைவில் உங்களை தொடர்பு கொள்வோம்."
     },
     Hindi: {
@@ -238,6 +240,7 @@ function buildConfirmationEmail(data) {
       coordinator: "समन्वयक बनने की इच्छा",
       comments: "टिप्पणियाँ",
       overviewIntro: "CoC के बारे में अधिक जानने के लिए इस लिंक को देखें:",
+      disclaimer: "आपने पंजीकरण स्क्रीन पर दिखाए गए अस्वीकरण को स्वीकार किया है।",
       footer: "हम जल्द ही आपसे संपर्क करेंगे।"
     },
     Kannada: {
@@ -252,6 +255,7 @@ function buildConfirmationEmail(data) {
       coordinator: "ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛೆ",
       comments: "ಅಭಿಪ್ರಾಯಗಳು",
       overviewIntro: "CoC ಬಗ್ಗೆ ಹೆಚ್ಚು ತಿಳಿಯಲು ಈ ಲಿಂಕ್ ನೋಡಿ:",
+      disclaimer: "ನೀವು ನೋಂದಣಿ ಪರದೆಯಲ್ಲಿ ತೋರಿಸಿದ ದ್ವಿತೀಯ ಹೇಳಿಕೆಯನ್ನು ಒಪ್ಪಿಕೊಂಡಿದ್ದೀರಿ.",
       footer: "ನಾವು ಶೀಘ್ರದಲ್ಲೇ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ."
     },
     Telugu: {
@@ -266,6 +270,7 @@ function buildConfirmationEmail(data) {
       coordinator: "సమన్వయకర్తగా ఉండాలా",
       comments: "వ్యాఖ్యలు",
       overviewIntro: "CoC గురించి మరింత తెలుసుకోవడానికి ఈ లింక్ చూడండి:",
+      disclaimer: "రిజిస్ట్రేషన్ స్క్రీన్‌లో చూపించిన డిస్క్లైమర్‌ను మీరు అంగీకరించారు.",
       footer: "మేము త్వరలో మిమ్మల్ని సంప్రదిస్తాము."
     }
   };
@@ -275,6 +280,7 @@ function buildConfirmationEmail(data) {
   const timesHtml = data.Times.map(t => `<li>${t}</li>`).join("");
   const englishAbility = data.Language !== "English" && data.EnglishAbility ? `<p><strong>${t.english}:</strong> ${data.EnglishAbility}</p>` : "";
   const comments = data.Comments ? `<p><strong>${t.comments}:</strong> ${data.Comments}</p>` : "";
+  const disclaimerLine = data.DisclaimerConsent === "Yes" ? `<p>${t.disclaimer}</p>` : "";
   const overviewLine = links.overview ? `<p>${t.overviewIntro} <a href="${links.overview}">${links.overview}</a></p>` : "";
 
   return `
@@ -289,6 +295,7 @@ function buildConfirmationEmail(data) {
     <ul>${timesHtml}</ul>
     <p><strong>${t.coordinator}:</strong> ${data.Coordinator}</p>
     ${comments}
+    ${disclaimerLine}
     ${overviewLine}
     <p>${t.footer}</p>
   `;
