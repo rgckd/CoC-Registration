@@ -385,17 +385,25 @@ function weeklyLifecycleProcessing() {
       : labels.closedBodyInactive.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK);
     MailApp.sendEmail({ to: email, subject, body });
   };
-  const sendTerminatedEmail = (email, name, groupName, language) => {
+  const sendTerminatedEmail = (email, name, groupName, language, coordinatorEmail) => {
     const labels = getLifecycleEmailLabels(language);
     const subject = labels.terminatedSubject.replace('{groupName}', groupName);
     const body = labels.terminatedBody.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK);
-    MailApp.sendEmail({ to: email, subject, body });
+    const emailOptions = { to: email, subject, body };
+    if (coordinatorEmail && coordinatorEmail.trim()) {
+      emailOptions.cc = coordinatorEmail;
+    }
+    MailApp.sendEmail(emailOptions);
   };
-  const sendDiscontinuedEmail = (email, name, groupName, language) => {
+  const sendDiscontinuedEmail = (email, name, groupName, language, coordinatorEmail) => {
     const labels = getLifecycleEmailLabels(language);
     const subject = labels.discontinuedSubject.replace('{groupName}', groupName);
     const body = labels.discontinuedBody.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK);
-    MailApp.sendEmail({ to: email, subject, body });
+    const emailOptions = { to: email, subject, body };
+    if (coordinatorEmail && coordinatorEmail.trim()) {
+      emailOptions.cc = coordinatorEmail;
+    }
+    MailApp.sendEmail(emailOptions);
   };
 
   // Helper to list participants for a group (case-insensitive)
@@ -443,6 +451,7 @@ function weeklyLifecycleProcessing() {
     if (status === "Inactive") {
       const groupName = String(gRow[gIdx.GroupName] || "").trim();
       const lang = String(gRow[gIdx.Language] || "").trim();
+      const coordinatorEmail = String(gRow[gIdx.CoordinatorEmail] || "").trim();
       const members = listGroupParticipants(groupName);
 
       // Update group status
@@ -457,7 +466,7 @@ function weeklyLifecycleProcessing() {
         if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Discontinued";
         if (pIdx.IsActive !== undefined) pRow[pIdx.IsActive] = false;
         try {
-          sendTerminatedEmail(email, name, groupName, memberLang);
+          sendTerminatedEmail(email, name, groupName, memberLang, coordinatorEmail);
         } catch (err) {
           emailFailures.push({ type: "Terminated group email", lang, group: groupName, email, name, reason: err.message });
         }
@@ -1150,7 +1159,16 @@ function acceptGroupSuggestions(sendEmails = true) {
         if (status === "Discontinued") {
           const subject = labels.discontinuedSubject.replace('{groupName}', groupName);
           const body = labels.discontinuedBody.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK);
-          MailApp.sendEmail({ to: email, subject, body });
+          
+          // Get coordinator email from Groups sheet
+          const groupRow = gDataFresh.find(g => String(g[gIdxFresh.GroupName] || "").trim().toLowerCase() === groupName.toLowerCase());
+          const coordinatorEmail = groupRow && gIdxFresh.CoordinatorEmail !== undefined ? String(groupRow[gIdxFresh.CoordinatorEmail] || "").trim() : "";
+          
+          const emailOptions = { to: email, subject, body };
+          if (coordinatorEmail) {
+            emailOptions.cc = coordinatorEmail;
+          }
+          MailApp.sendEmail(emailOptions);
         } else if (status === "Completed") {
           const wasActive = participantRow[pIdxFresh.IsActive] === true || participantRow[pIdxFresh.IsActive] === "TRUE";
           const subject = labels.closedSubject.replace('{groupName}', groupName);
@@ -1861,7 +1879,7 @@ function getLifecycleEmailLabels(language) {
       terminatedSubject: "CoC Group Terminated - {groupName}",
       terminatedBody: "Dear {name},\n\nYour CoC group ({groupName}) has been dissolved as it has not been functioning. We acknowledge your efforts and encourage you to register again at {regLink} if you would like to continue your CoC journey with a new group.\n\nWith best wishes,\nCoC Admin Team",
       discontinuedSubject: "CoC Participation Discontinued - {groupName}",
-      discontinuedBody: "Dear {name},\n\nWe have unregistered your membership from the CoC group ({groupName}) as you have not been joining sessions. We understand you may have other commitments or personal situations. If you would like to continue your CoC journey in the future, please register at {regLink}.\n\nWith best wishes,\nCoC Admin Team"
+      discontinuedBody: "Dear {name},\n\nWe have unregistered your membership from the CoC group ({groupName}) as you have not been joining sessions. We understand you may have other commitments or personal situations.\n\nIf you think your deregistration is an error and/or you would like to continue your CoC journey, please reply to this email, or get in touch with your coordinator. Alternatively, you can register again at {regLink}.\n\nWith best wishes,\nCoC Admin Team"
     },
     Tamil: {
       closedSubject: "CoC குழு மூடப்பட்டது - {groupName}",
@@ -1870,7 +1888,7 @@ function getLifecycleEmailLabels(language) {
       terminatedSubject: "CoC குழு கலைக்கப்பட்டது - {groupName}",
       terminatedBody: "அன்புள்ள {name},\n\nஉங்கள் CoC குழு ({groupName}) செயல்படவில்லை என்பதால் கலைக்கப்பட்டுள்ளது. உங்கள் முயற்சிகளை நாங்கள் அங்கீகரிக்கிறோம், புதிய குழுவுடன் உங்கள் CoC பயணத்தைத் தொடர விரும்பினால் {regLink} இல் மீண்டும் பதிவு செய்ய ஊக்குவிக்கிறோம்.\n\nநல்வாழ்த்துகளுடன்,\nCoC நிர்வாகக் குழு",
       discontinuedSubject: "CoC பங்கேற்பு நிறுத்தப்பட்டது - {groupName}",
-      discontinuedBody: "அன்புள்ள {name},\n\nநீங்கள் அமர்வுகளில் கலந்து கொள்ளாததால் CoC குழுவில் ({groupName}) உங்கள் உறுப்பினராக்கத்தை ரத்து செய்துள்ளோம். உங்களுக்கு வேறு கடமைகள் அல்லது தனிப்பட்ட சூழ்நிலைகள் இருக்கலாம் என்பதை நாங்கள் புரிந்துகொள்கிறோம். எதிர்காலத்தில் உங்கள் CoC பயணத்தைத் தொடர விரும்பினால், {regLink} இல் பதிவு செய்யவும்.\n\nநல்வாழ்த்துகளுடன்,\nCoC நிர்வாகக் குழு"
+      discontinuedBody: "அன்புள்ள {name},\n\nநீங்கள் அமர்வுகளில் கலந்து கொள்ளாததால் CoC குழுவில் ({groupName}) உங்கள் உறுப்பினராக்கத்தை ரத்து செய்துள்ளோம். உங்களுக்கு வேறு கடமைகள் அல்லது தனிப்பட்ட சூழ்நிலைகள் இருக்கலாம் என்பதை நாங்கள் புரிந்துகொள்கிறோம்.\n\nஉங்கள் பதிவு நீக்கம் பிழை என்று நீங்கள் நினைத்தால் மற்றும்/அல்லது உங்கள் CoC பயணத்தைத் தொடர விரும்பினால், தயவுசெய்து இந்த மின்னஞ்சலுக்கு பதிலளிக்கவும், அல்லது உங்கள் ஒருங்கிணைப்பாளரைத் தொடர்பு கொள்ளவும். அல்லது, நீங்கள் {regLink} இல் மீண்டும் பதிவு செய்யலாம்.\n\nநல்வாழ்த்துகளுடன்,\nCoC நிர்வாகக் குழு"
     },
     Hindi: {
       closedSubject: "CoC समूह बंद - {groupName}",
@@ -1879,7 +1897,7 @@ function getLifecycleEmailLabels(language) {
       terminatedSubject: "CoC समूह समाप्त - {groupName}",
       terminatedBody: "प्रिय {name},\n\nआपका CoC समूह ({groupName}) भंग कर दिया गया है क्योंकि यह कार्य नहीं कर रहा था। हम आपके प्रयासों को स्वीकार करते हैं और यदि आप एक नए समूह के साथ अपनी CoC यात्रा जारी रखना चाहते हैं तो {regLink} पर फिर से पंजीकरण करने के लिए प्रोत्साहित करते हैं।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम",
       discontinuedSubject: "CoC भागीदारी बंद - {groupName}",
-      discontinuedBody: "प्रिय {name},\n\nआप सत्रों में शामिल नहीं हो रहे थे इसलिए हमने CoC समूह ({groupName}) से आपकी सदस्यता समाप्त कर दी है। हम समझते हैं कि आपकी अन्य प्रतिबद्धताएँ या व्यक्तिगत परिस्थितियाँ हो सकती हैं। यदि आप भविष्य में अपनी CoC यात्रा जारी रखना चाहते हैं, तो कृपया {regLink} पर पंजीकरण करें।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम"
+      discontinuedBody: "प्रिय {name},\n\nआप सत्रों में शामिल नहीं हो रहे थे इसलिए हमने CoC समूह ({groupName}) से आपकी सदस्यता समाप्त कर दी है। हम समझते हैं कि आपकी अन्य प्रतिबद्धताएँ या व्यक्तिगत परिस्थितियाँ हो सकती हैं।\n\nयदि आपको लगता है कि आपका पंजीकरण रद्द करना एक त्रुटि है और/या आप अपनी CoC यात्रा जारी रखना चाहते हैं, तो कृपया इस ईमेल का उत्तर दें, या अपने समन्वयक से संपर्क करें। वैकल्पिक रूप से, आप {regLink} पर फिर से पंजीकरण कर सकते हैं।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम"
     },
     Kannada: {
       closedSubject: "CoC ಗುಂಪು ಮುಚ್ಚಲಾಗಿದೆ - {groupName}",
@@ -1888,7 +1906,7 @@ function getLifecycleEmailLabels(language) {
       terminatedSubject: "CoC ಗುಂಪು ವಿಸರ್ಜಿಸಲಾಗಿದೆ - {groupName}",
       terminatedBody: "ಆತ್ಮೀಯ {name},\n\nನಿಮ್ಮ CoC ಗುಂಪು ({groupName}) ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತಿಲ್ಲದ ಕಾರಣ ವಿಸರ್ಜಿಸಲಾಗಿದೆ. ನಾವು ನಿಮ್ಮ ಪ್ರಯತ್ನಗಳನ್ನು ಅಂಗೀಕರಿಸುತ್ತೇವೆ ಮತ್ತು ನೀವು ಹೊಸ ಗುಂಪಿನೊಂದಿಗೆ ನಿಮ್ಮ CoC ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಬಯಸಿದರೆ {regLink} ನಲ್ಲಿ ಮತ್ತೆ ನೋಂದಾಯಿಸಲು ಪ್ರೋತ್ಸಾಹಿಸುತ್ತೇವೆ.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ",
       discontinuedSubject: "CoC ಭಾಗವಹಿಸುವಿಕೆ ನಿಲ್ಲಿಸಲಾಗಿದೆ - {groupName}",
-      discontinuedBody: "ಆತ್ಮೀಯ {name},\n\nನೀವು ಅಧಿವೇಶನಗಳಲ್ಲಿ ಭಾಗವಹಿಸದ ಕಾರಣ CoC ಗುಂಪು ({groupName}) ಯಿಂದ ನಿಮ್ಮ ಸದಸ್ಯತ್ವವನ್ನು ರದ್ದುಪಡಿಸಿದ್ದೇವೆ. ನೀವು ಇತರ ಬದ್ಧತೆಗಳು ಅಥವಾ ವೈಯಕ್ತಿಕ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ಹೊಂದಿರಬಹುದು ಎಂದು ನಾವು ಅರ್ಥಮಾಡಿಕೊಳ್ಳುತ್ತೇವೆ. ಭವಿಷ್ಯದಲ್ಲಿ ನಿಮ್ಮ CoC ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಬಯಸಿದರೆ, ದಯವಿಟ್ಟು {regLink} ನಲ್ಲಿ ನೋಂದಾಯಿಸಿ.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ"
+      discontinuedBody: "ಆತ್ಮೀಯ {name},\n\nನೀವು ಅಧಿವೇಶನಗಳಲ್ಲಿ ಭಾಗವಹಿಸದ ಕಾರಣ CoC ಗುಂಪು ({groupName}) ಯಿಂದ ನಿಮ್ಮ ಸದಸ್ಯತ್ವವನ್ನು ರದ್ದುಪಡಿಸಿದ್ದೇವೆ. ನೀವು ಇತರ ಬದ್ಧತೆಗಳು ಅಥವಾ ವೈಯಕ್ತಿಕ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ಹೊಂದಿರಬಹುದು ಎಂದು ನಾವು ಅರ್ಥಮಾಡಿಕೊಳ್ಳುತ್ತೇವೆ.\n\nನಿಮ್ಮ ನೋಂದಣಿ ರದ್ದುಪಡಿಸುವಿಕೆ ದೋಷ ಎಂದು ನೀವು ಭಾವಿಸಿದರೆ ಮತ್ತು/ಅಥವಾ ನಿಮ್ಮ CoC ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಬಯಸಿದರೆ, ದಯವಿಟ್ಟು ಈ ಇಮೇಲ್‌ಗೆ ಪ್ರತ್ಯುತ್ತರಿಸಿ, ಅಥವಾ ನಿಮ್ಮ ಸಂಯೋಜಕರನ್ನು ಸಂಪರ್ಕಿಸಿ. ಪರ್ಯಾಯವಾಗಿ, ನೀವು {regLink} ನಲ್ಲಿ ಮತ್ತೆ ನೋಂದಾಯಿಸಬಹುದು.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ"
     },
     Telugu: {
       closedSubject: "CoC గ్రూప్ మూసివేయబడింది - {groupName}",
@@ -1897,7 +1915,7 @@ function getLifecycleEmailLabels(language) {
       terminatedSubject: "CoC గ్రూప్ రద్దు చేయబడింది - {groupName}",
       terminatedBody: "ప్రియమైన {name},\n\nమీ CoC గ్రూప్ ({groupName}) పనిచేయడం లేదు కాబట్టి రద్దు చేయబడింది. మేము మీ ప్రయత్నాలను గుర్తిస్తున్నాము మరియు మీరు కొత్త గ్రూప్‌తో మీ CoC ప్రయాణాన్ని కొనసాగించాలనుకుంటే {regLink} వద్ద మళ్లీ నమోదు చేయమని ప్రోత్సహిస్తున్నాము.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం",
       discontinuedSubject: "CoC భాగస్వామ్యం నిలిపివేయబడింది - {groupName}",
-      discontinuedBody: "ప్రియమైన {name},\n\nమీరు సెషన్‌లలో చేరకపోవడంతో CoC గ్రూప్ ({groupName}) నుండి మీ సభ్యత్వాన్ని రద్దు చేసాము. మీకు ఇతర బాధ్యతలు లేదా వ్యక్తిగత పరిస్థితులు ఉండవచ్చని మేము అర్థం చేసుకుంటున్నాము. భవిష్యత్తులో మీ CoC ప్రయాణాన్ని కొనసాగించాలనుకుంటే, దయచేసి {regLink} వద్ద నమోదు చేయండి.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం"
+      discontinuedBody: "ప్రియమైన {name},\n\nమీరు సెషన్‌లలో చేరకపోవడంతో CoC గ్రూప్ ({groupName}) నుండి మీ సభ్యత్వాన్ని రద్దు చేసాము. మీకు ఇతర బాధ్యతలు లేదా వ్యక్తిగత పరిస్థితులు ఉండవచ్చని మేము అర్థం చేసుకుంటున్నాము.\n\nమీ రిజిస్ట్రేషన్ రద్దు చేయడం పొరపాటు అని మీరు భావిస్తే మరియు/లేదా మీ CoC ప్రయాణాన్ని కొనసాగించాలనుకుంటే, దయచేసి ఈ ఇమెయిల్‌కు ప్రత్యుత్తరం ఇవ్వండి, లేదా మీ సమన్వయకర్తతో సంప్రదించండి. ప్రత్యామ్నాయంగా, మీరు {regLink} వద్ద మళ్లీ నమోదు చేసుకోవచ్చు.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం"
     }
   };
   
