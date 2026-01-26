@@ -210,7 +210,7 @@ function buildConfirmationEmail(data) {
       coordinator: "Willing to be a coordinator",
       comments: "Comments",
       overviewIntro: "Please go through this link to learn more about CoC:",
-      disclaimer: "You agreed to the disclaimer shown on the registration screen.",
+      disclaimerFull: "You agreed to: I have read and agree to the <a href=\"https://www.hcessentials.org/disclaimer\" target=\"_blank\">Event Disclaimer and Social Media Policy</a>, including the terms at <a href=\"https://heartfulness.org/us/terms\" target=\"_blank\">heartfulness.org/us/terms</a>. I confirm that I am at least 18 years of age and consent to recordings being made of this program.",
       footer: "We will contact you soon."
     },
     Tamil: {
@@ -225,7 +225,7 @@ function buildConfirmationEmail(data) {
       coordinator: "ஒருங்கிணைப்பாளராக இருக்க தயாரா",
       comments: "கருத்துக்கள்",
       overviewIntro: "CoC பற்றி மேலும் அறிய இந்த இணைப்பைப் பார்க்கவும்:",
-      disclaimer: "பதிவுத் திரையில் காணப்பட்ட Disclaimer-ஐ நீங்கள் ஒப்புக்கொண்டுள்ளீர்கள்.",
+      disclaimerFull: "நான் <a href=\"https://www.hcessentials.org/disclaimer\" target=\"_blank\">Event Disclaimer and Social Media Policy</a> மற்றும் <a href=\"https://heartfulness.org/us/terms\" target=\"_blank\">heartfulness.org/us/terms</a> இல் உள்ள விதிமுறைகளை படித்து ஒப்புக்கொள்கிறேன். நான் குறைந்தது 18 வயது நிரம்பியவர் என்பதை உறுதிப்படுத்துகிறேன் மற்றும் இந்த நிகழ்ச்சியின் பதிவுகள் செய்யப்படுவதற்கு சம்மதிக்கிறேன்.",
       footer: "விரைவில் உங்களை தொடர்பு கொள்வோம்."
     },
     Hindi: {
@@ -240,7 +240,7 @@ function buildConfirmationEmail(data) {
       coordinator: "समन्वयक बनने की इच्छा",
       comments: "टिप्पणियाँ",
       overviewIntro: "CoC के बारे में अधिक जानने के लिए इस लिंक को देखें:",
-      disclaimer: "आपने पंजीकरण स्क्रीन पर दिखाए गए अस्वीकरण को स्वीकार किया है।",
+      disclaimerFull: "मैंने <a href=\"https://www.hcessentials.org/disclaimer\" target=\"_blank\">Event Disclaimer and Social Media Policy</a> और <a href=\"https://heartfulness.org/us/terms\" target=\"_blank\">heartfulness.org/us/terms</a> पर दी गई शर्तों को पढ़ लिया है और सहमत हूं। मैं पुष्टि करता/करती हूं कि मैं कम से कम 18 वर्ष का/की हूं और इस कार्यक्रम की रिकॉर्डिंग के लिए सहमति देता/देती हूं।",
       footer: "हम जल्द ही आपसे संपर्क करेंगे।"
     },
     Kannada: {
@@ -255,7 +255,7 @@ function buildConfirmationEmail(data) {
       coordinator: "ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛೆ",
       comments: "ಅಭಿಪ್ರಾಯಗಳು",
       overviewIntro: "CoC ಬಗ್ಗೆ ಹೆಚ್ಚು ತಿಳಿಯಲು ಈ ಲಿಂಕ್ ನೋಡಿ:",
-      disclaimer: "ನೀವು ನೋಂದಣಿ ಪರದೆಯಲ್ಲಿ ತೋರಿಸಿದ ದ್ವಿತೀಯ ಹೇಳಿಕೆಯನ್ನು ಒಪ್ಪಿಕೊಂಡಿದ್ದೀರಿ.",
+      disclaimerFull: "ನಾನು <a href=\"https://www.hcessentials.org/disclaimer\" target=\"_blank\">Event Disclaimer and Social Media Policy</a> ಮತ್ತು <a href=\"https://heartfulness.org/us/terms\" target=\"_blank\">heartfulness.org/us/terms</a> ನಲ್ಲಿನ ನಿಯಮಗಳನ್ನು ಓದಿದ್ದೇನೆ ಮತ್ತು ಒಪ್ಪುತ್ತೇನೆ. ನಾನು ಕನಿಷ್ಠ 18 ವರ್ಷ ವಯಸ್ಸನ್ನು ತಲುಪಿದ್ದೇನೆ ಎಂದು ದೃಢೀಕರಿಸುತ್ತೇನೆ ಮತ್ತು ಈ ಕಾರ್ಯಕ್ರಮದ ರೆಕಾರ್ಡಿಂಗ್‌ಗಳನ್ನು ಮಾಡಲು ಒಪ್ಪುತ್ತೇನೆ.",
       footer: "ನಾವು ಶೀಘ್ರದಲ್ಲೇ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ."
     },
     Telugu: {
@@ -270,7 +270,7 @@ function buildConfirmationEmail(data) {
       coordinator: "సమన్వయకర్తగా ఉండాలా",
       comments: "వ్యాఖ్యలు",
       overviewIntro: "CoC గురించి మరింత తెలుసుకోవడానికి ఈ లింక్ చూడండి:",
-      disclaimer: "రిజిస్ట్రేషన్ స్క్రీన్‌లో చూపించిన డిస్క్లైమర్‌ను మీరు అంగీకరించారు.",
+      disclaimerFull: "నేను <a href=\"https://www.hcessentials.org/disclaimer\" target=\"_blank\">Event Disclaimer and Social Media Policy</a> మరియు <a href=\"https://heartfulness.org/us/terms\" target=\"_blank\">heartfulness.org/us/terms</a> వద్ద ఉన్న నిబంధనలను చదివాను మరియు అంగీకరిస్తున్నాను. నేను కనీసం 18 సంవత్సరాల వయస్సు కలిగి ఉన్నానని నిర్ధారిస్తున్నాను మరియు ఈ కార్యక్రమం యొక్క రికార్డింగ్‌లు చేయడానికి అంగీకరిస్తున్నాను.",
       footer: "మేము త్వరలో మిమ్మల్ని సంప్రదిస్తాము."
     }
   };
@@ -280,7 +280,7 @@ function buildConfirmationEmail(data) {
   const timesHtml = data.Times.map(t => `<li>${t}</li>`).join("");
   const englishAbility = data.Language !== "English" && data.EnglishAbility ? `<p><strong>${t.english}:</strong> ${data.EnglishAbility}</p>` : "";
   const comments = data.Comments ? `<p><strong>${t.comments}:</strong> ${data.Comments}</p>` : "";
-  const disclaimerLine = data.DisclaimerConsent === "Yes" ? `<p>${t.disclaimer}</p>` : "";
+  const disclaimerLine = data.DisclaimerConsent === "Yes" ? `<p>${t.disclaimerFull}</p>` : "";
   const overviewLine = links.overview ? `<p>${t.overviewIntro} <a href="${links.overview}">${links.overview}</a></p>` : "";
 
   return `
@@ -295,9 +295,9 @@ function buildConfirmationEmail(data) {
     <ul>${timesHtml}</ul>
     <p><strong>${t.coordinator}:</strong> ${data.Coordinator}</p>
     ${comments}
-    ${disclaimerLine}
     ${overviewLine}
     <p>${t.footer}</p>
+    ${disclaimerLine}
   `;
 }
 
