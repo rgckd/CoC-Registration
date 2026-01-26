@@ -209,6 +209,7 @@ function buildConfirmationEmail(data) {
       times: "Preferred days & times",
       coordinator: "Willing to be a coordinator",
       comments: "Comments",
+      overviewIntro: "Please go through this link to learn more about CoC:",
       footer: "We will contact you soon."
     },
     Tamil: {
@@ -222,6 +223,7 @@ function buildConfirmationEmail(data) {
       times: "விருப்பமான நாட்கள் & நேரங்கள்",
       coordinator: "ஒருங்கிணைப்பாளராக இருக்க தயாரா",
       comments: "கருத்துக்கள்",
+      overviewIntro: "CoC பற்றி மேலும் அறிய இந்த இணைப்பைப் பார்க்கவும்:",
       footer: "விரைவில் உங்களை தொடர்பு கொள்வோம்."
     },
     Hindi: {
@@ -235,6 +237,7 @@ function buildConfirmationEmail(data) {
       times: "पसंदीदा दिन और समय",
       coordinator: "समन्वयक बनने की इच्छा",
       comments: "टिप्पणियाँ",
+      overviewIntro: "CoC के बारे में अधिक जानने के लिए इस लिंक को देखें:",
       footer: "हम जल्द ही आपसे संपर्क करेंगे।"
     },
     Kannada: {
@@ -248,6 +251,7 @@ function buildConfirmationEmail(data) {
       times: "ಆದ್ಯತೆಯ ದಿನಗಳು ಮತ್ತು ಸಮಯಗಳು",
       coordinator: "ಸಂಯೋಜಕರಾಗಲು ಇಚ್ಛೆ",
       comments: "ಅಭಿಪ್ರಾಯಗಳು",
+      overviewIntro: "CoC ಬಗ್ಗೆ ಹೆಚ್ಚು ತಿಳಿಯಲು ಈ ಲಿಂಕ್ ನೋಡಿ:",
       footer: "ನಾವು ಶೀಘ್ರದಲ್ಲೇ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ."
     },
     Telugu: {
@@ -261,14 +265,17 @@ function buildConfirmationEmail(data) {
       times: "ఇష్టమైన రోజులు & సమయాలు",
       coordinator: "సమన్వయకర్తగా ఉండాలా",
       comments: "వ్యాఖ్యలు",
+      overviewIntro: "CoC గురించి మరింత తెలుసుకోవడానికి ఈ లింక్ చూడండి:",
       footer: "మేము త్వరలో మిమ్మల్ని సంప్రదిస్తాము."
     }
   };
 
   const t = labels[data.Language] || labels.English;
+  const links = typeof getMasterResourceLinks === "function" ? getMasterResourceLinks(data.Language) : {};
   const timesHtml = data.Times.map(t => `<li>${t}</li>`).join("");
   const englishAbility = data.Language !== "English" && data.EnglishAbility ? `<p><strong>${t.english}:</strong> ${data.EnglishAbility}</p>` : "";
   const comments = data.Comments ? `<p><strong>${t.comments}:</strong> ${data.Comments}</p>` : "";
+  const overviewLine = links.overview ? `<p>${t.overviewIntro} <a href="${links.overview}">${links.overview}</a></p>` : "";
 
   return `
     <p>🙏 <strong>${t.title}</strong></p>
@@ -282,6 +289,7 @@ function buildConfirmationEmail(data) {
     <ul>${timesHtml}</ul>
     <p><strong>${t.coordinator}:</strong> ${data.Coordinator}</p>
     ${comments}
+    ${overviewLine}
     <p>${t.footer}</p>
   `;
 }
