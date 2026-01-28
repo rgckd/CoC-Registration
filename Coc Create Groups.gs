@@ -1367,7 +1367,7 @@ function updateAdminDashboard() {
   ];
   
   const participantsMetrics = [
-    { key: "Unassigned", label: "Unassigned Participants" },
+    { key: "Unassigned", label: "Unassigned Participants", highlight: true },
     { key: "Assigned", label: "Assigned Participants" },
     { key: "Active", label: "Active Participants" },
     { key: "Inactive", label: "Inactive Participants", highlight: true },
