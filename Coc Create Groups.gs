@@ -1914,3 +1914,18 @@ function getLifecycleEmailLabels(language) {
   
   return allLabels[language] || allLabels.English;
 }
+
+// Global helper: send discontinued participant email (used by acceptGroupSuggestions)
+function sendDiscontinuedEmail(email, name, groupName, language, coordinatorEmail) {
+  const labels = getLifecycleEmailLabels(language);
+  const subject = labels.discontinuedSubject.replace('{groupName}', groupName);
+  const body = labels.discontinuedBody
+    .replace('{name}', name)
+    .replace('{groupName}', groupName)
+    .replace('{regLink}', "https://www.hcessentials.org/coc-registration-form");
+  const emailOptions = { to: email, subject, body };
+  if (coordinatorEmail && coordinatorEmail.trim()) {
+    emailOptions.cc = coordinatorEmail;
+  }
+  MailApp.sendEmail(emailOptions);
+}
