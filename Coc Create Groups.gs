@@ -1872,7 +1872,7 @@ function getLifecycleEmailLabels(language) {
       terminatedSubject: "CoC Group Terminated - {groupName}",
       terminatedBody: "Dear {name},\n\nYour CoC group ({groupName}) has been dissolved as it has not been functioning. We acknowledge your efforts.\n\nIf you think this is an error and/or you would like to continue your CoC journey, please reply to this email, or get in touch with your coordinator. Alternatively, you can register again at {regLink} for a new group.\n\nWith best wishes,\nCoC Admin Team",
       discontinuedSubject: "CoC Participation Discontinued - {groupName}",
-      discontinuedBody: "Dear {name},\n\nWe have unregistered your membership from the CoC group ({groupName}) as you have not been joining sessions. We understand you may have other commitments or personal situations.\n\nIf you think your deregistration is an error and/or you would like to continue your CoC journey, please reply to this email, or get in touch with your coordinator. Alternatively, you can register again at {regLink}.\n\nWith best wishes,\nCoC Admin Team"
+      discontinuedBody: "Dear {name},\n\nWe have unregistered your membership from the CoC group ({groupName}) due to either the group not functioning or a lack of sufficient participation.\n\nIf you think your deregistration is an error and/or you would like to continue your CoC journey, please reply to this email, or get in touch with your coordinator. Alternatively, you can register again at {regLink}.\n\nWith best wishes,\nCoC Admin Team"
     },
     Tamil: {
       closedSubject: "CoC குழு மூடப்பட்டது - {groupName}",
@@ -1881,7 +1881,7 @@ function getLifecycleEmailLabels(language) {
       terminatedSubject: "CoC குழு கலைக்கப்பட்டது - {groupName}",
       terminatedBody: "அன்புள்ள {name},\n\nஉங்கள் CoC குழு ({groupName}) செயல்படவில்லை என்பதால் கலைக்கப்பட்டுள்ளது. உங்கள் முயற்சிகளை நாங்கள் அங்கீகரிக்கிறோம்.\n\nஇது பிழை என்று நீங்கள் நினைத்தால் மற்றும்/அல்லது உங்கள் CoC பயணத்தைத் தொடர விரும்பினால், தயவுசெய்து இந்த மின்னஞ்சலுக்கு பதிலளிக்கவும், அல்லது உங்கள் ஒருங்கிணைப்பாளரைத் தொடர்பு கொள்ளவும். அல்லது, புதிய குழுவிற்கு {regLink} இல் மீண்டும் பதிவு செய்யலாம்.\n\nநல்வாழ்த்துகளுடன்,\nCoC நிர்வாகக் குழு",
       discontinuedSubject: "CoC பங்கேற்பு நிறுத்தப்பட்டது - {groupName}",
-      discontinuedBody: "அன்புள்ள {name},\n\nநீங்கள் அமர்வுகளில் கலந்து கொள்ளாததால் CoC குழுவில் ({groupName}) உங்கள் உறுப்பினராக்கத்தை ரத்து செய்துள்ளோம். உங்களுக்கு வேறு கடமைகள் அல்லது தனிப்பட்ட சூழ்நிலைகள் இருக்கலாம் என்பதை நாங்கள் புரிந்துகொள்கிறோம்.\n\nஉங்கள் பதிவு நீக்கம் பிழை என்று நீங்கள் நினைத்தால் மற்றும்/அல்லது உங்கள் CoC பயணத்தைத் தொடர விரும்பினால், தயவுசெய்து இந்த மின்னஞ்சலுக்கு பதிலளிக்கவும், அல்லது உங்கள் ஒருங்கிணைப்பாளரைத் தொடர்பு கொள்ளவும். அல்லது, நீங்கள் {regLink} இல் மீண்டும் பதிவு செய்யலாம்.\n\nநல்வாழ்த்துகளுடன்,\nCoC நிர்வாகக் குழு"
+      discontinuedBody: "அன்புள்ள {name},\n\nCoC குழு ({groupName}) செயல்படாமல் இருந்ததாலோ அல்லது போதுமான பங்கேற்பு இல்லாததாலோ, உங்கள் உறுப்பினராக்கத்தை ரத்து செய்துள்ளோம்.\n\nஉங்கள் பதிவு நீக்கம் பிழை என்று நீங்கள் நினைத்தால் மற்றும்/அல்லது உங்கள் CoC பயணத்தைத் தொடர விரும்பினால், தயவுசெய்து இந்த மின்னஞ்சலுக்கு பதிலளிக்கவும், அல்லது உங்கள் ஒருங்கிணைப்பாளரைத் தொடர்பு கொள்ளவும். அல்லது, நீங்கள் {regLink} இல் மீண்டும் பதிவு செய்யலாம்.\n\nநல்வாழ்த்துகளுடன்,\nCoC நிர்வாகக் குழு"
     },
     Hindi: {
       closedSubject: "CoC समूह बंद - {groupName}",
@@ -1890,7 +1890,7 @@ function getLifecycleEmailLabels(language) {
       terminatedSubject: "CoC समूह समाप्त - {groupName}",
       terminatedBody: "प्रिय {name},\n\nआपका CoC समूह ({groupName}) भंग कर दिया गया है क्योंकि यह कार्य नहीं कर रहा था। हम आपके प्रयासों को स्वीकार करते हैं।\n\nयदि आपको लगता है कि यह एक त्रुटि है और/या आप अपनी CoC यात्रा जारी रखना चाहते हैं, तो कृपया इस ईमेल का उत्तर दें, या अपने समन्वयक से संपर्क करें। वैकल्पिक रूप से, आप एक नए समूह के लिए {regLink} पर फिर से पंजीकरण कर सकते हैं।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम",
       discontinuedSubject: "CoC भागीदारी बंद - {groupName}",
-      discontinuedBody: "प्रिय {name},\n\nआप सत्रों में शामिल नहीं हो रहे थे इसलिए हमने CoC समूह ({groupName}) से आपकी सदस्यता समाप्त कर दी है। हम समझते हैं कि आपकी अन्य प्रतिबद्धताएँ या व्यक्तिगत परिस्थितियाँ हो सकती हैं।\n\nयदि आपको लगता है कि आपका पंजीकरण रद्द करना एक त्रुटि है और/या आप अपनी CoC यात्रा जारी रखना चाहते हैं, तो कृपया इस ईमेल का उत्तर दें, या अपने समन्वयक से संपर्क करें। वैकल्पिक रूप से, आप {regLink} पर फिर से पंजीकरण कर सकते हैं।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम"
+      discontinuedBody: "प्रिय {name},\n\nCoC समूह ({groupName}) के कार्यात्मक न रहने या पर्याप्त भागीदारी की कमी के कारण हमने आपकी सदस्यता समाप्त कर दी है।\n\nयदि आपको लगता है कि आपका पंजीकरण रद्द करना एक त्रुटि है और/या आप अपनी CoC यात्रा जारी रखना चाहते हैं, तो कृपया इस ईमेल का उत्तर दें, या अपने समन्वयक से संपर्क करें। वैकल्पिक रूप से, आप {regLink} पर फिर से पंजीकरण कर सकते हैं।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम"
     },
     Kannada: {
       closedSubject: "CoC ಗುಂಪು ಮುಚ್ಚಲಾಗಿದೆ - {groupName}",
@@ -1899,7 +1899,7 @@ function getLifecycleEmailLabels(language) {
       terminatedSubject: "CoC ಗುಂಪು ವಿಸರ್ಜಿಸಲಾಗಿದೆ - {groupName}",
       terminatedBody: "ಆತ್ಮೀಯ {name},\n\nನಿಮ್ಮ CoC ಗುಂಪು ({groupName}) ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತಿಲ್ಲದ ಕಾರಣ ವಿಸರ್ಜಿಸಲಾಗಿದೆ. ನಾವು ನಿಮ್ಮ ಪ್ರಯತ್ನಗಳನ್ನು ಅಂಗೀಕರಿಸುತ್ತೇವೆ.\n\nಇದು ದೋಷ ಎಂದು ನೀವು ಭಾವಿಸಿದರೆ ಮತ್ತು/ಅಥವಾ ನಿಮ್ಮ CoC ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಬಯಸಿದರೆ, ದಯವಿಟ್ಟು ಈ ಇಮೇಲ್‌ಗೆ ಪ್ರತ್ಯುತ್ತರಿಸಿ, ಅಥವಾ ನಿಮ್ಮ ಸಂಯೋಜಕರನ್ನು ಸಂಪರ್ಕಿಸಿ. ಪರ್ಯಾಯವಾಗಿ, ಹೊಸ ಗುಂಪಿಗಾಗಿ ನೀವು {regLink} ನಲ್ಲಿ ಮತ್ತೆ ನೋಂದಾಯಿಸಬಹುದು.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ",
       discontinuedSubject: "CoC ಭಾಗವಹಿಸುವಿಕೆ ನಿಲ್ಲಿಸಲಾಗಿದೆ - {groupName}",
-      discontinuedBody: "ಆತ್ಮೀಯ {name},\n\nನೀವು ಅಧಿವೇಶನಗಳಲ್ಲಿ ಭಾಗವಹಿಸದ ಕಾರಣ CoC ಗುಂಪು ({groupName}) ಯಿಂದ ನಿಮ್ಮ ಸದಸ್ಯತ್ವವನ್ನು ರದ್ದುಪಡಿಸಿದ್ದೇವೆ. ನೀವು ಇತರ ಬದ್ಧತೆಗಳು ಅಥವಾ ವೈಯಕ್ತಿಕ ಪರಿಸ್ಥಿತಿಗಳನ್ನು ಹೊಂದಿರಬಹುದು ಎಂದು ನಾವು ಅರ್ಥಮಾಡಿಕೊಳ್ಳುತ್ತೇವೆ.\n\nನಿಮ್ಮ ನೋಂದಣಿ ರದ್ದುಪಡಿಸುವಿಕೆ ದೋಷ ಎಂದು ನೀವು ಭಾವಿಸಿದರೆ ಮತ್ತು/ಅಥವಾ ನಿಮ್ಮ CoC ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಬಯಸಿದರೆ, ದಯವಿಟ್ಟು ಈ ಇಮೇಲ್‌ಗೆ ಪ್ರತ್ಯುತ್ತರಿಸಿ, ಅಥವಾ ನಿಮ್ಮ ಸಂಯೋಜಕರನ್ನು ಸಂಪರ್ಕಿಸಿ. ಪರ್ಯಾಯವಾಗಿ, ನೀವು {regLink} ನಲ್ಲಿ ಮತ್ತೆ ನೋಂದಾಯಿಸಬಹುದು.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ"
+      discontinuedBody: "ಆತ್ಮೀಯ {name},\n\nCoC ಗುಂಪು ({groupName}) ಕಾರ್ಯನಿರ್ವಹಿಸದಿರುವುದು ಅಥವಾ ಸಮರ್ಪಕ ಭಾಗವಹಿಸುವಿಕೆ ಇಲ್ಲದಿರುವುದರಿಂದ ನಿಮ್ಮ ಸದಸ್ಯತ್ವವನ್ನು ರದ್ದುಪಡಿಸಿದ್ದೇವೆ.\n\nನಿಮ್ಮ ನೋಂದಣಿ ರದ್ದುಪಡಿಸುವಿಕೆ ದೋಷ ಎಂದು ನೀವು ಭಾವಿಸಿದರೆ ಮತ್ತು/ಅಥವಾ ನಿಮ್ಮ CoC ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಬಯಸಿದರೆ, ದಯವಿಟ್ಟು ಈ ಇಮೇಲ್‌ಗೆ ಪ್ರತ್ಯುತ್ತರಿಸಿ, ಅಥವಾ ನಿಮ್ಮ ಸಂಯೋಜಕರನ್ನು ಸಂಪರ್ಕಿಸಿ. ಪರ್ಯಾಯವಾಗಿ, ನೀವು {regLink} ನಲ್ಲಿ ಮತ್ತೆ ನೋಂದಾಯಿಸಬಹುದು.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ"
     },
     Telugu: {
       closedSubject: "CoC గ్రూప్ మూసివేయబడింది - {groupName}",
@@ -1908,7 +1908,7 @@ function getLifecycleEmailLabels(language) {
       terminatedSubject: "CoC గ్రూప్ రద్దు చేయబడింది - {groupName}",
       terminatedBody: "ప్రియమైన {name},\n\nమీ CoC గ్రూప్ ({groupName}) పనిచేయడం లేదు కాబట్టి రద్దు చేయబడింది. మేము మీ ప్రయత్నాలను గుర్తిస్తున్నాము.\n\nఇది పొరపాటు అని మీరు భావిస్తే మరియు/లేదా మీ CoC ప్రయాణాన్ని కొనసాగించాలనుకుంటే, దయచేసి ఈ ఇమెయిల్‌కు ప్రత్యుత్తరం ఇవ్వండి, లేదా మీ సమన్వయకర్తతో సంప్రదించండి. ప్రత్యామ్నాయంగా, కొత్త గ్రూప్ కోసం మీరు {regLink} వద్ద మళ్లీ నమోదు చేసుకోవచ్చు.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం",
       discontinuedSubject: "CoC భాగస్వామ్యం నిలిపివేయబడింది - {groupName}",
-      discontinuedBody: "ప్రియమైన {name},\n\nమీరు సెషన్‌లలో చేరకపోవడంతో CoC గ్రూప్ ({groupName}) నుండి మీ సభ్యత్వాన్ని రద్దు చేసాము. మీకు ఇతర బాధ్యతలు లేదా వ్యక్తిగత పరిస్థితులు ఉండవచ్చని మేము అర్థం చేసుకుంటున్నాము.\n\nమీ రిజిస్ట్రేషన్ రద్దు చేయడం పొరపాటు అని మీరు భావిస్తే మరియు/లేదా మీ CoC ప్రయాణాన్ని కొనసాగించాలనుకుంటే, దయచేసి ఈ ఇమెయిల్‌కు ప్రత్యుత్తరం ఇవ్వండి, లేదా మీ సమన్వయకర్తతో సంప్రదించండి. ప్రత్యామ్నాయంగా, మీరు {regLink} వద్ద మళ్లీ నమోదు చేసుకోవచ్చు.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం"
+      discontinuedBody: "ప్రియమైన {name},\n\nCoC గ్రూప్ ({groupName}) పనిచేయకపోవడం లేదా సరిపడా పాల్గొనకపోవడం వల్ల మీ సభ్యత్వాన్ని రద్దు చేశాము.\n\nమీ రిజిస్ట్రేషన్ రద్దు చేయడం పొరపాటు అని మీరు భావిస్తే మరియు/లేదా మీ CoC ప్రయాణాన్ని కొనసాగించాలనుకుంటే, దయచేసి ఈ ఇమెయిల్‌కు ప్రత్యుత్తరం ఇవ్వండి, లేదా మీ సమన్వయకర్తతో సంప్రదించండి. ప్రత్యామ్నాయంగా, మీరు {regLink} వద్ద మళ్లీ నమోదు చేసుకోవచ్చు.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం"
     }
   };
   
