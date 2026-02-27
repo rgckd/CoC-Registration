@@ -70,7 +70,15 @@ document.addEventListener("DOMContentLoaded", () => {
           .then(r => r.json())
           .then(res => {
             if (res.result === "success") {
-              window.location.href = "success.html";
+              const selectedLanguage = res.language || fd.get("Language") || "English";
+              const adminEmail = res.adminEmail || "";
+              const userEmail = res.submittedEmail || fd.get("Email") || "";
+              const params = new URLSearchParams({
+                lang: selectedLanguage,
+                adminEmail: adminEmail,
+                userEmail: userEmail
+              });
+              window.location.href = `success.html?${params.toString()}`;
             } else {
               setSubmitting(false);
               errorEl.textContent = res.error || "Submission failed.";

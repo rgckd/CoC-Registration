@@ -112,7 +112,46 @@ function handleRegistration(e) {
     });
   }
 
-  return success();
+  const adminEmail = resolveAdminEmailForLanguage(data.Language);
+
+  return success({
+    language: data.Language,
+    adminEmail: adminEmail,
+    submittedEmail: data.Email
+  });
+}
+
+function resolveAdminEmailForLanguage(language) {
+  if (typeof getAdminEmailForLanguage === "function") {
+    const fromSharedHelper = String(getAdminEmailForLanguage(language) || "").trim();
+    if (fromSharedHelper) return fromSharedHelper;
+  }
+
+  try {
+    const master = SpreadsheetApp.getActive().getSheetByName("MASTER");
+    if (!master) return "";
+
+    const values = master.getDataRange().getValues();
+    if (!values || values.length < 2) return "";
+
+    const normalize = (s) => String(s || "").trim().toLowerCase().replace(/[^a-z]/g, "");
+    const headers = values[0].map(h => String(h || "").trim());
+    const wantedLang = String(language || "").trim().toLowerCase();
+
+    const recordRow = values.find(r => normalize(r[0]) === "adminemail");
+    if (!recordRow) return "";
+
+    let langCol = headers.findIndex(h => String(h || "").trim().toLowerCase() === wantedLang);
+    if (langCol < 0) {
+      langCol = headers.findIndex(h => String(h || "").trim().toLowerCase() === "english");
+    }
+    if (langCol < 0) langCol = 2;
+
+    return String(recordRow[langCol] || "").trim();
+  } catch (err) {
+    Logger.log("resolveAdminEmailForLanguage fallback failed: " + err);
+    return "";
+  }
 }
 
 /**************************************
@@ -381,9 +420,10 @@ function sanitize(val) {
   return String(val || "").replace(/[<>]/g, "").trim();
 }
 
-function success() {
+function success(payload) {
+  const body = Object.assign({ result: "success" }, payload || {});
   return ContentService
-    .createTextOutput(JSON.stringify({ result: "success" }))
+    .createTextOutput(JSON.stringify(body))
     .setMimeType(ContentService.MimeType.JSON);
 }
 

@@ -26,42 +26,48 @@
 <h2 id="title"></h2>
 <p id="line1"></p>
 <p id="line2"></p>
-<p><strong id="line3"></strong></p>
+<p id="line3"></p>
+<p><strong id="line4"></strong></p>
 
 <script>
 /* -------------------------------
    Language messages
 -------------------------------- */
 const messages = {
-  en: {
+  English: {
     title: "🙏 Thank you for registering!",
-    line1: "We will contact you soon.",
-    line2: "Your submitted details have been sent to your email.",
-    line3: "You can now close this page."
+    line1: "Your submission has been received successfully.",
+    line2: "You will receive a copy of your submission in the email address you provided.",
+    line3: "If you have any questions, please contact the admin at",
+    line4: "You can now close this page."
   },
-  ta: {
+  Tamil: {
     title: "🙏 பதிவு செய்ததற்கு நன்றி!",
-    line1: "விரைவில் உங்களை தொடர்பு கொள்வோம்.",
-    line2: "நீங்கள் அளித்த விவரங்கள் உங்கள் மின்னஞ்சலுக்கு அனுப்பப்பட்டுள்ளன.",
-    line3: "இப்போது இந்தப் பக்கத்தை மூடலாம்."
+    line1: "உங்கள் பதிவு வெற்றிகரமாக பெறப்பட்டது.",
+    line2: "நீங்கள் வழங்கிய மின்னஞ்சல் முகவரிக்கு உங்கள் பதிவின் ஒரு பிரதியை அனுப்புவோம்.",
+    line3: "உங்களுக்கு கேள்விகள் இருந்தால், இந்த முகவரியில் உள்ள நிர்வாகியை தொடர்பு கொள்ளவும்:",
+    line4: "இப்போது இந்தப் பக்கத்தை மூடலாம்."
   },
-  hi: {
+  Hindi: {
     title: "🙏 पंजीकरण के लिए धन्यवाद!",
-    line1: "हम आपसे शीघ्र संपर्क करेंगे।",
-    line2: "आपके द्वारा दी गई जानकारी आपके ईमेल पर भेज दी गई है।",
-    line3: "अब आप इस पेज को बंद कर सकते हैं।"
+    line1: "आपका पंजीकरण सफलतापूर्वक प्राप्त हो गया है।",
+    line2: "आपके द्वारा दिए गए ईमेल पते पर आपके पंजीकरण की एक प्रति भेजी जाएगी।",
+    line3: "यदि आपके कोई प्रश्न हों, तो कृपया इस ईमेल पर एडमिन से संपर्क करें:",
+    line4: "अब आप इस पेज को बंद कर सकते हैं।"
   },
-  kn: {
+  Kannada: {
     title: "🙏 ನೋಂದಾಯಿಸಿದ್ದಕ್ಕಾಗಿ ಧನ್ಯವಾದಗಳು!",
-    line1: "ಶೀಘ್ರದಲ್ಲೇ ನಿಮ್ಮನ್ನು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ.",
-    line2: "ನೀವು ಸಲ್ಲಿಸಿದ ವಿವರಗಳನ್ನು ನಿಮ್ಮ ಇಮೇಲ್‌ಗೆ ಕಳುಹಿಸಲಾಗಿದೆ.",
-    line3: "ಈಗ ನೀವು ಈ ಪುಟವನ್ನು ಮುಚ್ಚಬಹುದು."
+    line1: "ನಿಮ್ಮ ನೋಂದಣಿ ಯಶಸ್ವಿಯಾಗಿ ಸ್ವೀಕರಿಸಲಾಗಿದೆ.",
+    line2: "ನೀವು ನೀಡಿದ ಇಮೇಲ್ ವಿಳಾಸಕ್ಕೆ ನಿಮ್ಮ ನೋಂದಣಿಯ ಪ್ರತಿಯನ್ನು ಕಳುಹಿಸಲಾಗುತ್ತದೆ.",
+    line3: "ಯಾವುದೇ ಪ್ರಶ್ನೆಗಳಿದ್ದರೆ, ದಯವಿಟ್ಟು ಈ ಇಮೇಲ್‌ನಲ್ಲಿ ಆಡ್ಮಿನ್ ಅನ್ನು ಸಂಪರ್ಕಿಸಿ:",
+    line4: "ಈಗ ನೀವು ಈ ಪುಟವನ್ನು ಮುಚ್ಚಬಹುದು."
   },
-  te: {
+  Telugu: {
     title: "🙏 నమోదు చేసినందుకు ధన్యవాదాలు!",
-    line1: "త్వరలో మిమ్మల్ని సంప్రదిస్తాము.",
-    line2: "మీరు సమర్పించిన వివరాలు మీ ఇమెయిల్‌కు పంపబడ్డాయి.",
-    line3: "ఇప్పుడు ఈ పేజీని మూసివేయవచ్చు."
+    line1: "మీ నమోదు విజయవంతంగా స్వీకరించబడింది.",
+    line2: "మీరు ఇచ్చిన ఇమెయిల్ చిరునామాకు మీ నమోదు ప్రతిని పంపిస్తాము.",
+    line3: "మీకు ఏవైనా ప్రశ్నలు ఉంటే, దయచేసి ఈ ఇమెయిల్‌లో అడ్మిన్‌ను సంప్రదించండి:",
+    line4: "ఇప్పుడు ఈ పేజీని మూసివేయవచ్చు."
   }
 };
 
@@ -69,16 +75,33 @@ const messages = {
    Read language from URL
 -------------------------------- */
 const params = new URLSearchParams(window.location.search);
-const lang = params.get("lang") || "en";
-const m = messages[lang] || messages.en;
+const lang = params.get("lang") || "English";
+const adminEmail = params.get("adminEmail") || "";
+const userEmail = params.get("userEmail") || "";
+const m = messages[lang] || messages.English;
 
 /* -------------------------------
    Apply text
 -------------------------------- */
 document.getElementById("title").innerText = m.title;
 document.getElementById("line1").innerText = m.line1;
-document.getElementById("line2").innerText = m.line2;
-document.getElementById("line3").innerText = m.line3;
+document.getElementById("line2").innerText = userEmail
+  ? `${m.line2} (${userEmail})`
+  : m.line2;
+const line3 = document.getElementById("line3");
+const line4 = document.getElementById("line4");
+
+if (adminEmail) {
+  const link = document.createElement("a");
+  link.href = `mailto:${adminEmail}`;
+  link.innerText = adminEmail;
+  line3.innerText = `${m.line3} `;
+  line3.appendChild(link);
+} else {
+  line3.innerText = m.line3;
+}
+
+line4.innerText = m.line4;
 </script>
 
 </body>
