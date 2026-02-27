@@ -76,7 +76,8 @@ document.addEventListener("DOMContentLoaded", () => {
               const params = new URLSearchParams({
                 lang: selectedLanguage,
                 adminEmail: adminEmail,
-                userEmail: userEmail
+                userEmail: userEmail,
+                webapp: WEBAPP_URL
               });
               window.location.href = `success.html?${params.toString()}`;
             } else {

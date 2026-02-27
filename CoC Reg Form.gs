@@ -37,6 +37,8 @@ function doPost(e) {
     switch (action) {
       case "register":
         return handleRegistration(e);
+      case "getAdminEmail":
+        return handleGetAdminEmail(e);
       case "queryCoordinatorGroups":
         return handleQueryCoordinatorGroups(e);
       case "getGroupMembers":
@@ -121,6 +123,27 @@ function handleRegistration(e) {
   });
 }
 
+function handleGetAdminEmail(e) {
+  const language = String((e && e.parameter && (e.parameter.language || e.parameter.Language)) || "English").trim() || "English";
+  const adminEmail = resolveAdminEmailForLanguage(language);
+  return success({
+    language: language,
+    adminEmail: adminEmail
+  });
+}
+
+function getMasterSheetSafe_() {
+  const ss = SpreadsheetApp.getActive();
+  if (!ss) return null;
+
+  let master = ss.getSheetByName("MASTER");
+  if (master) return master;
+
+  const all = ss.getSheets();
+  const match = all.find(sh => String(sh.getName() || "").trim().toLowerCase() === "master");
+  return match || null;
+}
+
 function resolveAdminEmailForLanguage(language) {
   if (typeof getAdminEmailForLanguage === "function") {
     const fromSharedHelper = String(getAdminEmailForLanguage(language) || "").trim();
@@ -128,7 +151,7 @@ function resolveAdminEmailForLanguage(language) {
   }
 
   try {
-    const master = SpreadsheetApp.getActive().getSheetByName("MASTER");
+    const master = getMasterSheetSafe_();
     if (!master) return "";
 
     const values = master.getDataRange().getValues();

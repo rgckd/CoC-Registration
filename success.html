@@ -76,32 +76,61 @@ const messages = {
 -------------------------------- */
 const params = new URLSearchParams(window.location.search);
 const lang = params.get("lang") || "English";
-const adminEmail = params.get("adminEmail") || "";
+let adminEmail = params.get("adminEmail") || "";
 const userEmail = params.get("userEmail") || "";
+const webappUrl = params.get("webapp") || "https://script.google.com/macros/s/AKfycbxPw3PzC2RVFoo1cmxknCiwZeUr_wtECxDrI-2wzfTP3LK0rttnt2EzAuPuJU-M6WniCw/exec";
 const m = messages[lang] || messages.English;
 
 /* -------------------------------
    Apply text
 -------------------------------- */
-document.getElementById("title").innerText = m.title;
-document.getElementById("line1").innerText = m.line1;
-document.getElementById("line2").innerText = userEmail
-  ? `${m.line2} (${userEmail})`
-  : m.line2;
+const titleEl = document.getElementById("title");
+const line1El = document.getElementById("line1");
+const line2El = document.getElementById("line2");
 const line3 = document.getElementById("line3");
 const line4 = document.getElementById("line4");
 
-if (adminEmail) {
-  const link = document.createElement("a");
-  link.href = `mailto:${adminEmail}`;
-  link.innerText = adminEmail;
-  line3.innerText = `${m.line3} `;
-  line3.appendChild(link);
-} else {
-  line3.innerText = m.line3;
+function renderAdminLine(email) {
+  line3.innerHTML = "";
+  line3.append(`${m.line3} `);
+
+  if (email) {
+    const link = document.createElement("a");
+    link.href = `mailto:${email}`;
+    link.innerText = email;
+    line3.appendChild(link);
+  }
 }
 
+titleEl.innerText = m.title;
+line1El.innerText = m.line1;
+line2El.innerText = userEmail
+  ? `${m.line2} (${userEmail})`
+  : m.line2;
 line4.innerText = m.line4;
+
+if (adminEmail) {
+  renderAdminLine(adminEmail);
+} else {
+  renderAdminLine("");
+
+  const fd = new FormData();
+  fd.append("action", "getAdminEmail");
+  fd.append("language", lang);
+
+  fetch(webappUrl, { method: "POST", body: fd })
+    .then(r => r.json())
+    .then(res => {
+      const fetchedEmail = String((res && res.adminEmail) || "").trim();
+      if (fetchedEmail) {
+        adminEmail = fetchedEmail;
+        renderAdminLine(adminEmail);
+      }
+    })
+    .catch(() => {
+      // Keep base sentence even when fallback fetch fails.
+    });
+}
 </script>
 
 </body>
