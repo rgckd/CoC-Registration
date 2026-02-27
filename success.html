@@ -79,6 +79,13 @@ const lang = params.get("lang") || "English";
 let adminEmail = params.get("adminEmail") || "";
 const userEmail = params.get("userEmail") || "";
 const webappUrl = params.get("webapp") || "https://script.google.com/macros/s/AKfycbxPw3PzC2RVFoo1cmxknCiwZeUr_wtECxDrI-2wzfTP3LK0rttnt2EzAuPuJU-M6WniCw/exec";
+const fallbackAdminEmails = {
+  English: "heartfulnessumit@gmail.com",
+  Tamil: "rgchandar@gmail.com",
+  Hindi: "heartfulnessumit@gmail.com",
+  Telugu: "gaddamsushrut@gmail.com",
+  Kannada: "rgchandar@gmail.com"
+};
 const m = messages[lang] || messages.English;
 
 /* -------------------------------
@@ -125,10 +132,20 @@ if (adminEmail) {
       if (fetchedEmail) {
         adminEmail = fetchedEmail;
         renderAdminLine(adminEmail);
+      } else {
+        const fallbackEmail = fallbackAdminEmails[lang] || fallbackAdminEmails.English || "";
+        if (fallbackEmail) {
+          adminEmail = fallbackEmail;
+          renderAdminLine(adminEmail);
+        }
       }
     })
     .catch(() => {
-      // Keep base sentence even when fallback fetch fails.
+      const fallbackEmail = fallbackAdminEmails[lang] || fallbackAdminEmails.English || "";
+      if (fallbackEmail) {
+        adminEmail = fallbackEmail;
+        renderAdminLine(adminEmail);
+      }
     });
 }
 </script>
