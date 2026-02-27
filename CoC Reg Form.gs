@@ -136,18 +136,28 @@ function resolveAdminEmailForLanguage(language) {
 
     const normalize = (s) => String(s || "").trim().toLowerCase().replace(/[^a-z]/g, "");
     const headers = values[0].map(h => String(h || "").trim());
-    const wantedLang = String(language || "").trim().toLowerCase();
+    const wantedLang = String(language || "").trim();
+    const wantedLangLower = wantedLang.toLowerCase();
+    const wantedLangNorm = normalize(wantedLang);
 
-    const recordRow = values.find(r => normalize(r[0]) === "adminemail");
-    if (!recordRow) return "";
-
-    let langCol = headers.findIndex(h => String(h || "").trim().toLowerCase() === wantedLang);
+    let langCol = headers.findIndex(h => String(h || "").trim().toLowerCase() === wantedLangLower);
+    if (langCol < 0) {
+      langCol = headers.findIndex(h => normalize(h) === wantedLangNorm);
+    }
     if (langCol < 0) {
       langCol = headers.findIndex(h => String(h || "").trim().toLowerCase() === "english");
     }
     if (langCol < 0) langCol = 2;
 
-    return String(recordRow[langCol] || "").trim();
+    const adminRows = values.filter(r => normalize(r[0]) === "adminemail");
+    if (adminRows.length === 0) return "";
+
+    for (let i = 0; i < adminRows.length; i++) {
+      const email = String(adminRows[i][langCol] || "").trim();
+      if (email) return email;
+    }
+
+    return "";
   } catch (err) {
     Logger.log("resolveAdminEmailForLanguage fallback failed: " + err);
     return "";
