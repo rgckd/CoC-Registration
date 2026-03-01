@@ -108,7 +108,11 @@ function handleUpdateGroupStatus(e) {
   const day = (e.parameter.day || "").trim();
   const time = (e.parameter.time || "").trim();
   const notes = (e.parameter.notes || "").trim();
-  const today = e.parameter.today || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  const scriptTz = Session.getScriptTimeZone();
+  const today = (e.parameter.today || "").trim();
+  const parsedToday = /^\d{4}-\d{2}-\d{2}$/.test(today) ? new Date(`${today}T00:00:00`) : null;
+  const updateDate = parsedToday && !Number.isNaN(parsedToday.getTime()) ? parsedToday : new Date();
+  const noteDateText = Utilities.formatDate(updateDate, scriptTz, "yyyy-MM-dd");
   const membersPayload = e.parameter.members;
 
   if (!groupID || !groupName) return reject("GroupID and GroupName are required");
@@ -165,11 +169,11 @@ function handleUpdateGroupStatus(e) {
   if (gIdx.Time !== undefined) groupRow[gIdx.Time] = time;
   if (gIdx.Notes !== undefined) {
     const existingNotes = (groupRow[gIdx.Notes] || "").trim();
-    const newNote = notes ? `${today} - ${notes}` : `${today}`;
+    const newNote = notes ? `${noteDateText} - ${notes}` : `${noteDateText}`;
     groupRow[gIdx.Notes] = existingNotes ? `${existingNotes}\n${newNote}` : newNote;
   }
   if (gIdx.LastUpdated !== undefined) {
-    groupRow[gIdx.LastUpdated] = new Date();
+    groupRow[gIdx.LastUpdated] = updateDate;
   }
   gData[groupRowIndex] = groupRow;
 
@@ -196,3 +200,4 @@ function handleUpdateGroupStatus(e) {
 
   return success();
 }
+
