@@ -198,6 +198,104 @@ function handleUpdateGroupStatus(e) {
     pSheet.getRange(2, 1, pData.length, pHeaders.length).setValues(pData);
   }
 
+  try {
+    sendCoordinatorUpdateNotification_({
+      groupID: groupID,
+      groupName: groupName,
+      language: gIdx.Language !== undefined ? String(groupRow[gIdx.Language] || "").trim() : "",
+      coordinatorName: gIdx.CoordinatorName !== undefined ? String(groupRow[gIdx.CoordinatorName] || coordinatorName || "").trim() : coordinatorName,
+      coordinatorEmail: gIdx.CoordinatorEmail !== undefined ? String(groupRow[gIdx.CoordinatorEmail] || "").trim() : "",
+      status: status,
+      weeksCompleted: weeksCompleted,
+      day: day,
+      time: time,
+      updateDateText: noteDateText,
+      notes: notes,
+      membersUpdate: membersUpdate
+    });
+  } catch (err) {
+    Logger.log("Coordinator update notification failed: " + (err && err.message ? err.message : err));
+  }
+
   return success();
+}
+
+function sendCoordinatorUpdateNotification_(summary) {
+  const adminEmail = summary.language ? String(resolveAdminEmailForLanguage(summary.language) || "").trim() : "";
+  const coordinatorEmail = String(summary.coordinatorEmail || "").trim();
+
+  const recipients = [adminEmail, coordinatorEmail]
+    .filter(Boolean)
+    .filter((email, i, arr) => arr.indexOf(email) === i);
+
+  if (recipients.length === 0) return;
+
+  const members = summary.membersUpdate && typeof summary.membersUpdate === "object"
+    ? summary.membersUpdate
+    : {};
+
+  const memberIds = Object.keys(members);
+  const totalMembersSubmitted = memberIds.length;
+  const activeSubmitted = memberIds.reduce((count, pid) => count + (toBool(members[pid]) ? 1 : 0), 0);
+  const inactiveSubmitted = totalMembersSubmitted - activeSubmitted;
+
+  const subject = `CoC Group Update Submitted: ${summary.groupName} (${summary.status})`;
+  const body = buildCoordinatorUpdateEmailBody_({
+    groupID: summary.groupID,
+    groupName: summary.groupName,
+    language: summary.language,
+    coordinatorName: summary.coordinatorName,
+    status: summary.status,
+    weeksCompleted: summary.weeksCompleted,
+    day: summary.day,
+    time: summary.time,
+    updateDateText: summary.updateDateText,
+    notes: summary.notes,
+    totalMembersSubmitted: totalMembersSubmitted,
+    activeSubmitted: activeSubmitted,
+    inactiveSubmitted: inactiveSubmitted
+  });
+
+  MailApp.sendEmail({
+    to: recipients.join(","),
+    subject: subject,
+    htmlBody: body
+  });
+}
+
+function buildCoordinatorUpdateEmailBody_(summary) {
+  const weeksText = (summary.status === "Active" || summary.status === "Completed")
+    ? String(summary.weeksCompleted)
+    : "0";
+  const notesText = String(summary.notes || "").trim() || "(No notes provided)";
+
+  return [
+    "<div style=\"font-family:Arial,sans-serif;line-height:1.5;color:#222;\">",
+    "<p>Hello,</p>",
+    "<p>A coordinator status update was submitted for a CoC group.</p>",
+    "<p>",
+    `<strong>Group:</strong> ${summary.groupName}<br>`,
+    `<strong>Group ID:</strong> ${summary.groupID}<br>`,
+    `<strong>Language:</strong> ${summary.language || "-"}<br>`,
+    `<strong>Coordinator:</strong> ${summary.coordinatorName || "-"}<br>`,
+    `<strong>Status:</strong> ${summary.status}<br>`,
+    `<strong>Weeks Completed:</strong> ${weeksText}<br>`,
+    `<strong>Meeting Day:</strong> ${summary.day || "-"}<br>`,
+    `<strong>Meeting Time:</strong> ${summary.time || "-"}<br>`,
+    `<strong>Update Date:</strong> ${summary.updateDateText}`,
+    "</p>",
+    "<p>",
+    "<strong>Participant Activity Summary:</strong><br>",
+    `• Total members submitted: ${summary.totalMembersSubmitted}<br>`,
+    `• Marked active: ${summary.activeSubmitted}<br>`,
+    `• Marked inactive: ${summary.inactiveSubmitted}`,
+    "</p>",
+    "<p>",
+    "<strong>Notes:</strong><br>",
+    `${notesText}`,
+    "</p>",
+    "<p>This is an automated notification from the CoC coordinator update workflow.</p>",
+    "</div>"
+  ].join("");
 }
 
