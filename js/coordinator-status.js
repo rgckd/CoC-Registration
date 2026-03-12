@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function fillWeeksOptions() {
     weeksSel.innerHTML = "";
-    for (let i = 0; i <= 20; i++) {
+    for (let i = 0; i <= 25; i++) {
       const opt = document.createElement("option");
       opt.value = String(i);
       opt.textContent = i;

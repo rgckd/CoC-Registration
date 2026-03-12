@@ -121,8 +121,8 @@ function handleUpdateGroupStatus(e) {
   }
 
   const weeksCompleted = (status === "Active" || status === "Completed") ? Number(weeksCompletedRaw || 0) : 0;
-  if (weeksCompleted < 0 || weeksCompleted > 20 || Number.isNaN(weeksCompleted)) {
-    return reject("WeeksCompleted must be between 0 and 20");
+  if (weeksCompleted < 0 || weeksCompleted > 25 || Number.isNaN(weeksCompleted)) {
+    return reject("WeeksCompleted must be between 0 and 25");
   }
 
   let membersUpdate = {};
