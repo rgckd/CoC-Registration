@@ -51,7 +51,8 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | Coordinator | String | Yes/No indicating willingness to coordinate |
 | Language | String | Full language name (required) |
 | Processed | Boolean | Marks if the row has been transferred to Participants sheet |
-| Comments | String | Optional comments from participant (last column) |
+| Comments | String | Optional comments from participant |
+| DisclaimerConsent | String | Yes/No checkbox consent; required by backend |
 
 ### 3.2 Participants Sheet Columns
 
@@ -69,7 +70,7 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | AssignmentStatus | String | Unassigned, Assigned, or custom status |
 | IsGroupCoordinator | Boolean | Admin marks who leads the group |
 | AcceptSuggestion | Boolean | Admin confirms suggested group |
-| SuggestedGroup | String | System-generated group suggestion |
+| Suggestions | String | System-generated suggestion text (new/existing group or manual-review marker) |
 | Notes | String | Admin notes |
 | IsActive | Boolean | Coordinator-updated participation flag |
 
@@ -78,17 +79,18 @@ All code is **column-agnostic** using header-based lookup via `indexMap()`. This
 | Column | Type | Notes |
 |--------|------|-------|
 | GroupID | String | Unique opaque ID (e.g., G-0001) |
+| GroupCreationDate | Timestamp | Creation timestamp (present in setup script) |
 | GroupName | String | Formatted as CoC-<Language>-<Sequence> (e.g., CoC-English-001) |
 | Language | String | Full language name |
 | Day | String | Extracted from slot suggestions (e.g., Mon, Tue) |
 | Time | String | Day or Evening |
 | CoordinatorEmail | String | Populated from Participants when admin assigns coordinator |
 | CoordinatorName | String | Populated from Participants when admin assigns coordinator |
-| CoordinatorWhatsApp | String | Populated from Participants when admin assigns coordinator |
+| CoordinatorWhatsApp | String | Populated from Participants when available (legacy sheets may omit this column) |
 | MemberCount | Number | Auto-computed by refresh |
 | Status | String | Active, Inactive, etc. |
 | Sequence | Number | Language-specific sequence number |
-| WeeksCompleted | Number | Coordinator-updated weeks completed (0–20) |
+| WeeksCompleted | Number | Coordinator-updated weeks completed (0–25) |
 | Notes | String | Coordinator notes |
 | LastUpdated | Timestamp | Auto-recorded when coordinator updates group status |
 
@@ -203,6 +205,7 @@ Confirmation Email (includes all fields + English proficiency for non-English + 
 | Preferred times | `Times` | Yes | Checkbox grid |
 | Coordinator willing | `Coordinator` | Yes | Yes / No (select dropdown) |
 | Comments | `Comments` | No | Optional free text (label: "Comments (if any)", not translated) |
+| Disclaimer consent | `DisclaimerConsent` | Yes | Required checkbox; must be checked |
 | Honeypot | `honey` | No | Must be empty (spam trap) |
 | Captcha token | `recaptcha` | Yes | Added programmatically by form |
 
@@ -216,6 +219,7 @@ Rules:
 - Required fields must be present
 - WhatsApp must be 8–15 digits after stripping symbols (include country code)
 - At least one preferred time must be selected
+- Disclaimer consent must be checked
 - If Language ≠ English → `EnglishAbility` must be "Yes"
 - If Language = English → backend auto-sets `EnglishAbility` to "Yes"
 
@@ -287,9 +291,9 @@ This is a **Google Sheets–first workflow**. No background automation or implic
 A valid group must have:
 
 1. **Same language** (required)
-2. **5–8 members** (soft limits)
+2. **4–8 members** (current suggestion logic target range)
 3. **At least one common time slot** (required)
-4. **At least one coordinator-willing member** (required)
+4. **Coordinator availability is preferred** (admin can still handle edge cases manually)
 5. **Prefer same center** (soft constraint, not enforced)
 
 ---
@@ -318,11 +322,15 @@ Examples:
 
 #### Suggest Groups
 - Triggered by language-specific menu items
-- Suggests **NEW group names only** for unassigned participants
-- Does **not** assign participants to existing groups
-- Each participant gets a unique new group suggestion based on their first preferred time slot
+- Suggests assignments for unassigned participants into:
+  - Existing **Active** groups with matching slot, available capacity, and `WeeksCompleted <= 5`
+  - New suggested groups when existing groups are not suitable
+- Uses all preferred slots and slot-density heuristics (not only first slot)
 - Does **not** auto-commit assignments
-- Suggestions appear in SuggestedGroup column with format: `NEW → CoC-{Language}-{Seq} ({TimeSlot})`
+- Suggestions appear in `Suggestions` column with values such as:
+  - `NEW → CoC-{Language}-{Seq} ({TimeSlot})`
+  - Existing group name (for assignment to an existing group)
+  - `⚠️ NEEDS_MANUAL_REVIEW (...)` for insufficient/edge-case slot clusters
 - Admin reviews and checks AcceptSuggestion checkbox to confirm
 
 #### Accept Group Suggestions
@@ -376,7 +384,7 @@ This makes UI label changes safe. If you change the UI label from "Day" to "Morn
 Groups can move through the following statuses (`Groups.Status`):
 - **Active**: All groups start as Active at creation. Active groups are visible in the Coordinator update form. Participants under an Active group may be Active or Inactive (`IsActive = TRUE/FALSE`).
 - **Inactive**: Coordinators mark their groups Inactive via the update form when the group is no longer meeting. Inactive groups remain visible in the Coordinator update form. A weekly job will later mark these as Terminated (see below).
-- **Completed**: Coordinators mark groups as Completed when they finish all 20 weekly sessions. Completed groups remain visible in the Coordinator update form until the weekly job closes them.
+- **Completed**: Coordinators mark groups as Completed when they finish all 25 weekly sessions. Completed groups remain visible in the Coordinator update form until the weekly job closes them.
 - **Closed**: A weekly batch job marks all Completed groups as Closed, sends emails to participants and coordinators, and updates participants to `AssignmentStatus = Completed` and `IsActive = FALSE`. Closed groups are not shown in the Coordinator update form.
 - **Terminated**: A weekly batch job marks all Inactive groups as Terminated, sends emails to participants and coordinators, and updates participants to `AssignmentStatus = Discontinued` and `IsActive = FALSE`. Terminated groups are not shown in the Coordinator update form.
 
@@ -490,6 +498,8 @@ When modifying this system:
 5. **Prefer explicit admin actions over automation** – Let humans decide group assignments
 6. **Use `indexMap()` for column lookups** – Never hardcode column positions
 7. **Log changes** – Sheet-driven audits require traceability
+8. **Push workflow for coding assistants** – After finishing edits, ask for approval before pushing to source repo
+9. **Post-push reporting** – After push, provide commit summary (commit ID, message, and key files/changes)
 
 ---
 
