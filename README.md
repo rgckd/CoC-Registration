@@ -406,6 +406,19 @@ Coordinator UI behavior:
 - Hides groups in `Closed` and `Terminated` status
 - Hides participants with `AssignmentStatus = Discontinued`
 
+### 6.10 Coordinator Update Notification Email
+
+When a coordinator submits a group status update from the coordinator portal, the system sends an automated notification email to:
+- The language CoC admin (resolved from `MASTER` sheet `AdminEmail` row)
+- The coordinator (if coordinator email exists)
+
+The email includes:
+- Group summary (group name/ID, language, status, weeks completed, schedule, update date)
+- Coordinator details including coordinator WhatsApp/phone number
+- Participant activity summary (submitted total, active, inactive)
+- Coordinator notes
+- Reference links to the `Participants` and `Groups` sheets in the same spreadsheet
+
 ---
 
 ## 7. Design Philosophy

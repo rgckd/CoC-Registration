@@ -199,12 +199,28 @@ function handleUpdateGroupStatus(e) {
   }
 
   try {
+    let coordinatorPhone = gIdx.CoordinatorWhatsApp !== undefined
+      ? String(groupRow[gIdx.CoordinatorWhatsApp] || "").trim()
+      : "";
+
+    // Fallback: derive coordinator phone from group participants if group row does not have it.
+    if (!coordinatorPhone && pIdx.IsGroupCoordinator !== undefined && pIdx.WhatsApp !== undefined) {
+      const coordinatorMember = pData.find(row => {
+        const assigned = String(row[pIdx.AssignedGroup] || "").trim().toLowerCase();
+        return assigned === groupName.trim().toLowerCase() && toBool(row[pIdx.IsGroupCoordinator]);
+      });
+      if (coordinatorMember) {
+        coordinatorPhone = String(coordinatorMember[pIdx.WhatsApp] || "").trim();
+      }
+    }
+
     sendCoordinatorUpdateNotification_({
       groupID: groupID,
       groupName: groupName,
       language: gIdx.Language !== undefined ? String(groupRow[gIdx.Language] || "").trim() : "",
       coordinatorName: gIdx.CoordinatorName !== undefined ? String(groupRow[gIdx.CoordinatorName] || coordinatorName || "").trim() : coordinatorName,
       coordinatorEmail: gIdx.CoordinatorEmail !== undefined ? String(groupRow[gIdx.CoordinatorEmail] || "").trim() : "",
+      coordinatorPhone: coordinatorPhone,
       status: status,
       weeksCompleted: weeksCompleted,
       day: day,
@@ -240,11 +256,13 @@ function sendCoordinatorUpdateNotification_(summary) {
   const inactiveSubmitted = totalMembersSubmitted - activeSubmitted;
 
   const subject = `CoC Group Update Submitted: ${summary.groupName} (${summary.status})`;
+  const sheetLinks = getParticipantsAndGroupsSheetLinks_();
   const body = buildCoordinatorUpdateEmailBody_({
     groupID: summary.groupID,
     groupName: summary.groupName,
     language: summary.language,
     coordinatorName: summary.coordinatorName,
+    coordinatorPhone: summary.coordinatorPhone,
     status: summary.status,
     weeksCompleted: summary.weeksCompleted,
     day: summary.day,
@@ -253,7 +271,9 @@ function sendCoordinatorUpdateNotification_(summary) {
     notes: summary.notes,
     totalMembersSubmitted: totalMembersSubmitted,
     activeSubmitted: activeSubmitted,
-    inactiveSubmitted: inactiveSubmitted
+    inactiveSubmitted: inactiveSubmitted,
+    participantsSheetUrl: sheetLinks.participants,
+    groupsSheetUrl: sheetLinks.groups
   });
 
   MailApp.sendEmail({
@@ -263,11 +283,32 @@ function sendCoordinatorUpdateNotification_(summary) {
   });
 }
 
+function getParticipantsAndGroupsSheetLinks_() {
+  const ss = SpreadsheetApp.getActive();
+  if (!ss) return { participants: "", groups: "" };
+
+  const baseUrl = String(ss.getUrl() || "").trim();
+  const participantsSheet = ss.getSheetByName("Participants");
+  const groupsSheet = ss.getSheetByName("Groups");
+
+  const participants = (baseUrl && participantsSheet)
+    ? `${baseUrl}#gid=${participantsSheet.getSheetId()}`
+    : "";
+  const groups = (baseUrl && groupsSheet)
+    ? `${baseUrl}#gid=${groupsSheet.getSheetId()}`
+    : "";
+
+  return { participants, groups };
+}
+
 function buildCoordinatorUpdateEmailBody_(summary) {
   const weeksText = (summary.status === "Active" || summary.status === "Completed")
     ? String(summary.weeksCompleted)
     : "0";
   const notesText = String(summary.notes || "").trim() || "(No notes provided)";
+  const coordinatorPhone = String(summary.coordinatorPhone || "").trim() || "-";
+  const participantsLink = String(summary.participantsSheetUrl || "").trim();
+  const groupsLink = String(summary.groupsSheetUrl || "").trim();
 
   return [
     "<div style=\"font-family:Arial,sans-serif;line-height:1.5;color:#222;\">",
@@ -278,6 +319,7 @@ function buildCoordinatorUpdateEmailBody_(summary) {
     `<strong>Group ID:</strong> ${summary.groupID}<br>`,
     `<strong>Language:</strong> ${summary.language || "-"}<br>`,
     `<strong>Coordinator:</strong> ${summary.coordinatorName || "-"}<br>`,
+    `<strong>Coordinator WhatsApp:</strong> ${coordinatorPhone}<br>`,
     `<strong>Status:</strong> ${summary.status}<br>`,
     `<strong>Weeks Completed:</strong> ${weeksText}<br>`,
     `<strong>Meeting Day:</strong> ${summary.day || "-"}<br>`,
@@ -293,6 +335,12 @@ function buildCoordinatorUpdateEmailBody_(summary) {
     "<p>",
     "<strong>Notes:</strong><br>",
     `${notesText}`,
+    "</p>",
+    "<p>",
+    "<strong>Reference Sheets:</strong><br>",
+    participantsLink ? `• <a href=\"${participantsLink}\">CoC Participants Sheet</a><br>` : "",
+    groupsLink ? `• <a href=\"${groupsLink}\">CoC Groups Sheet</a>` : "",
+    (!participantsLink && !groupsLink) ? "(Participants/Groups sheet links unavailable)" : "",
     "</p>",
     "<p>This is an automated notification from the CoC coordinator update workflow.</p>",
     "</div>"
