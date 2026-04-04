@@ -276,11 +276,17 @@ function sendCoordinatorUpdateNotification_(summary) {
     groupsSheetUrl: sheetLinks.groups
   });
 
-  MailApp.sendEmail({
+  const emailOptions = {
     to: recipients.join(","),
     subject: subject,
     htmlBody: body
-  });
+  };
+
+  if (adminEmail) {
+    emailOptions.replyTo = adminEmail;
+  }
+
+  MailApp.sendEmail(emailOptions);
 }
 
 function getParticipantsAndGroupsSheetLinks_() {

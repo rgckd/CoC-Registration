@@ -181,6 +181,15 @@ function getAdminEmailForLanguage(language) {
   return key ? map[key] : "";
 }
 
+function applyLanguageAdminReplyTo_(emailOptions, language) {
+  if (!emailOptions || typeof emailOptions !== "object") return emailOptions;
+  const adminEmail = String(getAdminEmailForLanguage(language) || "").trim();
+  if (adminEmail) {
+    emailOptions.replyTo = adminEmail;
+  }
+  return emailOptions;
+}
+
 // Quick verification helper to inspect resolved admin emails in logs
 function debugLogAdminEmails() {
   const map = getAdminEmailMapFromMaster();
@@ -383,7 +392,7 @@ function weeklyLifecycleProcessing() {
     const body = wasActive 
       ? labels.closedBodyActive.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK)
       : labels.closedBodyInactive.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK);
-    MailApp.sendEmail({ to: email, subject, body });
+    MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: email, subject, body }, language));
   };
   const sendTerminatedEmail = (email, name, groupName, language, coordinatorEmail, coordinatorPhone) => {
     const labels = getLifecycleEmailLabels(language);
@@ -401,7 +410,7 @@ function weeklyLifecycleProcessing() {
     if (coordinatorEmail && coordinatorEmail.trim()) {
       emailOptions.cc = coordinatorEmail;
     }
-    MailApp.sendEmail(emailOptions);
+    MailApp.sendEmail(applyLanguageAdminReplyTo_(emailOptions, language));
   };
   const sendDiscontinuedEmail = (email, name, groupName, language, coordinatorEmail) => {
     const labels = getLifecycleEmailLabels(language);
@@ -411,7 +420,7 @@ function weeklyLifecycleProcessing() {
     if (coordinatorEmail && coordinatorEmail.trim()) {
       emailOptions.cc = coordinatorEmail;
     }
-    MailApp.sendEmail(emailOptions);
+    MailApp.sendEmail(applyLanguageAdminReplyTo_(emailOptions, language));
   };
 
   // Helper to list participants for a group (case-insensitive)
@@ -547,7 +556,7 @@ function weeklyLifecycleProcessing() {
       }
       const body = lines.join("\n");
       try {
-        MailApp.sendEmail({ to: adminEmail, subject, body });
+        MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: adminEmail, subject, body }, lang));
       } catch (err) {
         emailFailures.push({ type: "Admin summary email", lang, email: adminEmail, reason: err.message });
       }
@@ -607,11 +616,11 @@ function sendAdminAlertEmail(email, language, participants, pIdx) {
     <p>Best regards,<br>CoC Admin System</p>
   `;
   
-  MailApp.sendEmail({
+  MailApp.sendEmail(applyLanguageAdminReplyTo_({
     to: email,
     subject: subject,
     htmlBody: htmlBody
-  });
+  }, language));
 }
 
 /************************************************
@@ -1187,7 +1196,7 @@ function acceptGroupSuggestions(sendEmails = true) {
           const body = wasActive
             ? labels.closedBodyActive.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK)
             : labels.closedBodyInactive.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK);
-          MailApp.sendEmail({ to: email, subject, body });
+          MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: email, subject, body }, language));
         }
 
         emailsSent++;
@@ -1636,7 +1645,7 @@ function sendMemberAssignmentEmail(email, name, language, groupInfo, memberInfo 
       emailOptions.cc = groupInfo.coordinatorEmail;
     }
     
-    MailApp.sendEmail(emailOptions);
+    MailApp.sendEmail(applyLanguageAdminReplyTo_(emailOptions, language));
   } catch (error) {
     throw new Error(`Email sending failed for ${email}: ${error.message}`);
   }
@@ -1700,11 +1709,11 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
   `;
   
   try {
-    MailApp.sendEmail({
+    MailApp.sendEmail(applyLanguageAdminReplyTo_({
       to: email,
       subject: subject,
       htmlBody: htmlBody
-    });
+    }, language));
   } catch (error) {
     throw new Error(`Email sending failed for coordinator ${email}: ${error.message}`);
   }
@@ -1951,5 +1960,5 @@ function sendDiscontinuedEmail(email, name, groupName, language, coordinatorEmai
   if (coordinatorEmail && coordinatorEmail.trim()) {
     emailOptions.cc = coordinatorEmail;
   }
-  MailApp.sendEmail(emailOptions);
+  MailApp.sendEmail(applyLanguageAdminReplyTo_(emailOptions, language));
 }

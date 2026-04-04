@@ -103,18 +103,25 @@ function handleRegistration(e) {
     data.DisclaimerConsent || "No" // Disclaimer Consent
   ]);
 
+  const adminEmail = resolveAdminEmailForLanguage(data.Language);
+
   // Only send confirmation email if not a duplicate
   if (!isDuplicate) {
     const emailBody = buildConfirmationEmail(data);
-
-    MailApp.sendEmail({
+    const emailOptions = {
       to: data.Email,
       subject: "CoC Registration Confirmation",
       htmlBody: emailBody
-    });
-  }
+    };
 
-  const adminEmail = resolveAdminEmailForLanguage(data.Language);
+    // CC the language admin when configured in MASTER/AdminEmail.
+    if (adminEmail) {
+      emailOptions.cc = adminEmail;
+      emailOptions.replyTo = adminEmail;
+    }
+
+    MailApp.sendEmail(emailOptions);
+  }
 
   return success({
     language: data.Language,
