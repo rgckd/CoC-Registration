@@ -386,13 +386,17 @@ function weeklyLifecycleProcessing() {
 
   // Helpers: send lifecycle emails
   const REG_LINK = "https://www.hcessentials.org/coc-registration-form";
-  const sendClosedEmail = (email, name, groupName, wasActive, language) => {
+  const sendClosedEmail = (email, name, groupName, wasActive, language, coordinatorEmail) => {
     const labels = getLifecycleEmailLabels(language);
     const subject = labels.closedSubject.replace('{groupName}', groupName);
     const body = wasActive 
       ? labels.closedBodyActive.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK)
       : labels.closedBodyInactive.replace('{name}', name).replace('{groupName}', groupName).replace('{regLink}', REG_LINK);
-    MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: email, subject, body }, language));
+    const emailOptions = { to: email, subject, body };
+    if (coordinatorEmail && coordinatorEmail.trim()) {
+      emailOptions.cc = coordinatorEmail;
+    }
+    MailApp.sendEmail(applyLanguageAdminReplyTo_(emailOptions, language));
   };
   const sendTerminatedEmail = (email, name, groupName, language, coordinatorEmail, coordinatorPhone) => {
     const labels = getLifecycleEmailLabels(language);
@@ -435,6 +439,7 @@ function weeklyLifecycleProcessing() {
     if (status === "Completed") {
       const groupName = String(gRow[gIdx.GroupName] || "").trim();
       const lang = String(gRow[gIdx.Language] || "").trim();
+      const coordinatorEmail = gIdx.CoordinatorEmail !== undefined ? String(gRow[gIdx.CoordinatorEmail] || "").trim() : "";
       const members = listGroupParticipants(groupName);
 
       // Update group status
@@ -451,7 +456,7 @@ function weeklyLifecycleProcessing() {
         if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Completed";
         if (pIdx.IsActive !== undefined) pRow[pIdx.IsActive] = false;
         try {
-          sendClosedEmail(email, name, groupName, wasActive, memberLang);
+          sendClosedEmail(email, name, groupName, wasActive, memberLang, coordinatorEmail);
         } catch (err) {
           emailFailures.push({ type: "Closed group email", lang, group: groupName, email, name, reason: err.message });
         }

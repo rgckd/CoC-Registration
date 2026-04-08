@@ -385,8 +385,8 @@ Groups can move through the following statuses (`Groups.Status`):
 - **Active**: All groups start as Active at creation. Active groups are visible in the Coordinator update form. Participants under an Active group may be Active or Inactive (`IsActive = TRUE/FALSE`).
 - **Inactive**: Coordinators mark their groups Inactive via the update form when the group is no longer meeting. Inactive groups remain visible in the Coordinator update form. A weekly job will later mark these as Terminated (see below).
 - **Completed**: Coordinators mark groups as Completed when they finish all 25 weekly sessions. Completed groups remain visible in the Coordinator update form until the weekly job closes them.
-- **Closed**: A weekly batch job marks all Completed groups as Closed, sends emails to participants and coordinators, and updates participants to `AssignmentStatus = Completed` and `IsActive = FALSE`. Closed groups are not shown in the Coordinator update form.
-- **Terminated**: A weekly batch job marks all Inactive groups as Terminated, sends emails to participants and coordinators, and updates participants to `AssignmentStatus = Discontinued` and `IsActive = FALSE`. Terminated groups are not shown in the Coordinator update form.
+- **Closed**: A weekly batch job marks all Completed groups as Closed, emails each participant with the coordinator CC'd (body varies: active participants receive an invitation to re-register; inactive participants receive a different message), and updates participants to `AssignmentStatus = Completed` and `IsActive = FALSE`. Closed groups are not shown in the Coordinator update form.
+- **Terminated**: A weekly batch job marks all Inactive groups as Terminated, emails each participant with the coordinator CC'd on each message, and updates participants to `AssignmentStatus = Discontinued` and `IsActive = FALSE`. Terminated groups are not shown in the Coordinator update form.
 
 Weekly lifecycle processing also updates the AdminDashboard and sends a summary email to each language admin with the status changes applied that week.
 
@@ -405,8 +405,8 @@ Lifecycle rules:
 - **Assigned**: Set when a participant is added to a group. Independent of activity flag.
 - **Unassigned**: Default upon registration.
 - **Reassign**: For participants wanting to change groups (process handled outside the system).
-- **Discontinued**: Weekly job sets participants to Discontinued and `IsActive = FALSE` when their group is Terminated.
-- **Completed**: Weekly job sets participants to Completed when their group is Closed.
+- **Discontinued**: Weekly job sets participants to Discontinued and `IsActive = FALSE` when their group is Terminated. Each participant is emailed with the coordinator CC'd.
+- **Completed**: Weekly job sets participants to Completed and `IsActive = FALSE` when their group is Closed. Each participant is emailed with the coordinator CC'd; active participants receive an invitation to re-register, inactive participants receive a different message.
 
 Re-registration link (emails reference): https://www.hcessentials.org/coc-registration-form
 
