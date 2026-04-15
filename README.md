@@ -469,8 +469,8 @@ Each language admin receives an email when there are new unassigned participants
 - Link to CoC Registrations spreadsheet: https://docs.google.com/spreadsheets/d/1aBJ8vJx5UHrnPEsNZ-y_REVv6F7F_sYjXPJoCw2AxvU/edit?usp=sharing
 
 Resource links and labels
-- Participant and coordinator assignment emails pull the four resource URLs (Overview, Weekly Schedule/Materials, Downloadable Books, Purchase link) from the MASTER sheet RecordTypes `CocOverview`, `CoCWeek1-20`, `CoCBooks`, and `CoCPurchaseLink`, per language column.
-- The downloadable books label is generated dynamically as “Downloadable Books (link valid for 3 days only)”.
+- Participant and coordinator assignment emails now show a hardcoded self-service portal link for weekly schedules, documents, and downloadable books: https://www.hcessentials.org/request.
+- The remaining resource URL used in those emails is the purchase link from the MASTER sheet RecordType `CoCPurchaseLink`, per language column.
 
 ---
 

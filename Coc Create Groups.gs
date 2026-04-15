@@ -234,10 +234,6 @@ function getMasterResourceLinks(language) {
   };
 }
 
-function getDownloadableBooksLabel(language) {
-  return "Downloadable Books (link valid for 3 days only)";
-}
-
 /************************************************
  * DAILY BATCH PROCESSING WITH ALERTS
  * 
@@ -1600,12 +1596,12 @@ function sendMemberAssignmentEmail(email, name, language, groupInfo, memberInfo 
   }
   
   const labels = getEmailLabels(language);
+  const selfServicePortalUrl = "https://www.hcessentials.org/request";
   const memberWhatsapp = memberInfo.whatsapp || labels.notProvided;
   const memberCenter = memberInfo.center || labels.notProvided;
   
   const subject = labels.memberSubject;
   const links = getMasterResourceLinks(language);
-  const booksLabel = getDownloadableBooksLabel(language);
   const htmlBody = `
     <p>Dear ${name},</p>
     <p>${labels.memberIntro}</p>
@@ -1627,9 +1623,7 @@ function sendMemberAssignmentEmail(email, name, language, groupInfo, memberInfo 
     <p>${labels.memberUseWhatsappNote}</p>
     <br>
     <p><strong>${labels.resourcesTitle}</strong></p>
-    ${links.overview ? `<p><strong>${labels.cocOverview}</strong> - <a href="${links.overview}">${links.overview}</a></p>` : ""}
-    ${links.schedule ? `<p><strong>${labels.cocSchedule}</strong> - <a href="${links.schedule}">${links.schedule}</a></p>` : ""}
-    ${links.books ? `<p><strong>${booksLabel}</strong> - <a href="${links.books}">${links.books}</a></p>` : ""}
+    <p><strong>${labels.selfServicePortal}</strong> <a href="${selfServicePortalUrl}">${selfServicePortalUrl}</a></p>
     <p><strong>${labels.nvcBook}</strong><br>
     ${labels.bookPurchase} ${links.purchase ? `<a href="${links.purchase}">${links.purchase}</a>` : ""}</p>
     <br>
@@ -1662,6 +1656,7 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
   }
   
   const labels = getEmailLabels(language);
+  const selfServicePortalUrl = "https://www.hcessentials.org/request";
   
   const memberListHtml = members.map(m => `
     <tr>
@@ -1674,7 +1669,6 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
   
   const subject = labels.coordinatorSubject;
   const links = getMasterResourceLinks(language);
-  const booksLabel = getDownloadableBooksLabel(language);
   const htmlBody = `
     <p>Dear ${name},</p>
     <p>${labels.coordinatorIntro}</p>
@@ -1697,9 +1691,7 @@ function sendCoordinatorAssignmentEmail(email, name, language, groupInfo, member
       <li>${labels.createWhatsApp}</li>
       <li>${labels.updateWhatsApp}
         <ul style="margin-top: 10px;">
-          ${links.overview ? `<li><strong>${labels.cocOverview}</strong> - <a href="${links.overview}">${links.overview}</a></li>` : ""}
-          ${links.schedule ? `<li><strong>${labels.cocSchedule}</strong> - <a href="${links.schedule}">${links.schedule}</a></li>` : ""}
-          ${links.books ? `<li><strong>${booksLabel}</strong> - <a href="${links.books}">${links.books}</a></li>` : ""}
+          <li><strong>${labels.selfServicePortal}</strong> <a href="${selfServicePortalUrl}">${selfServicePortalUrl}</a></li>
           <li><strong>${labels.nvcBook}</strong><br>
           ${labels.bookPurchase} ${links.purchase ? `<a href="${links.purchase}">${links.purchase}</a>` : ""}</li>
         </ul>
@@ -1747,8 +1739,7 @@ function getEmailLabels(language) {
       coordinatorClosing: "Please reach out to your group members to schedule the first session.",
       regards: "Best regards,<br>CoC Team",
       resourcesTitle: "Please refer to the following documents for information:",
-      cocOverview: "CoC Overview",
-      cocSchedule: "CoC Weekly Schedule and Study Materials",
+      selfServicePortal: "Request Weekly Schedule, Documents, and Downloadable Books through our Self-service Portal:",
       nvcBook: "Nonviolent Communication: A Language of Life (3rd Edition):",
       bookPurchase: "Book can be purchased at:",
       whatsappNote: "Your Coordinator will add you to your CoC WhatsApp group within a day or two. If you have not been added, you may directly reach out to your coordinator whose contact details are above.",
@@ -1780,8 +1771,7 @@ function getEmailLabels(language) {
       coordinatorClosing: "முதல் அமர்வை திட்டமிட உங்கள் குழு உறுப்பினர்களை தொடர்பு கொள்ளவும்.",
       regards: "நன்றி,<br>CoC குழு",
       resourcesTitle: "தகவலுக்கு பின்வரும் ஆவணங்களைப் பார்க்கவும்:",
-      cocOverview: "CoC கண்ணோட்டம்",
-      cocSchedule: "CoC வாராந்திர அட்டவணை மற்றும் படிப்புப் பொருட்கள்",
+      selfServicePortal: "எங்கள் சுய சேவை தளத்தின் மூலம் வாராந்திர அட்டவணை, ஆவணங்கள் மற்றும் பதிவிறக்கக்கூடிய புத்தகங்களை கோருங்கள்:",
       nvcBook: "அகிம்சை தொடர்பு: வாழ்க்கையின் மொழி (3வது பதிப்பு) ஆங்கிலம் :",
       bookPurchase: "புத்தகத்தை வாங்க:",
       whatsappNote: "உங்கள் ஒருங்கிணைப்பாளர் ஒரு அல்லது இரண்டு நாட்களுக்குள் உங்களை CoC வாட்ஸ்அப் குழுவில் சேர்ப்பார். நீங்கள் சேர்க்கப்படவில்லை என்றால், மேலே உள்ள தொடர்பு விவரங்களைப் பயன்படுத்தி நேரடியாக உங்கள் ஒருங்கிணைப்பாளரைத் தொடர்பு கொள்ளலாம்.",
@@ -1813,8 +1803,7 @@ function getEmailLabels(language) {
       coordinatorClosing: "कृपया पहला सत्र निर्धारित करने के लिए अपने समूह सदस्यों से संपर्क करें।",
       regards: "सादर,<br>CoC टीम",
       resourcesTitle: "जानकारी के लिए कृपया निम्नलिखित दस्तावेज़ देखें:",
-      cocOverview: "CoC अवलोकन",
-      cocSchedule: "CoC साप्ताहिक कार्यक्रम और अध्ययन सामग्री",
+      selfServicePortal: "हमारे स्व-सेवा पोर्टल के माध्यम से साप्ताहिक कार्यक्रम, दस्तावेज़ और डाउनलोड करने योग्य पुस्तकें अनुरोध करें:",
       nvcBook: "अहिंसक संचार: जीवन की भाषा (तीसरा संस्करण):",
       bookPurchase: "पुस्तक यहाँ से खरीदी जा सकती है:",
       whatsappNote: "आपके समन्वयक एक या दो दिन में आपको CoC व्हाट्सएप समूह में जोड़ेंगे। यदि आपको नहीं जोड़ा गया है, तो आप ऊपर दिए गए संपर्क विवरण का उपयोग करके सीधे अपने समन्वयक से संपर्क कर सकते हैं।",
@@ -1846,8 +1835,7 @@ function getEmailLabels(language) {
       coordinatorClosing: "ಮೊದಲ ಅಧಿವೇಶನವನ್ನು ನಿಗದಿಪಡಿಸಲು ದಯವಿಟ್ಟು ನಿಮ್ಮ ಗುಂಪು ಸದಸ್ಯರನ್ನು ಸಂಪರ್ಕಿಸಿ.",
       regards: "ಧನ್ಯವಾದಗಳು,<br>CoC ತಂಡ",
       resourcesTitle: "ಮಾಹಿತಿಗಾಗಿ ದಯವಿಟ್ಟು ಈ ಕೆಳಗಿನ ದಾಖಲೆಗಳನ್ನು ನೋಡಿ:",
-      cocOverview: "CoC ಅವಲೋಕನ",
-      cocSchedule: "CoC ವಾರಾಂತ್ಯ ವೇಳಾಪಟ್ಟಿ ಮತ್ತು ಅಧ್ಯಯನ ಸಾಮಗ್ರಿಗಳು",
+      selfServicePortal: "ನಮ್ಮ ಸ್ವಯಂ-ಸೇವಾ ಪೋರ್ಟಲ್ ಮೂಲಕ ವಾರಾಂತ್ಯ ವೇಳಾಪಟ್ಟಿ, ದಾಖಲೆಗಳು ಮತ್ತು ಡೌನ್‌ಲೋಡ್ ಮಾಡಬಹುದಾದ ಪುಸ್ತಕಗಳನ್ನು ವಿನಂತಿಸಿ:",
       nvcBook: "ಅಹಿಂಸಾ ಸಂವಹನ: ಜೀವನದ ಭಾಷೆ (3ನೇ ಆವೃತ್ತಿ):",
       bookPurchase: "ಪುಸ್ತಕವನ್ನು ಇಲ್ಲಿ ಖರೀದಿಸಬಹುದು:",
       whatsappNote: "ನಿಮ್ಮ ಸಮನ್ವಯಕರು ಒಂದು ಅಥವಾ ಎರಡು ದಿನಗಳಲ್ಲಿ ನಿಮ್ಮನ್ನು CoC ವಾಟ್ಸಾಪ್ ಗುಂಪಿಗೆ ಸೇರಿಸುತ್ತಾರೆ. ನೀವು ಸೇರಿಸದಿದ್ದರೆ, ಮೇಲೆ ನೀಡಲಾದ ಸಂಪರ್ಕ ವಿವರಗಳನ್ನು ಬಳಸಿಕೊಂಡು ನೀವು ನೇರವಾಗಿ ನಿಮ್ಮ ಸಮನ್ವಯಕರನ್ನು ಸಂಪರ್ಕಿಸಬಹುದು.",
@@ -1879,8 +1867,7 @@ function getEmailLabels(language) {
       coordinatorClosing: "దయచేసి మొదటి సెషన్‌ను షెడ్యూల్ చేయడానికి మీ సమూహ సభ్యులను సంప్రదించండి.",
       regards: "శుభాకాంక్షలు,<br>CoC బృందం",
       resourcesTitle: "సమాచారం కోసం దయచేసి క్రింది పత్రాలను చూడండి:",
-      cocOverview: "CoC అవలోకనం",
-      cocSchedule: "CoC వారపు షెడ్యూల్ మరియు అధ్యయన పత్రాలు",
+      selfServicePortal: "మా స్వీయ-సేవా పోర్టల్ ద్వారా వారపు షెడ్యూల్, పత్రాలు మరియు డౌన్‌లోడ్ చేసుకోగల పుస్తకాలను అభ్యర్థించండి:",
       nvcBook: "అహింసా సంభాషణ: జీవితం యొక్క భాష (3వ ఎడిషన్):",
       bookPurchase: "పుస్తకాన్ని ఇక్కడ కొనుగోలు చేయవచ్చు:",
       whatsappNote: "మీ సమన్వయకర్త ఒకటి లేదా రెండు రోజుల్లో మిమ్మల్ని CoC వాట్సాప్ సమూహంలో చేర్చుతారు. మీరు చేర్చబడకపోతే, పైన ఇచ్చిన సంప్రదింపు వివరాలను ఉపయోగించి మీరు నేరుగా మీ సమన్వయకర్తను సంప్రదించవచ్చు.",
