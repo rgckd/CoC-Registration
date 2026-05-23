@@ -637,6 +637,7 @@ function suggestGroupsForLanguage(language) {
   const MIN_GROUP_SIZE = 4;
   const MAX_GROUP_SIZE = 8;
   const TWO_GROUP_THRESHOLD = MAX_GROUP_SIZE + MIN_GROUP_SIZE; // e.g., 8 + 4 = 12
+  const ui = SpreadsheetApp.getUi();
   const ss = SpreadsheetApp.getActive();
   const pSheet = ss.getSheetByName("Participants");
   const gSheet = ss.getSheetByName("Groups");
@@ -656,9 +657,10 @@ function suggestGroupsForLanguage(language) {
     .map((r, i) => ({ row: i + 2, data: r }))
     .filter(p =>
       p.data[pIdx.Language] === language &&
-      p.data[pIdx.AssignmentStatus] === "Unassigned" &&
-      !p.data[pIdx.Suggestions]
+      p.data[pIdx.AssignmentStatus] === "Unassigned"
     );
+
+  const rowsWithExistingSuggestions = participants.filter(p => String(p.data[pIdx.Suggestions] || "").trim()).length;
 
   // Track summary counts
   const totalCandidates = participants.length;
@@ -668,12 +670,26 @@ function suggestGroupsForLanguage(language) {
 
   // If nothing to suggest, show a quick notice
   if (totalCandidates === 0) {
-    SpreadsheetApp.getUi().alert(
+    ui.alert(
       `Suggest Groups – ${language}`,
       `No unassigned participants found for ${language}.`,
-      SpreadsheetApp.getUi().ButtonSet.OK
+      ui.ButtonSet.OK
     );
     return;
+  }
+
+  if (rowsWithExistingSuggestions > 0) {
+    const response = ui.alert(
+      `Overwrite Existing Suggestions – ${language}`,
+      `${rowsWithExistingSuggestions} unassigned participant(s) already have suggestions.\n\n` +
+      `Continuing will overwrite existing values in the Suggestions column for this language.\n\n` +
+      `Do you want to continue?`,
+      ui.ButtonSet.YES_NO
+    );
+
+    if (response !== ui.Button.YES) {
+      return;
+    }
   }
 
   // Build existing groups map by language, slot, and eligibility
@@ -897,10 +913,10 @@ function suggestGroupsForLanguage(language) {
       `\n• Contact participants about alternative time slots`;
   }
   
-  SpreadsheetApp.getUi().alert(
+  ui.alert(
     `Suggest Groups Summary – ${language}`,
     summaryMessage,
-    SpreadsheetApp.getUi().ButtonSet.OK
+    ui.ButtonSet.OK
   );
 }
 
