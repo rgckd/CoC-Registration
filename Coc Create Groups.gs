@@ -336,9 +336,30 @@ function dailyParticipantProcessingWithAlerts() {
  * WEEKLY LIFECYCLE PROCESSING
  * - Close Completed groups -> Closed
  * - Terminate Inactive groups -> Terminated
- * - Send per-language admin summary email
+ * - Send language-scoped admin summary email
+ *
+ * Use language-specific functions for triggers so each language can be
+ * processed independently:
+ * - weeklyLifecycleProcessingEnglish
+ * - weeklyLifecycleProcessingTamil
+ * - weeklyLifecycleProcessingHindi
+ * - weeklyLifecycleProcessingKannada
+ * - weeklyLifecycleProcessingTelugu
  ************************************************/
 function weeklyLifecycleProcessing() {
+  Logger.log("weeklyLifecycleProcessing() runs all languages. Prefer per-language trigger functions.");
+  ["English", "Tamil", "Hindi", "Kannada", "Telugu"].forEach(lang => {
+    weeklyLifecycleProcessingByLanguage_(lang);
+  });
+}
+
+function weeklyLifecycleProcessingEnglish() { weeklyLifecycleProcessingByLanguage_("English"); }
+function weeklyLifecycleProcessingTamil() { weeklyLifecycleProcessingByLanguage_("Tamil"); }
+function weeklyLifecycleProcessingHindi() { weeklyLifecycleProcessingByLanguage_("Hindi"); }
+function weeklyLifecycleProcessingKannada() { weeklyLifecycleProcessingByLanguage_("Kannada"); }
+function weeklyLifecycleProcessingTelugu() { weeklyLifecycleProcessingByLanguage_("Telugu"); }
+
+function weeklyLifecycleProcessingByLanguage_(language) {
   const ss = SpreadsheetApp.getActive();
   const pSheet = ss.getSheetByName("Participants");
   const gSheet = ss.getSheetByName("Groups");
@@ -359,25 +380,31 @@ function weeklyLifecycleProcessing() {
     }
   });
 
-  // Track changes for admin summary
+  // Track changes for admin summary (single language run)
   const summary = {
-    closed: {},        // lang -> [{groupName, count}]
-    terminated: {},    // lang -> [{groupName, count}]
-    discontinued: {}   // lang -> count
+    closed: [],        // [{groupName, count, coordinatorName}]
+    terminated: [],    // [{groupName, count, coordinatorName}]
+    discontinued: 0
   };
 
   const emailFailures = [];
+  const emailStats = {
+    participantAttempts: 0,
+    participantSent: 0,
+    participantFailed: 0,
+    adminAttempts: 0,
+    adminSent: 0,
+    adminFailed: 0
+  };
 
-  const registerClosed = (lang, groupName, count) => {
-    summary.closed[lang] = summary.closed[lang] || [];
-    summary.closed[lang].push({ groupName: groupName, count: count });
+  const registerClosed = (groupName, count, coordinatorName) => {
+    summary.closed.push({ groupName: groupName, count: count, coordinatorName: coordinatorName || "" });
   };
-  const registerTerminated = (lang, groupName, count) => {
-    summary.terminated[lang] = summary.terminated[lang] || [];
-    summary.terminated[lang].push({ groupName: groupName, count: count });
+  const registerTerminated = (groupName, count, coordinatorName) => {
+    summary.terminated.push({ groupName: groupName, count: count, coordinatorName: coordinatorName || "" });
   };
-  const registerDiscontinued = (lang) => {
-    summary.discontinued[lang] = (summary.discontinued[lang] || 0) + 1;
+  const registerDiscontinued = () => {
+    summary.discontinued++;
   };
 
   // Helpers: send lifecycle emails
@@ -435,7 +462,9 @@ function weeklyLifecycleProcessing() {
     if (status === "Completed") {
       const groupName = String(gRow[gIdx.GroupName] || "").trim();
       const lang = String(gRow[gIdx.Language] || "").trim();
+      if (lang !== language) return;
       const coordinatorEmail = gIdx.CoordinatorEmail !== undefined ? String(gRow[gIdx.CoordinatorEmail] || "").trim() : "";
+      const coordinatorName = gIdx.CoordinatorName !== undefined ? String(gRow[gIdx.CoordinatorName] || "").trim() : "";
       const members = listGroupParticipants(groupName);
 
       // Update group status
@@ -451,15 +480,18 @@ function weeklyLifecycleProcessing() {
         // set status
         if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Completed";
         if (pIdx.IsActive !== undefined) pRow[pIdx.IsActive] = false;
+        emailStats.participantAttempts++;
         try {
           sendClosedEmail(email, name, groupName, wasActive, memberLang, coordinatorEmail);
+          emailStats.participantSent++;
         } catch (err) {
+          emailStats.participantFailed++;
           emailFailures.push({ type: "Closed group email", lang, group: groupName, email, name, reason: err.message });
         }
       });
 
       // Register summary
-      registerClosed(lang, groupName, members.length);
+      registerClosed(groupName, members.length, coordinatorName);
     }
   });
 
@@ -469,7 +501,9 @@ function weeklyLifecycleProcessing() {
     if (status === "Inactive") {
       const groupName = String(gRow[gIdx.GroupName] || "").trim();
       const lang = String(gRow[gIdx.Language] || "").trim();
+      if (lang !== language) return;
       const coordinatorEmail = String(gRow[gIdx.CoordinatorEmail] || "").trim();
+      const coordinatorName = gIdx.CoordinatorName !== undefined ? String(gRow[gIdx.CoordinatorName] || "").trim() : "";
       const members = listGroupParticipants(groupName);
       let coordinatorPhone = gIdx.CoordinatorWhatsApp !== undefined
         ? String(gRow[gIdx.CoordinatorWhatsApp] || "").trim()
@@ -494,16 +528,19 @@ function weeklyLifecycleProcessing() {
         const memberLang = String(pRow[pIdx.Language] || "").trim() || lang;
         if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Discontinued";
         if (pIdx.IsActive !== undefined) pRow[pIdx.IsActive] = false;
+        emailStats.participantAttempts++;
         try {
           sendTerminatedEmail(email, name, groupName, memberLang, coordinatorEmail, coordinatorPhone);
+          emailStats.participantSent++;
         } catch (err) {
+          emailStats.participantFailed++;
           emailFailures.push({ type: "Terminated group email", lang, group: groupName, email, name, reason: err.message });
         }
-        registerDiscontinued(memberLang);
+        registerDiscontinued();
       });
 
       // Register summary
-      registerTerminated(lang, groupName, members.length);
+      registerTerminated(groupName, members.length, coordinatorName);
     }
   });
 
@@ -516,63 +553,166 @@ function weeklyLifecycleProcessing() {
   // Update Groups and Dashboard before sending emails
   updateAdminDashboard();
 
-  // Send per-language admin summaries
+  // Send admin summary for this language
   const props = PropertiesService.getScriptProperties();
   const masterUrl = String(props.getProperty('MASTER_SHEET_URL') || '').trim();
-  const languages = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
   const adminEmailMap = getAdminEmailMapFromMaster();
-  languages.forEach(lang => {
-    const adminEmail = adminEmailMap[lang] || getAdminEmailForLanguage(lang);
-    const closed = summary.closed[lang] || [];
-    const terminated = summary.terminated[lang] || [];
-    const discCount = summary.discontinued[lang] || 0;
-    const failuresForLang = emailFailures.filter(f => f.lang === lang);
-    const changesExist = closed.length || terminated.length || discCount || failuresForLang.length;
-    if (adminEmail && changesExist) {
-      const subject = `CoC Weekly Lifecycle Summary - ${lang}`;
-      let lines = [];
-      if (closed.length) {
-        lines.push("Closed groups:");
-        closed.forEach(c => lines.push(`- ${c.groupName} (members updated: ${c.count})`));
-      }
-      if (terminated.length) {
-        lines.push("Terminated groups:");
-        terminated.forEach(t => lines.push(`- ${t.groupName} (members updated: ${t.count})`));
-      }
-      if (discCount) {
-        lines.push(`Discontinued participants: ${discCount}`);
-      }
-      if (failuresForLang.length) {
-        lines.push("");
-        lines.push("Email delivery issues:");
-        failuresForLang.forEach(f => {
-          const who = [f.name, f.email].filter(Boolean).join(" | ") || "Unknown";
-          const grp = f.group ? ` [${f.group}]` : "";
-          lines.push(`- ${f.type}${grp}: ${who} – ${f.reason}`);
-        });
-      }
-      if (masterUrl) {
-        lines.push("");
-        lines.push(`CoC Master sheet: ${masterUrl}`);
-      }
-      const body = lines.join("\n");
-      try {
-        MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: adminEmail, subject, body }, lang));
-      } catch (err) {
-        emailFailures.push({ type: "Admin summary email", lang, email: adminEmail, reason: err.message });
-      }
+  const adminEmail = adminEmailMap[language] || getAdminEmailForLanguage(language);
+  const closed = summary.closed;
+  const terminated = summary.terminated;
+  const discCount = summary.discontinued;
+  const failuresForLang = emailFailures.filter(f => f.lang === language);
+  const changesExist = closed.length || terminated.length || discCount || failuresForLang.length;
+  if (adminEmail && changesExist) {
+    const subject = `CoC Weekly Lifecycle Summary - ${language}`;
+    let lines = [];
+    lines.push(...buildLifecycleSummaryIntroLines_(language, closed.length, terminated.length, discCount));
+    lines.push("");
+    if (closed.length) {
+      lines.push("Closed groups:");
+      closed.forEach(c => lines.push(`- ${c.groupName} (members updated: ${c.count})`));
     }
-  });
+    if (terminated.length) {
+      lines.push("Terminated groups:");
+      terminated.forEach(t => lines.push(`- ${t.groupName} (members updated: ${t.count})`));
+    }
+    if (discCount) {
+      lines.push(`Discontinued participants: ${discCount}`);
+    }
+
+    if (closed.length || terminated.length) {
+      lines.push("");
+      lines.push("WhatsApp message for coordinators:");
+      lines.push(buildLifecycleWhatsAppMessage_(language, closed, terminated));
+    }
+
+    if (failuresForLang.length) {
+      lines.push("");
+      lines.push("Email delivery issues:");
+      failuresForLang.forEach(f => {
+        const who = [f.name, f.email].filter(Boolean).join(" | ") || "Unknown";
+        const grp = f.group ? ` [${f.group}]` : "";
+        lines.push(`- ${f.type}${grp}: ${who} - ${f.reason}`);
+      });
+    }
+    if (masterUrl) {
+      lines.push("");
+      lines.push(`CoC Master sheet: ${masterUrl}`);
+    }
+    const body = lines.join("\n");
+    emailStats.adminAttempts++;
+    try {
+      MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: adminEmail, subject, body }, language));
+      emailStats.adminSent++;
+    } catch (err) {
+      emailStats.adminFailed++;
+      emailFailures.push({ type: "Admin summary email", lang: language, email: adminEmail, reason: err.message });
+    }
+  }
+
+  Logger.log(`weeklyLifecycleProcessingByLanguage_ (${language}) email stats -> ` +
+    `participant attempts: ${emailStats.participantAttempts}, sent: ${emailStats.participantSent}, failed: ${emailStats.participantFailed}; ` +
+    `admin attempts: ${emailStats.adminAttempts}, sent: ${emailStats.adminSent}, failed: ${emailStats.adminFailed}`);
 
   if (emailFailures.length) {
-    Logger.log("Email send failures during weeklyLifecycleProcessing:");
+    Logger.log(`Email send failures during weeklyLifecycleProcessingByLanguage_ (${language}):`);
     emailFailures.forEach(f => {
       const grp = f.group ? ` [${f.group}]` : "";
       Logger.log(`- ${f.lang}: ${f.type}${grp} -> ${f.email || "(no email)"} (${f.reason})`);
     });
   } else {
-    Logger.log("No email send failures during weeklyLifecycleProcessing.");
+    Logger.log(`No email send failures during weeklyLifecycleProcessingByLanguage_ (${language}).`);
   }
+}
+
+function buildLifecycleSummaryIntroLines_(language, closedCount, terminatedCount, discontinuedCount) {
+  const templates = {
+    English: [
+      "This weekly lifecycle process keeps group records accurate and ensures participants are informed based on current group status.",
+      `For ${language}, this report tells you which groups were closed or terminated, how many participants were updated (including discontinued: ${discontinuedCount}), and where manual follow-up may be needed.`,
+      "Use this summary to quickly validate actions, correct mistakes early, and communicate updates to coordinators."
+    ],
+    Tamil: [
+      "இந்த வார lifecycle செயல்முறை குழு நிலைகளை சரியாக புதுப்பித்து, தற்போதைய நிலைக்கு ஏற்ப பங்கேற்பாளர்களுக்கு தகவல் அனுப்ப உதவுகிறது.",
+      `${language} மொழிக்கான இந்த அறிக்கை எந்த குழுக்கள் மூடப்பட்டன அல்லது நிறுத்தப்பட்டன, எத்தனை பங்கேற்பாளர்கள் புதுப்பிக்கப்பட்டனர் (discontinued: ${discontinuedCount}) மற்றும் எங்கு கைமுறை பின்தொடர்பு தேவை என்பதை காட்டுகிறது.`,
+      "இந்த சுருக்கத்தை பயன்படுத்தி நடவடிக்கைகளை சரிபார்த்து, பிழைகளை விரைவாக திருத்தி, ஒருங்கிணைப்பாளர்களுக்கு தெளிவாக தகவல் பகிரலாம்."
+    ],
+    Hindi: [
+      "यह साप्ताहिक lifecycle प्रक्रिया समूह स्थिति को सही रखती है और वर्तमान स्थिति के आधार पर प्रतिभागियों को सूचित करती है।",
+      `${language} के लिए यह रिपोर्ट बताती है कि कौन से समूह बंद या समाप्त किए गए, कितने प्रतिभागी अपडेट हुए (discontinued: ${discontinuedCount}), और कहाँ मैन्युअल फॉलो-अप आवश्यक है।`,
+      "इस सारांश का उपयोग करके आप कार्रवाई सत्यापित कर सकते हैं, त्रुटियों को जल्दी सुधार सकते हैं, और समन्वयकों को स्पष्ट अपडेट दे सकते हैं।"
+    ],
+    Kannada: [
+      "ಈ ವಾರದ lifecycle ಪ್ರಕ್ರಿಯೆ ಗುಂಪು ಸ್ಥಿತಿಯನ್ನು ಸರಿಯಾಗಿ ಉಳಿಸಿ, ಪ್ರಸ್ತುತ ಸ್ಥಿತಿಗೆ ಅನುಗುಣವಾಗಿ ಭಾಗವಹಿಸುವವರಿಗೆ ಮಾಹಿತಿ ಕಳುಹಿಸಲು ಸಹಾಯ ಮಾಡುತ್ತದೆ.",
+      `${language} ಭಾಷೆಗೆ ಈ ವರದಿ ಯಾವ ಗುಂಪುಗಳು ಮುಚ್ಚಲ್ಪಟ್ಟಿವೆ ಅಥವಾ ನಿಲ್ಲಿಸಲ್ಪಟ್ಟಿವೆ, ಎಷ್ಟು ಭಾಗವಹಿಸುವವರು ಅಪ್ಡೇಟ್ ಆಗಿದ್ದಾರೆ (discontinued: ${discontinuedCount}), ಹಾಗೂ ಎಲ್ಲಿಗೆ ಕೈಯಾರೆ ಫಾಲೋ-ಅಪ್ ಬೇಕು ಎಂಬುದನ್ನು ತೋರಿಸುತ್ತದೆ.",
+      "ಈ ಸಾರಾಂಶದ ಮೂಲಕ ಕ್ರಮಗಳನ್ನು ಪರಿಶೀಲಿಸಿ, ದೋಷಗಳನ್ನು ಬೇಗ ಸರಿಪಡಿಸಿ, ಸಂಯೋಜಕರಿಗೆ ಸ್ಪಷ್ಟವಾಗಿ ಮಾಹಿತಿ ಹಂಚಬಹುದು."
+    ],
+    Telugu: [
+      "ఈ వారపు lifecycle ప్రక్రియ గ్రూప్ స్థితులను సరైన విధంగా ఉంచి, ప్రస్తుత స్థితి ఆధారంగా భాగస్వాములకు సమాచారం పంపడంలో సహాయపడుతుంది.",
+      `${language} కోసం ఈ నివేదిక ఏ గ్రూపులు మూసివేయబడ్డాయి లేదా రద్దు చేయబడ్డాయి, ఎంత మంది భాగస్వాములు అప్డేట్ అయ్యారు (discontinued: ${discontinuedCount}), ఇంకా ఎక్కడ మాన్యువల్ ఫాలో-అప్ అవసరమో చూపిస్తుంది.",
+      "ఈ సారాంశంతో మీరు చర్యలను త్వరగా ధృవీకరించి, తప్పులను సరిదిద్దుకుని, సమన్వయకర్తలకు స్పష్టమైన అప్‌డేట్స్ ఇవ్వవచ్చు."
+    ]
+  };
+
+  return templates[language] || templates.English;
+}
+
+function buildLifecycleWhatsAppMessage_(language, closedGroups, terminatedGroups) {
+  const closedLines = closedGroups.map(g => `- ${g.groupName}${g.coordinatorName ? ` (${g.coordinatorName})` : ""}`);
+  const terminatedLines = terminatedGroups.map(g => `- ${g.groupName}${g.coordinatorName ? ` (${g.coordinatorName})` : ""}`);
+
+  const templates = {
+    English: {
+      intro: "Dear Coordinators, weekly lifecycle updates have been completed.",
+      closedTitle: "Closed groups (completed all sessions):",
+      terminatedTitle: "Terminated groups (inactive/not functioning):",
+      correction: "If any correction is needed, please contact me directly or message in this group."
+    },
+    Tamil: {
+      intro: "அன்புடையீர் ஒருங்கிணைப்பாளர்களே, இந்த வார lifecycle updates முடிக்கப்பட்டது.",
+      closedTitle: "மூடப்பட்ட குழுக்கள் (அனைத்து அமர்வுகளும் முடிந்ததால்):",
+      terminatedTitle: "நிறுத்தப்பட்ட குழுக்கள் (செயல்படாமல் இருந்ததால்):",
+      correction: "ஏதேனும் திருத்தம் வேண்டுமெனில், எனக்கு நேரடியாக தொடர்பு கொள்ளவும் அல்லது இந்த குழுவில் செய்தி இடவும்."
+    },
+    Hindi: {
+      intro: "प्रिय समन्वयकों, इस सप्ताह के lifecycle updates पूरे कर दिए गए हैं।",
+      closedTitle: "बंद किए गए समूह (सभी सत्र पूर्ण):",
+      terminatedTitle: "समाप्त किए गए समूह (निष्क्रिय/कार्य नहीं कर रहे):",
+      correction: "यदि कोई सुधार चाहिए, तो कृपया मुझसे सीधे संपर्क करें या इस समूह में संदेश करें।"
+    },
+    Kannada: {
+      intro: "ಪ್ರಿಯ ಸಂಯೋಜಕರೇ, ಈ ವಾರದ lifecycle updates ಪೂರ್ಣಗೊಂಡಿವೆ.",
+      closedTitle: "ಮುಚ್ಚಲಾದ ಗುಂಪುಗಳು (ಎಲ್ಲಾ ಅಧಿವೇಶನಗಳು ಪೂರ್ಣ):",
+      terminatedTitle: "ನಿಲ್ಲಿಸಲಾದ ಗುಂಪುಗಳು (ನಿಷ್ಕ್ರಿಯ/ಕಾರ್ಯನಿರ್ವಹಿಸದ):",
+      correction: "ಯಾವುದೇ ತಿದ್ದುಪಡಿ ಬೇಕಿದ್ದರೆ, ದಯವಿಟ್ಟು ನನಗೆ ನೇರವಾಗಿ ಸಂಪರ್ಕಿಸಿ ಅಥವಾ ಈ ಗುಂಪಿನಲ್ಲಿ ಸಂದೇಶಿಸಿ."
+    },
+    Telugu: {
+      intro: "ప్రియమైన సమన్వయకర్తలారా, ఈ వారపు lifecycle updates పూర్తి అయ్యాయి.",
+      closedTitle: "మూసివేసిన గ్రూపులు (అన్ని సెషన్లు పూర్తయ్యాయి):",
+      terminatedTitle: "రద్దు చేసిన గ్రూపులు (నిష్క్రియ/పనిచేయని):",
+      correction: "ఏదైనా సరిదిద్దాల్సి ఉంటే, దయచేసి నన్ను నేరుగా సంప్రదించండి లేదా ఈ గ్రూప్‌లో మెసేజ్ చేయండి."
+    }
+  };
+
+  const t = templates[language] || templates.English;
+  const lines = [t.intro];
+
+  if (closedLines.length) {
+    lines.push("");
+    lines.push(t.closedTitle);
+    lines.push(...closedLines);
+  }
+
+  if (terminatedLines.length) {
+    lines.push("");
+    lines.push(t.terminatedTitle);
+    lines.push(...terminatedLines);
+  }
+
+  lines.push("");
+  lines.push(t.correction);
+
+  return lines.join("\n");
 }
 
 /************************************************
