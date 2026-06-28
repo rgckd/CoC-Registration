@@ -610,9 +610,9 @@ function weeklyLifecycleProcessingByLanguage_(language) {
     }
   }
 
-  Logger.log(`weeklyLifecycleProcessingByLanguage_ (${language}) email stats -> ` +
-    `participant attempts: ${emailStats.participantAttempts}, sent: ${emailStats.participantSent}, failed: ${emailStats.participantFailed}; ` +
-    `admin attempts: ${emailStats.adminAttempts}, sent: ${emailStats.adminSent}, failed: ${emailStats.adminFailed}`);
+  Logger.log(`[${language}] Weekly Lifecycle Processing Email Summary:` +
+    ` Participants - Attempts: ${emailStats.participantAttempts}, Sent: ${emailStats.participantSent}, Failed: ${emailStats.participantFailed};` +
+    ` Admin - Attempts: ${emailStats.adminAttempts}, Sent: ${emailStats.adminSent}, Failed: ${emailStats.adminFailed}`);
 
   if (emailFailures.length) {
     Logger.log(`Email send failures during weeklyLifecycleProcessingByLanguage_ (${language}):`);
@@ -620,8 +620,10 @@ function weeklyLifecycleProcessingByLanguage_(language) {
       const grp = f.group ? ` [${f.group}]` : "";
       Logger.log(`- ${f.lang}: ${f.type}${grp} -> ${f.email || "(no email)"} (${f.reason})`);
     });
+  } else if (emailStats.participantAttempts > 0 || emailStats.adminAttempts > 0) {
+    Logger.log(`[${language}] All emails sent successfully - no failures reported.`);
   } else {
-    Logger.log(`No email send failures during weeklyLifecycleProcessingByLanguage_ (${language}).`);
+    Logger.log(`[${language}] No emails were attempted to be sent.`);
   }
 }
 
