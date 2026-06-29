@@ -476,17 +476,22 @@ function weeklyLifecycleProcessingByLanguage_(language) {
         const email = String(pRow[pIdx.Email] || "").trim();
         const name = String(pRow[pIdx.Name] || "").trim();
         const memberLang = String(pRow[pIdx.Language] || "").trim() || lang;
+        const isCurrentlyAssigned = pIdx.AssignmentStatus !== undefined &&
+          String(pRow[pIdx.AssignmentStatus] || "").trim().toLowerCase() === "assigned";
         const wasActive = !!toBool(pRow[pIdx.IsActive]);
-        // set status
-        if (pIdx.AssignmentStatus !== undefined) pRow[pIdx.AssignmentStatus] = "Completed";
+        if (isCurrentlyAssigned && pIdx.AssignmentStatus !== undefined) {
+          pRow[pIdx.AssignmentStatus] = "Completed";
+        }
         if (pIdx.IsActive !== undefined) pRow[pIdx.IsActive] = false;
-        emailStats.participantAttempts++;
-        try {
-          sendClosedEmail(email, name, groupName, wasActive, memberLang, coordinatorEmail);
-          emailStats.participantSent++;
-        } catch (err) {
-          emailStats.participantFailed++;
-          emailFailures.push({ type: "Closed group email", lang, group: groupName, email, name, reason: err.message });
+        if (isCurrentlyAssigned) {
+          emailStats.participantAttempts++;
+          try {
+            sendClosedEmail(email, name, groupName, wasActive, memberLang, coordinatorEmail);
+            emailStats.participantSent++;
+          } catch (err) {
+            emailStats.participantFailed++;
+            emailFailures.push({ type: "Closed group email", lang, group: groupName, email, name, reason: err.message });
+          }
         }
       });
 
@@ -2046,7 +2051,7 @@ function getLifecycleEmailLabels(language) {
     English: {
       closedSubject: "CoC Group Closed - {groupName}",
       closedBodyActive: "Dear {name},\n\nYour CoC group ({groupName}) is now closed as you have completed all sessions. Congratulations on successfully completing your CoC journey! If you would like to repeat with a new group, please register again at {regLink}.\n\nWith best wishes,\nCoC Admin Team",
-      closedBodyInactive: "Dear {name},\n\nYour CoC group ({groupName}) is now closed as the group has completed all sessions. We understand you may have had other commitments or personal situations. If you would like to continue your CoC journey in the future, please register at {regLink}.\n\nWith best wishes,\nCoC Admin Team",
+      closedBodyInactive: "Dear {name},\n\nYour CoC group ({groupName}) is now closed as the group has completed all sessions. If you would like to continue your CoC journey in the future, please register at {regLink}.\n\nWith best wishes,\nCoC Admin Team",
       terminatedSubject: "CoC Group Update - {groupName}",
       terminatedBody: "Dear {name},\n\nYour CoC group ({groupName}) has been dissolved as it has not been functioning. We acknowledge your efforts.\n\nIf you think this is an error and/or you would like to continue your CoC journey, please reply to this email, or get in touch with your coordinator{coordinatorContact}. Alternatively, you can register again at {regLink} for a new group.\n\nWith best wishes,\nCoC Admin Team",
       coordinatorWhatsAppLabel: "Coordinator WhatsApp",
@@ -2056,7 +2061,7 @@ function getLifecycleEmailLabels(language) {
     Tamil: {
       closedSubject: "CoC குழு மூடப்பட்டது - {groupName}",
       closedBodyActive: "அன்புள்ள {name},\n\nநீங்கள் அனைத்து அமர்வுகளையும் முடித்துவிட்டதால் உங்கள் CoC குழு ({groupName}) இப்போது மூடப்பட்டுள்ளது. உங்கள் CoC பயணத்தை வெற்றிகரமாக முடித்ததற்கு வாழ்த்துக்கள்! நீங்கள் புதிய குழுவுடன் மீண்டும் செய்ய விரும்பினால், {regLink} இல் மீண்டும் பதிவு செய்யவும்.\n\nநல்வாழ்த்துகளுடன்,\nCoC நிர்வாகக் குழு",
-      closedBodyInactive: "அன்புள்ள {name},\n\nகுழு அனைத்து அமர்வுகளையும் முடித்துவிட்டதால் உங்கள் CoC குழு ({groupName}) இப்போது மூடப்பட்டுள்ளது. உங்களுக்கு வேறு கடமைகள் அல்லது தனிப்பட்ட சூழ்நிலைகள் இருந்திருக்கலாம் என்பதை நாங்கள் புரிந்துகொள்கிறோம். எதிர்காலத்தில் உங்கள் CoC பயணத்தைத் தொடர விரும்பினால், {regLink} இல் பதிவு செய்யவும்.\n\nநல்வாழ்த்துகளுடன்,\nCoC நிர்வாகக் குழு",
+      closedBodyInactive: "அன்புள்ள {name},\n\nகுழு அனைத்து அமர்வுகளையும் முடித்துவிட்டதால் உங்கள் CoC குழு ({groupName}) இப்போது மூடப்பட்டுள்ளது. எதிர்காலத்தில் உங்கள் CoC பயணத்தைத் தொடர விரும்பினால், {regLink} இல் பதிவு செய்யவும்.\n\nநல்வாழ்த்துகளுடன்,\nCoC நிர்வாகக் குழு",
       terminatedSubject: "CoC குழு நிலை புதுப்பிப்பு - {groupName}",
       terminatedBody: "அன்புள்ள {name},\n\nஉங்கள் CoC குழு ({groupName}) தொடர்ந்து இயங்க முடியாத நிலை ஏற்பட்டதால், இந்த குழுவின் செயல்பாடு தற்போது நிறுத்தப்பட்டுள்ளது. உங்கள் பங்கேற்பும் முயற்சியும் மிகவும் மதிப்பிற்குரியது.\n\nஇது பிழை என்று நீங்கள் நினைத்தாலோ, அல்லது உங்கள் CoC பயணத்தைத் தொடர விரும்பினாலோ, தயவுசெய்து இந்த மின்னஞ்சலுக்கு பதிலளிக்கவும் அல்லது உங்கள் ஒருங்கிணைப்பாளரைத் தொடர்பு கொள்ளவும்{coordinatorContact}. விருப்பமிருந்தால், புதிய குழுவிற்கு {regLink} இல் மீண்டும் பதிவு செய்யலாம்.\n\nஅன்புடன்,\nCoC நிர்வாகக் குழு",
       coordinatorWhatsAppLabel: "ஒருங்கிணைப்பாளர் வாட்ஸ்அப்",
@@ -2066,7 +2071,7 @@ function getLifecycleEmailLabels(language) {
     Hindi: {
       closedSubject: "CoC समूह बंद - {groupName}",
       closedBodyActive: "प्रिय {name},\n\nआपका CoC समूह ({groupName}) अब बंद हो गया है क्योंकि आपने सभी सत्र पूरे कर लिए हैं। अपनी CoC यात्रा को सफलतापूर्वक पूरा करने के लिए बधाई! यदि आप एक नए समूह के साथ दोहराना चाहते हैं, तो कृपया {regLink} पर फिर से पंजीकरण करें।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम",
-      closedBodyInactive: "प्रिय {name},\n\nआपका CoC समूह ({groupName}) अब बंद हो गया है क्योंकि समूह ने सभी सत्र पूरे कर लिए हैं। हम समझते हैं कि आपकी अन्य प्रतिबद्धताएँ या व्यक्तिगत परिस्थितियाँ हो सकती हैं। यदि आप भविष्य में अपनी CoC यात्रा जारी रखना चाहते हैं, तो कृपया {regLink} पर पंजीकरण करें।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम",
+      closedBodyInactive: "प्रिय {name},\n\nआपका CoC समूह ({groupName}) अब बंद हो गया है क्योंकि समूह ने सभी सत्र पूरे कर लिए हैं। यदि आप भविष्य में अपनी CoC यात्रा जारी रखना चाहते हैं, तो कृपया {regLink} पर पंजीकरण करें।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम",
       terminatedSubject: "CoC समूह अपडेट - {groupName}",
       terminatedBody: "प्रिय {name},\n\nआपका CoC समूह ({groupName}) भंग कर दिया गया है क्योंकि यह कार्य नहीं कर रहा था। हम आपके प्रयासों को स्वीकार करते हैं।\n\nयदि आपको लगता है कि यह एक त्रुटि है और/या आप अपनी CoC यात्रा जारी रखना चाहते हैं, तो कृपया इस ईमेल का उत्तर दें, या अपने समन्वयक से संपर्क करें{coordinatorContact}। वैकल्पिक रूप से, आप एक नए समूह के लिए {regLink} पर फिर से पंजीकरण कर सकते हैं।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम",
       coordinatorWhatsAppLabel: "समन्वयक व्हाट्सऐप",
@@ -2076,7 +2081,7 @@ function getLifecycleEmailLabels(language) {
     Kannada: {
       closedSubject: "CoC ಗುಂಪು ಮುಚ್ಚಲಾಗಿದೆ - {groupName}",
       closedBodyActive: "ಆತ್ಮೀಯ {name},\n\nನೀವು ಎಲ್ಲಾ ಅಧಿವೇಶನಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸಿದ್ದರಿಂದ ನಿಮ್ಮ CoC ಗುಂಪು ({groupName}) ಈಗ ಮುಚ್ಚಲಾಗಿದೆ. ನಿಮ್ಮ CoC ಪ್ರಯಾಣವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಪೂರ್ಣಗೊಳಿಸಿದ್ದಕ್ಕಾಗಿ ಅಭಿನಂದನೆಗಳು! ನೀವು ಹೊಸ ಗುಂಪಿನೊಂದಿಗೆ ಪುನರಾವರ್ತಿಸಲು ಬಯಸಿದರೆ, ದಯವಿಟ್ಟು {regLink} ನಲ್ಲಿ ಮತ್ತೆ ನೋಂದಾಯಿಸಿ.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ",
-      closedBodyInactive: "ಆತ್ಮೀಯ {name},\n\nಗುಂಪು ಎಲ್ಲಾ ಅಧಿವೇಶನಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸಿದ್ದರಿಂದ ನಿಮ್ಮ CoC ಗುಂಪು ({groupName}) ಈಗ ಮುಚ್ಚಲಾಗಿದೆ. ನೀವು ಇತರ ಬದ್ಧತೆಗಳು ಅಥವಾ ವೈಯಕ್ತಿಕ ಸನ್ನಿವೇಶಗಳನ್ನು ಹೊಂದಿರಬಹುದು ಎಂದು ನಾವು ಅರ್ಥಮಾಡಿಕೊಳ್ಳುತ್ತೇವೆ. ಭವಿಷ್ಯದಲ್ಲಿ ನಿಮ್ಮ CoC ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಬಯಸಿದರೆ, ದಯವಿಟ್ಟು {regLink} ನಲ್ಲಿ ನೋಂದಾಯಿಸಿ.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ",
+      closedBodyInactive: "ಆತ್ಮೀಯ {name},\n\nಗುಂಪು ಎಲ್ಲಾ ಅಧಿವೇಶನಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸಿದ್ದರಿಂದ ನಿಮ್ಮ CoC ಗುಂಪು ({groupName}) ಈಗ ಮುಚ್ಚಲಾಗಿದೆ. ಭವಿಷ್ಯದಲ್ಲಿ ನಿಮ್ಮ CoC ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಬಯಸಿದರೆ, ದಯವಿಟ್ಟು {regLink} ನಲ್ಲಿ ನೋಂದಾಯಿಸಿ.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ",
       terminatedSubject: "CoC ಗುಂಪು ನವೀಕರಣ - {groupName}",
       terminatedBody: "ಆತ್ಮೀಯ {name},\n\nನಿಮ್ಮ CoC ಗುಂಪು ({groupName}) ಕಾರ್ಯನಿರ್ವಹಿಸುತ್ತಿಲ್ಲದ ಕಾರಣ ವಿಸರ್ಜಿಸಲಾಗಿದೆ. ನಾವು ನಿಮ್ಮ ಪ್ರಯತ್ನಗಳನ್ನು ಅಂಗೀಕರಿಸುತ್ತೇವೆ.\n\nಇದು ದೋಷ ಎಂದು ನೀವು ಭಾವಿಸಿದರೆ ಮತ್ತು/ಅಥವಾ ನಿಮ್ಮ CoC ಪ್ರಯಾಣವನ್ನು ಮುಂದುವರಿಸಲು ಬಯಸಿದರೆ, ದಯವಿಟ್ಟು ಈ ಇಮೇಲ್‌ಗೆ ಪ್ರತ್ಯುತ್ತರಿಸಿ, ಅಥವಾ ನಿಮ್ಮ ಸಂಯೋಜಕರನ್ನು ಸಂಪರ್ಕಿಸಿ{coordinatorContact}. ಪರ್ಯಾಯವಾಗಿ, ಹೊಸ ಗುಂಪಿಗಾಗಿ ನೀವು {regLink} ನಲ್ಲಿ ಮತ್ತೆ ನೋಂದಾಯಿಸಬಹುದು.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ",
       coordinatorWhatsAppLabel: "ಸಂಯೋಜಕರ ವಾಟ್ಸ್ಆಪ್",
@@ -2086,7 +2091,7 @@ function getLifecycleEmailLabels(language) {
     Telugu: {
       closedSubject: "CoC గ్రూప్ మూసివేయబడింది - {groupName}",
       closedBodyActive: "ప్రియమైన {name},\n\nమీరు అన్ని సెషన్‌లను పూర్తి చేసినందున మీ CoC గ్రూప్ ({groupName}) ఇప్పుడు మూసివేయబడింది. మీ CoC ప్రయాణాన్ని విజయవంతంగా పూర్తి చేసినందుకు అభినందనలు! మీరు కొత్త గ్రూప్‌తో పునరావృతం చేయాలనుకుంటే, దయచేసి {regLink} వద్ద మళ్లీ నమోదు చేయండి.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం",
-      closedBodyInactive: "ప్రియమైన {name},\n\nగ్రూప్ అన్ని సెషన్‌లను పూర్తి చేసినందున మీ CoC గ్రూప్ ({groupName}) ఇప్పుడు మూసివేయబడింది. మీకు ఇతర బాధ్యతలు లేదా వ్యక్తిగత పరిస్థితులు ఉండవచ్చని మేము అర్థం చేసుకుంటున్నాము. భవిష్యత్తులో మీ CoC ప్రయాణాన్ని కొనసాగించాలనుకుంటే, దయచేసి {regLink} వద్ద నమోదు చేయండి.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం",
+      closedBodyInactive: "ప్రియమైన {name},\n\nగ్రూప్ అన్ని సెషన్‌లను పూర్తి చేసినందున మీ CoC గ్రూప్ ({groupName}) ఇప్పుడు మూసివేయబడింది. భవిష్యత్తులో మీ CoC ప్రయాణాన్ని కొనసాగించాలనుకుంటే, దయచేసి {regLink} వద్ద నమోదు చేయండి.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం",
       terminatedSubject: "CoC గ్రూప్ అప్డేట్ - {groupName}",
       terminatedBody: "ప్రియమైన {name},\n\nమీ CoC గ్రూప్ ({groupName}) పనిచేయడం లేదు కాబట్టి రద్దు చేయబడింది. మేము మీ ప్రయత్నాలను గుర్తిస్తున్నాము.\n\nఇది పొరపాటు అని మీరు భావిస్తే మరియు/లేదా మీ CoC ప్రయాణాన్ని కొనసాగించాలనుకుంటే, దయచేసి ఈ ఇమెయిల్‌కు ప్రత్యుత్తరం ఇవ్వండి, లేదా మీ సమన్వయకర్తతో సంప్రదించండి{coordinatorContact}. ప్రత్యామ్నాయంగా, కొత్త గ్రూప్ కోసం మీరు {regLink} వద్ద మళ్లీ నమోదు చేసుకోవచ్చు.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం",
       coordinatorWhatsAppLabel: "సమన్వయకర్త వాట్సాప్",
