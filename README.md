@@ -1,513 +1,445 @@
-# CoC Registration & Group Assignment System
+# CoC Registration and Group Operations
 
-This repository documents the frontend, backend, and admin automation used to manage **CoC (Circle of Connection)** study group registrations and assignments.
+This repo contains a Google Apps Script + static frontend system for:
 
-The system is intentionally simple, sheet-driven, auditable, and friendly to both humans and LLMs (Copilot, Cursor, ChatGPT, etc.).
+1. Participant registration (public form)
+2. Group suggestion and assignment (admin in Google Sheets)
+3. Coordinator status updates (public coordinator form)
 
----
-
-## 1. System Overview
-
-The system has **two major functional areas**:
-
-1. **User Registration Form** (public-facing)
-2. **Group Assignment & Admin Operations** (internal, Google Sheets–driven)
-
-Each area is independent but connected through a shared data contract.
+This README is optimized for both human maintainers and coding agents.
 
 ---
 
-## 2. Technology Stack
+## TL;DR (Agent Quickstart)
 
-| Layer | Technology |
-|----|----|
-| Frontend | Static HTML + Vanilla JavaScript |
-| Backend | Google Apps Script (Web App – `doPost`) |
-| Storage | Google Sheets |
-| Security | reCAPTCHA v3 + Honeypot |
-| Hosting | GitHub Pages / Google Sites |
-| Admin UI | Google Sheets |
-
----
-
-## 3. Sheet Column Mappings (Authoritative)
-
-All code is **column-agnostic** using header-based lookup via `indexMap()`. This means:
-- Column order doesn't matter
-- Column names are the source of truth
-- Code queries sheets by header name, not position
-
-### 3.1 CustomForm Sheet Columns
-
-| Column | Type | Notes |
-|--------|------|-------|
-| Timestamp | DateTime | Auto-generated submission time |
-| Email | String | Participant email (required, unique) |
-| Name | String | Full name (required) |
-| WhatsApp | String | International number: 8–15 digits (required) |
-| Center | String | Heartfulness center name (required) |
-| EnglishProficiency | String | Yes/No or auto-filled based on language |
-| PreferredTimes | String | Comma-separated day/time slots (e.g., "Mon Day, Tue Evening") |
-| Coordinator | String | Yes/No indicating willingness to coordinate |
-| Language | String | Full language name (required) |
-| Processed | Boolean | Marks if the row has been transferred to Participants sheet |
-| Comments | String | Optional comments from participant |
-| DisclaimerConsent | String | Yes/No checkbox consent; required by backend |
-
-### 3.2 Participants Sheet Columns
-
-| Column | Type | Notes |
-|--------|------|-------|
-| ParticipantID | String | Auto-generated ID (P-0001, P-0002, etc.) |
-| Name | String | Normalized from CustomForm |
-| Email | String | Unique identifier, from CustomForm |
-| WhatsApp | String | From CustomForm |
-| Language | String | Full language name |
-| Center | String | From CustomForm |
-| PreferredSlots | String | Time slots populated from CustomForm.PreferredTimes |
-| CoordinatorWilling | Boolean | Populated from CustomForm.Coordinator |
-| AssignedGroup | String | Final group name (e.g., CoC-English-001) |
-| AssignmentStatus | String | Unassigned, Assigned, or custom status |
-| IsGroupCoordinator | Boolean | Admin marks who leads the group |
-| AcceptSuggestion | Boolean | Admin confirms suggested group |
-| Suggestions | String | System-generated suggestion text (new/existing group or manual-review marker) |
-| Notes | String | Admin notes |
-| IsActive | Boolean | Coordinator-updated participation flag |
-
-### 3.3 Groups Sheet Columns
-
-| Column | Type | Notes |
-|--------|------|-------|
-| GroupID | String | Unique opaque ID (e.g., G-0001) |
-| GroupCreationDate | Timestamp | Creation timestamp (present in setup script) |
-| GroupName | String | Formatted as CoC-<Language>-<Sequence> (e.g., CoC-English-001) |
-| Language | String | Full language name |
-| Day | String | Extracted from slot suggestions (e.g., Mon, Tue) |
-| Time | String | Day or Evening |
-| CoordinatorEmail | String | Populated from Participants when admin assigns coordinator |
-| CoordinatorName | String | Populated from Participants when admin assigns coordinator |
-| CoordinatorWhatsApp | String | Populated from Participants when available (legacy sheets may omit this column) |
-| MemberCount | Number | Auto-computed by refresh |
-| Status | String | Active, Inactive, etc. |
-| Sequence | Number | Language-specific sequence number |
-| WeeksCompleted | Number | Coordinator-updated weeks completed (0–25) |
-| Notes | String | Coordinator notes |
-| LastUpdated | Timestamp | Auto-recorded when coordinator updates group status |
-
-### 3.4 AdminDashboard Sheet Columns
-
-| Column | Type | Notes |
-|--------|------|-------|
-| DashboardSection | String | Section grouping (Groups, Participants) |
-| Metric | String | Label of metric (e.g., "Active Groups", "Unassigned Participants") |
-| English | Number | Count for English language |
-| Tamil | Number | Count for Tamil language |
-| Hindi | Number | Count for Hindi language |
-| Kannada | Number | Count for Kannada language |
-| Telugu | Number | Count for Telugu language |
-
-**Dashboard Layout:**
-
-The dashboard is completely reconstructed each time it refreshes. Column headers are in gray, followed by two visually distinct sections: GROUPS and PARTICIPANTS with darker section headers. Action items use a very light red tint and only highlight the metric label plus the language cells that are non-zero.
-
-*Groups section:*
-- Active Groups
-- Inactive Groups ⚠️ (highlighted for action)
-- Completed Groups
-- Closed Groups
-- Terminated Groups
-- Groups without Coordinator ⚠️ (highlighted for action)
-
-*Participants section:*
-- Unassigned Participants
-- Assigned Participants
-- Active Participants (Assigned AND IsActive = true)
-- Inactive Participants (IsActive = false, excluding Discontinued and Completed) ⚠️ (highlighted for action)
-- Discontinued Participants
-- Completed Participants
-
-⚠️ Highlighted metrics indicate action items requiring admin attention. Only the metric label and non-zero language cells are tinted; zero-value cells remain unhighlighted. The DashboardSection column shows the section name only in section headers, not repeated in data rows. All values are auto-computed by `updateAdminDashboard()` and the sheet is completely cleared and rebuilt each time the dashboard is refreshed.
+1. Read these files first:
+   - `CoC Reg Form.gs`
+   - `Coc Create Groups.gs`
+   - `CoC Coordinator Update.gs`
+   - `SetupSheets.gs`
+   - `index.html`
+   - `js/index.js`
+2. Do not hardcode sheet column indexes. Use header lookup (`indexMap`).
+3. Keep canonical language names exactly: `English`, `Tamil`, `Hindi`, `Kannada`, `Telugu`.
+4. Slot matching is normalized into day + bucket (`Morning`, `Afternoon`, `Evening`, `Night`) by helpers in `Coc Create Groups.gs`.
+5. Registration backend (`doPost`) is authoritative. Frontend validation is UX only.
+6. If you change any field/column names, update all producer and consumer scripts together.
 
 ---
 
-## 4. Canonical Concepts (Important)
+## Repository Map
 
-### 4.1 Supported Languages (Canonical Encoding)
-
-All systems use **full language names**, not codes:
-- English
-- Tamil
-- Hindi
-- Kannada
-- Telugu
-
-> Display text may be localized, but submitted values are always canonical.
-
----
-
-### 4.2 Preferred Time Slots (Canonical Encoding)
-
-All time slots are stored as **opaque strings**:
-
-Format: `<Day> <Time>`
-
-Examples:
-- Mon Day
-- Tue Evening
-- Thu Day
-- Sun Evening
-
-User-facing labels:
-- **Day**: 10am – 5pm
-- **Evening**: 5pm – 10pm
-
-**Admin and backend logic treats these as strings only** — no parsing of Day/Evening semantics.
+- `index.html`: Participant registration form UI.
+- `success.html`: Registration success page.
+- `coordinator-status.html`: Coordinator status update UI.
+- `js/index.js`: Registration submit flow (reCAPTCHA, fetch to web app).
+- `js/coordinator-status.js`: Coordinator portal calls.
+- `js/translations.js`: i18n labels.
+- `CoC Reg Form.gs`: Main web app dispatcher (`doPost`) and registration backend.
+- `Coc Create Groups.gs`: Admin menu, participant import, suggestions, accept flow, lifecycle jobs, email templates.
+- `CoC Coordinator Update.gs`: Coordinator query/member/status handlers and notification emails.
+- `SetupSheets.gs`: Bootstrap script to create core sheets and headers.
+- `appsscript.json`: Apps Script project manifest (V8, web app config).
 
 ---
 
-## 5. User Registration Form
+## Runtime and Deployment
 
-### 5.1 Purpose
-Collect participant registrations securely, multilingual, and at scale.
+### Apps Script manifest
 
----
+Current `appsscript.json`:
 
-### 5.2 Data Flow
+- Runtime: `V8`
+- Web app execute as: `USER_DEPLOYING`
+- Web app access: `ANYONE_ANONYMOUS`
 
-```
-User
-  ↓
-HTML Form (index.html)
-  ↓
-fetch(FormData) + reCAPTCHA
-  ↓
-Apps Script doPost
-  ↓
-Validation (backend authoritative)
-  ↓
-Google Sheet (CustomForm) - append-only
-  ↓
-Confirmation Email (includes all fields + English proficiency for non-English + comments if provided)
-```
+### Required Script Properties
 
----
+- `RECAPTCHA_SECRET` (required): used by `verifyRecaptcha`.
+- `MASTER_SHEET_URL` (optional): included in some admin emails.
 
-### 5.3 Registration Fields (Data Contract)
+### Frontend runtime values
 
-| Field | Form Name | Required | Notes |
-|-------|-----------|----------|-------|
-| Email | `Email` | Yes | HTML + backend validated |
-| Name | `Name` | Yes | Free text |
-| WhatsApp | `WhatsApp` | Yes | International number: 8–15 digits (include country code) |
-| Center | `Center` | Yes | Free text |
-| Language | `Language` | Yes | Canonical value (select dropdown) |
-| English proficiency | `EnglishAbility` | Conditional | Required if Language ≠ English |
-| Preferred times | `Times` | Yes | Checkbox grid |
-| Coordinator willing | `Coordinator` | Yes | Yes / No (select dropdown) |
-| Comments | `Comments` | No | Optional free text (label: "Comments (if any)", not translated) |
-| Disclaimer consent | `DisclaimerConsent` | Yes | Required checkbox; must be checked |
-| Honeypot | `honey` | No | Must be empty (spam trap) |
-| Captcha token | `recaptcha` | Yes | Added programmatically by form |
+In `js/index.js`, two values are currently hardcoded and must match your active deployment:
+
+- `WEBAPP_URL`
+- `SITE_KEY` (reCAPTCHA site key)
+
+If you deploy a new web app version, update `WEBAPP_URL`.
 
 ---
 
-### 5.4 Validation Model (Single Source of Truth)
+## Data Model (Sheets)
 
-**All business rules live in the backend** (CoC Reg Form.gs).
+All scripts rely on header names. Column order is not assumed.
 
-Rules:
-- Required fields must be present
-- WhatsApp must be 8–15 digits after stripping symbols (include country code)
-- At least one preferred time must be selected
-- Disclaimer consent must be checked
-- If Language ≠ English → `EnglishAbility` must be "Yes"
-- If Language = English → backend auto-sets `EnglishAbility` to "Yes"
+## 1) `CustomForm` (raw submissions)
 
-Frontend validation is **UX-only**, not authoritative.
+Expected fields written by `handleRegistration`:
+
+1. `Timestamp`
+2. `Language`
+3. `Email`
+4. `Name`
+5. `WhatsApp`
+6. `Center`
+7. `EnglishAbility`
+8. `PreferredTimes`
+9. `Coordinator`
+10. `Processed`
+11. `Comments`
+12. `DisclaimerConsent`
+
+Notes:
+
+- Duplicate submissions are still appended (append-only audit log).
+- Duplicate detection only suppresses confirmation email if same email submitted within 5 minutes.
+
+## 2) `Participants`
+
+Created by `setupAllCoCSheets` with these headers:
+
+1. `ParticipantID`
+2. `Name`
+3. `Email`
+4. `WhatsApp`
+5. `Language`
+6. `Center`
+7. `PreferredSlots`
+8. `CoordinatorWilling`
+9. `AssignedGroup`
+10. `AssignmentStatus`
+11. `IsGroupCoordinator`
+12. `AcceptSuggestion`
+13. `Suggestions`
+14. `Notes`
+15. `IsActive`
+
+## 3) `Groups`
+
+Created by `setupAllCoCSheets` with these headers:
+
+1. `GroupID`
+2. `GroupCreationDate`
+3. `GroupName`
+4. `Language`
+5. `Day`
+6. `Time`
+7. `CoordinatorEmail`
+8. `CoordinatorName`
+9. `MemberCount`
+10. `Status`
+11. `Sequence`
+12. `WeeksCompleted`
+13. `Notes`
+14. `LastUpdated`
+
+Important:
+
+- Some logic supports optional `CoordinatorWhatsApp`. It is not created by `SetupSheets.gs` by default.
+
+## 4) `AdminDashboard`
+
+Created by `setupAllCoCSheets` and fully rebuilt by `updateAdminDashboard`.
+
+## 5) `MASTER`
+
+Required for language-scoped admin routing and resource links.
+
+Expected pattern:
+
+- Header row with language columns (`English`, `Tamil`, `Hindi`, `Kannada`, `Telugu`).
+- Record rows in first column (`RecordType` style), including:
+  - `AdminEmail`
+  - `CocOverview`
+  - `CoCWeek1-20`
+  - `CoCBooks`
+  - `CoCPurchaseLink`
 
 ---
 
-### 5.5 Critical Frontend Rule (Must Not Be Broken)
+## API Surface (`doPost` actions)
 
-> **Never disable inputs before creating `FormData`.**
+Dispatcher in `CoC Reg Form.gs` handles:
 
-Correct pattern:
-```js
-const fd = new FormData(form);
-submitButton.disabled = true;
+1. `register`
+2. `getAdminEmail`
+3. `queryCoordinatorGroups`
+4. `getGroupMembers`
+5. `updateGroupStatus`
+
+Security checks:
+
+- Honeypot (`honey`) must be empty.
+- reCAPTCHA token required for all action handlers that call `verifyRecaptcha`.
+
+---
+
+## Request Flow Diagrams
+
+### 1) Registration flow
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant U as User
+  participant F as index.html + js/index.js
+  participant R as reCAPTCHA v3
+  participant A as Apps Script doPost
+  participant C as CustomForm sheet
+  participant M as MASTER sheet
+  participant E as MailApp
+
+  U->>F: Fill form and submit
+  F->>R: execute(site_key, action=submit)
+  R-->>F: token
+  F->>A: POST FormData (action=register + token)
+  A->>A: Validate + normalize + duplicate window check
+  A->>C: appendRow(submission)
+  A->>M: resolve language admin email
+  A->>E: Send confirmation email (skip if near-duplicate)
+  A-->>F: JSON result
+  F-->>U: Redirect to success page
 ```
 
-❌ Wrong:
-```js
-submitButton.disabled = true;  // Too early!
-const fd = new FormData(form);  // Disabled inputs excluded
+### 2) Coordinator update flow
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant C as Coordinator
+  participant UI as coordinator-status.html + js/coordinator-status.js
+  participant R as reCAPTCHA v3
+  participant A as Apps Script doPost
+  participant G as Groups sheet
+  participant P as Participants sheet
+  participant M as MASTER sheet
+  participant E as MailApp
+
+  C->>UI: Select language/group and submit update
+  UI->>R: execute(site_key)
+  R-->>UI: token
+  UI->>A: POST queryCoordinatorGroups/getGroupMembers/updateGroupStatus
+  A->>A: Validate status + payload
+  A->>G: Update status, weeks, notes, last updated
+  A->>P: Update member IsActive flags
+  A->>M: Resolve language admin email
+  A->>E: Send coordinator update notification
+  A-->>UI: JSON success/error
+  UI-->>C: Show confirmation/result
+```
+
+### 3) Admin grouping and lifecycle flow
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Admin as Spreadsheet Admin
+  participant S as CoC Admin menu
+  participant A as Coc Create Groups.gs
+  participant C as CustomForm sheet
+  participant P as Participants sheet
+  participant G as Groups sheet
+  participant D as AdminDashboard sheet
+  participant M as MASTER sheet
+  participant E as MailApp
+
+  Admin->>S: Populate Participants
+  S->>A: populateParticipantsFromCustomForm()
+  A->>C: Read unprocessed rows
+  A->>P: Insert latest-per-email participants
+  A->>C: Mark Processed=TRUE
+  A->>D: Refresh dashboard
+
+  Admin->>S: Suggest Groups (language)
+  S->>A: suggestGroupsForLanguage(lang)
+  A->>P: Read unassigned participants
+  A->>G: Read eligible active groups
+  A->>P: Write Suggestions values
+
+  Admin->>S: Accept Suggestions (+/- email)
+  S->>A: acceptGroupSuggestions(sendEmails)
+  A->>G: Create missing groups
+  A->>P: Set assignments + clear flags
+  A->>G: Recompute group derived fields
+  A->>D: Rebuild dashboard
+  A->>M: Resolve reply-to/resources
+  A->>E: Send assignment/lifecycle emails (optional)
+
+  Note over A,G: Weekly trigger: Completed->Closed, Inactive->Terminated
 ```
 
 ---
 
-### 5.6 Backend Response Contract
+## Core Workflows
 
-**Success:**
-```json
-{ "result": "success" }
-```
+## A) Registration workflow
 
-**Validation error:**
-```json
-{
-  "result": "error",
-  "error": "Missing required field(s)",
-  "missing": ["Coordinator", "Preferred days & times"]
-}
-```
+1. User submits `index.html` form.
+2. `js/index.js` gets reCAPTCHA token and posts `FormData` to web app.
+3. `handleRegistration` validates and appends to `CustomForm`.
+4. Confirmation email is sent (unless identified as near-duplicate submission).
 
-Frontend displays backend errors verbatim.
+Validation highlights:
 
----
+- Required: email, name, WhatsApp, center, coordinator answer, disclaimer consent, at least one preferred slot.
+- WhatsApp accepted format after normalization: 8 to 15 digits.
+- For non-English language, `EnglishAbility` is required.
 
-## 6. Admin Group Assignment System
+## B) Populate participants
 
-### 6.1 Purpose
+Menu action: `Populate Participants (All Languages)` -> `populateParticipantsFromCustomForm`.
 
-Assign registered participants into CoC groups using transparent, admin-controlled logic.
+Behavior:
 
-This is a **Google Sheets–first workflow**. No background automation or implicit decisions.
+- Ensures `Processed` column exists on `CustomForm`.
+- For each email, only the latest unprocessed submission is transferred.
+- Marks all submissions for that email as processed.
+- Creates `ParticipantID` values (`P-0001` style).
 
----
+## C) Suggest groups (per language)
 
-### 6.2 Core Sheets
+Menu actions:
 
-| Sheet | Role |
-|-------|------|
-| CustomForm | Raw registrations (append-only) |
-| Participants | Normalized participant records with assignment state |
-| Groups | Derived group definitions |
-| AdminDashboard | Read-only stats (auto-computed) |
+- `Suggest Groups - English`
+- `Suggest Groups - Tamil`
+- `Suggest Groups - Hindi`
+- `Suggest Groups - Kannada`
+- `Suggest Groups - Telugu`
 
----
+Algorithm summary:
 
-### 6.3 Group Definition Rules
+- Fills existing eligible active groups first (`WeeksCompleted <= 5`, capacity < 8).
+- Uses slot normalization helpers:
+  - `parseSlotDescriptor`
+  - `buildCanonicalSlotKey`
+  - `normalizeTimeBucket`
+  - `inferFirstHour24_`
+- Buckets supported by matching logic: `Morning`, `Afternoon`, `Evening`, `Night`.
+- Creates `NEW -> CoC-Language-### (Slot)` suggestions for new groups.
+- Flags unsplittable small clusters with `NEEDS_MANUAL_REVIEW`.
 
-A valid group must have:
+## D) Accept suggestions
 
-1. **Same language** (required)
-2. **4–8 members** (current suggestion logic target range)
-3. **At least one common time slot** (required)
-4. **Coordinator availability is preferred** (admin can still handle edge cases manually)
-5. **Prefer same center** (soft constraint, not enforced)
+Menu action: `Accept Suggestions and Email` (or no-email variant).
 
----
+Behavior:
 
-### 6.4 Group Naming Convention (Strict)
+- Processes rows where `AcceptSuggestion` is checked.
+- Creates missing groups as needed.
+- Updates participant assignment fields.
+- Refreshes derived group/dashboard views.
+- Sends member/coordinator assignment emails (optional).
 
-Format: `CoC-<Language>-<Sequence>`
+## E) Coordinator status updates
 
-Examples:
-- CoC-English-001
-- CoC-Tamil-004
-- CoC-Hindi-002
+Coordinator portal flow uses actions:
 
-**Sequence is per-language and count-based.** The sequence number is determined by counting existing groups for that language and adding 1. For example, if there are 4 Tamil groups, the next suggested group will be `CoC-Tamil-005`.
+- `queryCoordinatorGroups`
+- `getGroupMembers`
+- `updateGroupStatus`
 
----
+Status changes allowed from portal submit: `Active`, `Inactive`, `Completed`.
 
-### 6.5 Admin Workflows
+Update notification email is sent to language admin and coordinator (when addresses are available).
 
-#### Populate Participants
-- Triggered by menu: "Populate Participants (All Languages)"
-- Pulls data from CustomForm
-- Assigns Participant IDs (P-0001, P-0002, etc.)
-- No grouping performed
-- Only new emails are added (no duplicates)
+## F) Lifecycle batch jobs
 
-#### Suggest Groups
-- Triggered by language-specific menu items
-- Suggests assignments for unassigned participants into:
-  - Existing **Active** groups with matching slot, available capacity, and `WeeksCompleted <= 5`
-  - New suggested groups when existing groups are not suitable
-- Uses all preferred slots and slot-density heuristics (not only first slot)
-- Does **not** auto-commit assignments
-- Suggestions appear in `Suggestions` column with values such as:
-  - `NEW → CoC-{Language}-{Seq} ({TimeSlot})`
-  - Existing group name (for assignment to an existing group)
-  - `⚠️ NEEDS_MANUAL_REVIEW (...)` for insufficient/edge-case slot clusters
-- Admin reviews and checks AcceptSuggestion checkbox to confirm
+Daily:
 
-#### Accept Group Suggestions
-- Processes all rows with AcceptSuggestion = true
-- **Pattern matching for group assignments:**
-  - **Pattern a** (`NEW → CoC-{Language}-{Seq} ({TimeSlot})`): Creates new group with specified timing
-  - **Pattern b** (`CoC-{Language}-{Seq}`): Reassigns to existing group
-- Creates new groups in Groups sheet if needed
-  - Extracts Day & Time from timing slot (or sets to "TBD")
-  - Auto-populates coordinator info if IsGroupCoordinator is set for any member
-- Updates Participants with AssignedGroup and AssignmentStatus
-- **Sends assignment emails:**
-  - **For group members**: Group info + coordinator contact details
-  - **For coordinators**: Group info + full member list with contact details
-  - All emails sent in participant's selected language
-- Does not auto-pick coordinators (admin must set IsGroupCoordinator before accepting suggestions)
+- `dailyParticipantProcessingWithAlerts`
+- Populates new participants and emails language admins for unassigned inflow.
 
-#### Refresh Groups & Dashboard
-- Rebuilds Groups sheet from Participants data
-- Auto-creates any groups referenced in Participants but missing from Groups sheet
-- Recomputes MemberCount, CoordinatorEmail, CoordinatorName, CoordinatorWhatsApp
-- Updates AdminDashboard stats (by language)
+Weekly:
+
+- Preferred trigger model: per-language wrappers calling `weeklyLifecycleProcessingByLanguage_`.
+- Transitions:
+  - `Completed` groups -> `Closed`
+  - `Inactive` groups -> `Terminated`
+- Sends participant lifecycle emails and admin summary.
 
 ---
 
-### 6.6 Coordinator Handling
+## Group and Participant Status Semantics
 
-1. **Participants indicate willingness** → CustomForm.Coordinator = Yes/No
-2. **System populates** → Participants.CoordinatorWilling
-3. **Admin explicitly designates** → Participants.IsGroupCoordinator = true
-4. **System derives** → Groups.CoordinatorEmail, CoordinatorName, CoordinatorWhatsApp
-5. **Email notifications** → Sent automatically when accepting group suggestions
+Group statuses used in system:
 
-System does **not** auto-pick coordinators.
+- `Active`
+- `Inactive`
+- `Completed`
+- `Closed`
+- `Terminated`
 
----
+Participant assignment statuses commonly used:
 
-### 6.7 Time Slot Handling (Admin Logic)
+- `Unassigned`
+- `Assigned`
+- `Discontinued`
+- `Completed`
 
-Admin scripts:
-- Do **not** parse "Day / Evening"
-- Do **not** interpret semantics
-- Compare slots by **string equality**
-
-This makes UI label changes safe. If you change the UI label from "Day" to "Morning", only the UI changes — the canonical slot value "Mon Day" remains in the system.
+Participant activity is tracked separately via `IsActive`.
 
 ---
 
-### 6.8 Groups Lifecycle
+## Admin Menu (Spreadsheet)
 
-Groups can move through the following statuses (`Groups.Status`):
-- **Active**: All groups start as Active at creation. Active groups are visible in the Coordinator update form. Participants under an Active group may be Active or Inactive (`IsActive = TRUE/FALSE`).
-- **Inactive**: Coordinators mark their groups Inactive via the update form when the group is no longer meeting. Inactive groups remain visible in the Coordinator update form. A weekly job will later mark these as Terminated (see below).
-- **Completed**: Coordinators mark groups as Completed when they finish all 25 weekly sessions. Completed groups remain visible in the Coordinator update form until the weekly job closes them.
-- **Closed**: A weekly batch job marks all Completed groups as Closed, emails each participant with the coordinator CC'd (body varies: active participants receive an invitation to re-register; inactive participants receive a different message), and updates participants to `AssignmentStatus = Completed` and `IsActive = FALSE`. Closed groups are not shown in the Coordinator update form.
-- **Terminated**: A weekly batch job marks all Inactive groups as Terminated, emails each participant with the coordinator CC'd on each message, and updates participants to `AssignmentStatus = Discontinued` and `IsActive = FALSE`. Terminated groups are not shown in the Coordinator update form.
+Defined in `onOpen` in `Coc Create Groups.gs`:
 
-Weekly lifecycle processing also updates the AdminDashboard and sends a summary email to each language admin with the status changes applied that week.
-
-Setup note:
-- To include the CoC Master sheet link in the weekly summary email, set the script property `MASTER_SHEET_URL` (Apps Script → Project Settings → Script Properties).
-
-### 6.9 Participants / Coordinator Lifecycle
-
-Participants (including coordinators) have two independent fields:
-- **Activity**: `IsActive = TRUE/FALSE`
-- **AssignmentStatus**: `Unassigned`, `Assigned`, `Reassign` (external), plus `Discontinued`, `Completed`
-
-Lifecycle rules:
-- **Active**: Participants are added as Active on registration. Coordinators may mark a participant Inactive via the update form.
-- **Inactive**: Indicates the participant is not joining sessions. Coordinators set `IsActive = FALSE`. The AdminDashboard reports only Inactive participants who are not already Discontinued or Completed.
-- **Assigned**: Set when a participant is added to a group. Independent of activity flag.
-- **Unassigned**: Default upon registration.
-- **Reassign**: For participants wanting to change groups (process handled outside the system).
-- **Discontinued**: Weekly job sets participants to Discontinued and `IsActive = FALSE` when their group is Terminated. Each participant is emailed with the coordinator CC'd.
-- **Completed**: Weekly job sets participants to Completed and `IsActive = FALSE` when their group is Closed. Each participant is emailed with the coordinator CC'd; active participants receive an invitation to re-register, inactive participants receive a different message.
-
-Re-registration link (emails reference): https://www.hcessentials.org/coc-registration-form
-
-Coordinator UI behavior:
-- Hides groups in `Closed` and `Terminated` status
-- Hides participants with `AssignmentStatus = Discontinued`
-
-### 6.10 Coordinator Update Notification Email
-
-When a coordinator submits a group status update from the coordinator portal, the system sends an automated notification email to:
-- The language CoC admin (resolved from `MASTER` sheet `AdminEmail` row)
-- The coordinator (if coordinator email exists)
-
-The email includes:
-- Group summary (group name/ID, language, status, weeks completed, schedule, update date)
-- Coordinator details including coordinator WhatsApp/phone number
-- Participant activity summary (submitted total, active, inactive)
-- Coordinator notes
-- Reference links to the `Participants` and `Groups` sheets in the same spreadsheet
+1. Populate Participants (All Languages)
+2. Suggest Groups per language
+3. Accept Suggestions and Email
+4. Accept Suggestions Without Email
+5. Refresh Groups and Dashboard
 
 ---
 
-## 7. Design Philosophy
+## Operational Guardrails
 
-- **Sheets are the UI** – no separate admin dashboard or CRM
-- **Apps Script enforces consistency** – validates, normalizes, derives
-- **No background automation** – all grouping is explicit admin action
-- **All assignments are explicit** – no auto-assignment or AI-driven decisions
-- **Dashboards are derived, never edited manually** – read-only, auto-computed
-- **Readability > cleverness** – prefer simple loops over clever JS
+1. Keep sheet headers stable. Header text is effectively your API contract.
+2. Prefer additive changes over renaming existing fields.
+3. Keep backend validation authoritative.
+4. Do not disable form controls before building `FormData` for submit.
+5. Preserve append-only behavior in `CustomForm` for traceability.
+6. Keep language values canonical and case-consistent.
 
 ---
 
-## 8. Daily Alert Automation
+## Local Maintenance Checklist
 
-The system includes an optional daily batch processing function that:
-1. Processes new registrations from CustomForm to Participants
-2. Identifies unassigned participants by language
-3. Sends alert emails to language admins
+When making changes, validate these paths end-to-end:
 
-### Setup Instructions
+1. Registration submit succeeds and writes expected row.
+2. `Populate Participants` imports latest-per-email correctly.
+3. Suggestion run produces valid `Suggestions` output.
+4. Acceptance updates groups/participants and clears checkboxes.
+5. Coordinator portal can load groups and submit status changes.
+6. Dashboard rebuild runs without missing-column errors.
+7. Daily/weekly trigger functions run without runtime errors in logs.
 
-1. **Add admin emails in MASTER sheet** (same spreadsheet):
-  - Create/ensure a sheet named `MASTER`.
-  - Use headers: `RecordType`, `Description`, then one column per language (e.g., `English`, `Tamil`, `Hindi`, `Kannada`, `Telugu`).
-  - Add a row with `RecordType = AdminEmail`; put each language admin’s email under its language column.
-  - The script reads these values and no longer uses script properties for admin emails.
+---
 
-2. **Set up Time-Based Trigger** (Apps Script Editor → Triggers):
+## Trigger Setup (Recommended)
+
+1. Daily trigger:
    - Function: `dailyParticipantProcessingWithAlerts`
-   - Event source: Time-driven
-   - Type: Day timer
-   - Time of day: Choose preferred time (e.g., 9am to 10am)
-
-### Alert Email Contents
-
-Each language admin receives an email when there are new unassigned participants:
-- Subject: `CoC New Registrations Alert - [Language]`
-- Participant details table (ID, Name, Email, WhatsApp, Preferred Slots, Willing to Coordinate)
-- Link to CoC Registrations spreadsheet: https://docs.google.com/spreadsheets/d/1aBJ8vJx5UHrnPEsNZ-y_REVv6F7F_sYjXPJoCw2AxvU/edit?usp=sharing
-
-Resource links and labels
-- Participant and coordinator assignment emails now show a hardcoded self-service portal link for weekly schedules, documents, and downloadable books: https://www.hcessentials.org/request.
-- The remaining resource URL used in those emails is the purchase link from the MASTER sheet RecordType `CoCPurchaseLink`, per language column.
+   - Type: time-driven, once per day
+2. Weekly triggers (per language):
+   - `weeklyLifecycleProcessingEnglish`
+   - `weeklyLifecycleProcessingTamil`
+   - `weeklyLifecycleProcessingHindi`
+   - `weeklyLifecycleProcessingKannada`
+   - `weeklyLifecycleProcessingTelugu`
 
 ---
 
-## 9. Current Status
+## Change Notes for Contributors and Agents
 
-| Feature | Status |
-|---------|--------|
-| Registration form | ✅ stable |
-| Backend validation | ✅ authoritative |
-| Multilingual support | ✅ complete |
-| Admin grouping | ✅ functional |
-| Time slot consistency | ✅ aligned |
-| Column-agnostic code | ✅ refactored |
+When updating behavior, include all of the following in the same PR/change set:
 
----
+1. Script logic changes.
+2. Sheet/header contract updates (if any).
+3. Frontend field name updates (if any).
+4. Email template and language label adjustments (if any).
+5. README update describing new invariants.
 
-## 10. Notes for LLMs / Contributors
-
-When modifying this system:
-
-1. **Do not change field/column names lightly** – They are the API contract between systems
-2. **Treat backend as the source of truth** – Frontend validation is UX only
-3. **Keep time slot values canonical** – Always use "Day" / "Evening", never localized
-4. **Avoid implicit frontend assumptions** – Validate on backend always
-5. **Prefer explicit admin actions over automation** – Let humans decide group assignments
-6. **Use `indexMap()` for column lookups** – Never hardcode column positions
-7. **Log changes** – Sheet-driven audits require traceability
-8. **Push workflow for coding assistants** – After finishing edits, ask for approval before pushing to source repo
-9. **Post-push reporting** – After push, provide commit summary (commit ID, message, and key files/changes)
-
----
-
-## 11. Future Enhancements (Out of Scope)
-
-- One-click accept group suggestions
-- Coordinator/member bulk email tools
-- Automated reassignment workflows
-- Permissioned admin access by language
-- Mobile-friendly admin interface
-
+If a change touches grouping or scheduling logic, also review helpers in `Coc Create Groups.gs` and ensure existing slot strings remain backward-compatible.
