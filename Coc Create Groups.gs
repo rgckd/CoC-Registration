@@ -849,8 +849,7 @@ function suggestGroupsForLanguage(language) {
     )
     .map(g => ({
       name: g[gIdx.GroupName],
-      day: normalizeDay(g[gIdx.Day]),
-      time: normalizeTime(g[gIdx.Time]),
+      slotKey: buildCanonicalSlotKey(g[gIdx.Day], g[gIdx.Time]),
       memberCount: g[gIdx.MemberCount] || 0,
       capacity: MAX_GROUP_SIZE - (g[gIdx.MemberCount] || 0)
     }));
@@ -862,17 +861,15 @@ function suggestGroupsForLanguage(language) {
   participants.forEach(p => {
     if (assignedToExisting.has(p.row)) return;
     
-    const slots = splitSlots(p.data[pIdx.PreferredSlots]);
+    const slots = splitSlots(p.data[pIdx.PreferredSlots]).map(parseSlotDescriptor);
     
     // Try each preferred slot
-    for (const slot of slots) {
-      const slotParts = slot.split(" ");
-      const slotDay = normalizeDay(slotParts[0] || "TBD");
-      const slotTime = normalizeTime(slotParts[1] || "TBD");
+    for (const slotMeta of slots) {
+      if (slotMeta.key === "TBD|TBD") continue;
       
       // Find matching group with capacity
       const matchingGroup = existingGroups.find(g => 
-        g.day === slotDay && g.time === slotTime && g.capacity > 0
+        g.slotKey === slotMeta.key && g.capacity > 0
       );
       
       if (matchingGroup) {
@@ -898,28 +895,45 @@ function suggestGroupsForLanguage(language) {
   // obvious groups when the first preferred slot is sparsely chosen.
   const slotCounts = {};
   unassignedParticipants.forEach(p => {
-    const slots = splitSlots(p.data[pIdx.PreferredSlots]);
-    slots.forEach(s => {
-      slotCounts[s] = (slotCounts[s] || 0) + 1;
+    const slots = splitSlots(p.data[pIdx.PreferredSlots]).map(parseSlotDescriptor);
+    const uniqueKeys = {};
+    slots.forEach(meta => {
+      if (meta.key === "TBD|TBD") return;
+      if (uniqueKeys[meta.key]) return;
+      uniqueKeys[meta.key] = true;
+      slotCounts[meta.key] = (slotCounts[meta.key] || 0) + 1;
     });
   });
 
   const slotGroups = {};
   unassignedParticipants.forEach(p => {
-    const slots = splitSlots(p.data[pIdx.PreferredSlots]);
+    const slots = splitSlots(p.data[pIdx.PreferredSlots]).map(parseSlotDescriptor);
+    const uniqueByKey = [];
+    const seenKeys = {};
+    slots.forEach(meta => {
+      if (meta.key === "TBD|TBD") return;
+      if (seenKeys[meta.key]) return;
+      seenKeys[meta.key] = true;
+      uniqueByKey.push(meta);
+    });
+
+    if (uniqueByKey.length === 0) {
+      uniqueByKey.push({ key: "TBD|TBD", label: "TBD" });
+    }
+
     // Pick the slot with the highest overall count among this participant's options
-    let bestSlot = slots[0] || "TBD";
-    let bestCount = slotCounts[bestSlot] || 0;
-    slots.forEach(s => {
-      const c = slotCounts[s] || 0;
+    let bestSlotMeta = uniqueByKey[0];
+    let bestCount = slotCounts[bestSlotMeta.key] || 0;
+    uniqueByKey.forEach(meta => {
+      const c = slotCounts[meta.key] || 0;
       if (c > bestCount) {
-        bestSlot = s;
+        bestSlotMeta = meta;
         bestCount = c;
       }
     });
 
-    if (!slotGroups[bestSlot]) slotGroups[bestSlot] = [];
-    slotGroups[bestSlot].push(p);
+    if (!slotGroups[bestSlotMeta.label]) slotGroups[bestSlotMeta.label] = [];
+    slotGroups[bestSlotMeta.label].push(p);
   });
 
   // Sort slots by participant count (descending) for better bin packing
@@ -1711,6 +1725,78 @@ function normalizeTime(t) {
   const normalized = String(t || "").toLowerCase().trim();
   return timeMap[normalized] || String(t || "TBD").trim();
 }
+
+function parseSlotDescriptor(slotText) {
+  const raw = String(slotText || "").trim();
+  if (!raw) return { day: "TBD", bucket: "TBD", key: "TBD|TBD", label: "TBD" };
+
+  const parts = raw.split(/\s+/).filter(Boolean);
+  const day = normalizeDay(parts[0] || "TBD");
+  const timeText = parts.slice(1).join(" ");
+  const bucket = normalizeTimeBucket(timeText || raw);
+  const label = `${day} ${bucket}`.trim();
+
+  return {
+    day: day,
+    bucket: bucket,
+    key: `${day}|${bucket}`,
+    label: label
+  };
+}
+
+function buildCanonicalSlotKey(dayText, timeText) {
+  const day = normalizeDay(dayText || "TBD");
+  const bucket = normalizeTimeBucket(timeText || "");
+  return `${day}|${bucket}`;
+}
+
+function normalizeTimeBucket(timeText) {
+  const normalized = String(timeText || "").toLowerCase().trim();
+  if (!normalized) return "TBD";
+
+  if (/\bmorn(ing)?\b/.test(normalized)) return "Morning";
+  if (/\bafter\s*noon\b|\bafternoon\b|\bnoon\b|\baft\b/.test(normalized)) return "Afternoon";
+  if (/\beven(ing)?\b|\beve\b/.test(normalized)) return "Evening";
+  if (/\bnight\b/.test(normalized)) return "Night";
+
+  const inferredHour = inferFirstHour24_(normalized);
+  if (inferredHour !== null) {
+    if (inferredHour < 5) return "Night";
+    if (inferredHour < 12) return "Morning";
+    if (inferredHour < 17) return "Afternoon";
+    if (inferredHour < 22) return "Evening";
+    return "Night";
+  }
+
+  if (/\bam\b/.test(normalized)) return "Morning";
+  if (/\bpm\b/.test(normalized)) return "Evening";
+
+  return "TBD";
+}
+
+function inferFirstHour24_(text) {
+  const m = String(text || "").match(/(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?/i);
+  if (!m) return null;
+
+  let hour = Number(m[1]);
+  const minute = Number(m[2] || 0);
+  const ampm = (m[3] || "").toLowerCase();
+
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+
+  if (ampm === "am") {
+    if (hour === 12) hour = 0;
+  } else if (ampm === "pm") {
+    if (hour < 12) hour += 12;
+  } else {
+    // Heuristic for missing am/pm in user-entered ranges like "3 to 4.30".
+    if (hour >= 1 && hour <= 7) hour += 12;
+  }
+
+  return hour + (minute / 60);
+}
+
 function getNextParticipantIdStart(sh, idx) {
   const d = sh.getDataRange().getValues(); let m = 0;
   for (let i = 1; i < d.length; i++) {
