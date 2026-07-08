@@ -342,12 +342,6 @@ function buildCoordinatorUpdateEmailBody_(summary) {
     "<strong>Notes:</strong><br>",
     `${notesText}`,
     "</p>",
-    "<p>",
-    "<strong>Reference Sheets:</strong><br>",
-    participantsLink ? `• <a href=\"${participantsLink}\">CoC Participants Sheet</a><br>` : "",
-    groupsLink ? `• <a href=\"${groupsLink}\">CoC Groups Sheet</a>` : "",
-    (!participantsLink && !groupsLink) ? "(Participants/Groups sheet links unavailable)" : "",
-    "</p>",
     "<p>This is an automated notification from the CoC coordinator update workflow.</p>",
     "</div>"
   ].join("");
