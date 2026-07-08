@@ -57,12 +57,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function buildMembersUI(members, coordinatorName) {
+  function buildMembersUI(members) {
     membersList.innerHTML = "";
-    const excludeName = String(coordinatorName || "").trim().toLowerCase();
-    const others = (members || []).filter(m => String(m.name || "").trim().toLowerCase() !== excludeName);
+    const rows = members || [];
 
-    if (others.length === 0) {
+    if (rows.length === 0) {
       const dict = currentDict();
       membersList.textContent = (dict && dict.noMembers) || "No members found for this group.";
       return;
@@ -72,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const keepText = (dict && dict.keepLabel) || "Keep";
     const discontinueText = (dict && dict.discontinueLabel) || "Discontinue";
 
-    others.forEach(m => {
+    rows.forEach(m => {
       const isKeep = !!m.isActive;
       const row = document.createElement("div");
       row.className = "member-item";
@@ -210,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
     callApi("getGroupMembers", { GroupName: meta.groupName })
       .then(res => {
         if (res.result !== "success") throw new Error(res.error || "Failed to load members");
-        buildMembersUI(res.members || [], meta.coordinatorName);
+        buildMembersUI(res.members || []);
         setStatus("");
       })
       .catch(err => setStatus(err.message || "Failed to load members"));
