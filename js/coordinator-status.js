@@ -17,6 +17,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const statusMsg = document.getElementById("statusMsg");
   const submitBtn = document.getElementById("submitBtn");
   const honey = document.getElementById("honey");
+  const discontinueConfirm = document.getElementById("discontinueConfirm");
+  const discontinueConfirmBody = document.getElementById("discontinueConfirmBody");
+  const discontinueGoBack = document.getElementById("discontinueGoBack");
+  const discontinueConfirmBtn = document.getElementById("discontinueConfirmBtn");
 
   let groupsCache = [];
 
@@ -53,26 +57,62 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function buildMembersUI(members) {
+  function buildMembersUI(members, coordinatorName) {
     membersList.innerHTML = "";
-    if (!members || members.length === 0) {
-      membersList.textContent = "No members found for this group.";
+    const excludeName = String(coordinatorName || "").trim().toLowerCase();
+    const others = (members || []).filter(m => String(m.name || "").trim().toLowerCase() !== excludeName);
+
+    if (others.length === 0) {
+      const dict = currentDict();
+      membersList.textContent = (dict && dict.noMembers) || "No members found for this group.";
       return;
     }
-    members.forEach(m => {
+
+    const dict = currentDict();
+    const keepText = (dict && dict.keepLabel) || "Keep";
+    const discontinueText = (dict && dict.discontinueLabel) || "Discontinue";
+
+    others.forEach(m => {
+      const isKeep = !!m.isActive;
       const row = document.createElement("div");
       row.className = "member-item";
+      row.dataset.participantId = m.participantID;
+      row.dataset.state = isKeep ? "keep" : "discontinue";
+
       const name = document.createElement("span");
+      name.className = "member-name";
       name.textContent = m.center ? `${m.name} (${m.center})` : m.name;
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.checked = !!m.isActive;
-      cb.dataset.participantId = m.participantID;
+
+      const seg = document.createElement("div");
+      seg.className = "segmented";
+
+      const keepBtn = document.createElement("button");
+      keepBtn.type = "button";
+      keepBtn.className = "seg-keep" + (isKeep ? " is-on" : "");
+      keepBtn.textContent = keepText;
+
+      const discontinueBtn = document.createElement("button");
+      discontinueBtn.type = "button";
+      discontinueBtn.className = "seg-discontinue" + (isKeep ? "" : " is-on");
+      discontinueBtn.textContent = discontinueText;
+
+      seg.appendChild(keepBtn);
+      seg.appendChild(discontinueBtn);
       row.appendChild(name);
-      row.appendChild(cb);
+      row.appendChild(seg);
       membersList.appendChild(row);
     });
   }
+
+  membersList.addEventListener("click", (e) => {
+    const btn = e.target.closest(".seg-keep, .seg-discontinue");
+    if (!btn) return;
+    const row = btn.closest(".member-item");
+    const toKeep = btn.classList.contains("seg-keep");
+    row.dataset.state = toKeep ? "keep" : "discontinue";
+    row.querySelectorAll(".segmented button").forEach(b => b.classList.remove("is-on"));
+    btn.classList.add("is-on");
+  });
 
   function setDayValue(day) {
     const val = (day || "").trim();
@@ -170,25 +210,26 @@ document.addEventListener("DOMContentLoaded", () => {
     callApi("getGroupMembers", { GroupName: meta.groupName })
       .then(res => {
         if (res.result !== "success") throw new Error(res.error || "Failed to load members");
-        buildMembersUI(res.members || []);
+        buildMembersUI(res.members || [], meta.coordinatorName);
         setStatus("");
       })
       .catch(err => setStatus(err.message || "Failed to load members"));
   }
 
-  function handleSubmit() {
-    setStatus("");
-    const meta = getSelectedGroupMeta();
-    if (!meta) {
-      setStatus("Please select a group");
-      return;
-    }
-
+  function collectMembersUpdate() {
     const membersUpdate = {};
-    membersList.querySelectorAll("input[type='checkbox']").forEach(cb => {
-      membersUpdate[cb.dataset.participantId] = cb.checked;
+    membersList.querySelectorAll(".member-item").forEach(row => {
+      membersUpdate[row.dataset.participantId] = row.dataset.state !== "discontinue";
     });
+    return membersUpdate;
+  }
 
+  function namesToDiscontinue() {
+    return Array.from(membersList.querySelectorAll('.member-item[data-state="discontinue"]'))
+      .map(row => row.querySelector(".member-name").textContent);
+  }
+
+  function performSubmit(meta, membersUpdate) {
     const payload = {
       groupID: meta.groupID,
       groupName: meta.groupName,
@@ -214,6 +255,44 @@ document.addEventListener("DOMContentLoaded", () => {
         setSubmitting(false);
       });
   }
+
+  function handleSubmit() {
+    setStatus("");
+    const meta = getSelectedGroupMeta();
+    if (!meta) {
+      setStatus("Please select a group");
+      return;
+    }
+
+    const names = namesToDiscontinue();
+    if (names.length === 0) {
+      performSubmit(meta, collectMembersUpdate());
+      return;
+    }
+
+    const dict = currentDict();
+    const template = (dict && dict.discontinueConfirmBody) ||
+      "You're about to discontinue {names}. They'll be removed from this group and notified by email. This can't be undone.";
+    discontinueConfirmBody.textContent = template.replace("{names}", names.join(", "));
+    discontinueConfirm.classList.remove("hidden");
+    submitBtn.classList.add("hidden");
+  }
+
+  discontinueGoBack.addEventListener("click", () => {
+    discontinueConfirm.classList.add("hidden");
+    submitBtn.classList.remove("hidden");
+  });
+
+  discontinueConfirmBtn.addEventListener("click", () => {
+    discontinueConfirm.classList.add("hidden");
+    submitBtn.classList.remove("hidden");
+    const meta = getSelectedGroupMeta();
+    if (!meta) {
+      setStatus("Please select a group");
+      return;
+    }
+    performSubmit(meta, collectMembersUpdate());
+  });
 
   // Init
   fillWeeksOptions();

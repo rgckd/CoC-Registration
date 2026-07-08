@@ -15,8 +15,21 @@
     button:disabled { background: #ccc; cursor: not-allowed; }
     .row { margin-top: 10px; }
     .members { border: 1px solid #ddd; padding: 10px; margin-top: 10px; }
-    .member-item { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f2f2f2; }
+    .members-note { font-size: 12px; color: #888; margin: -4px 0 10px; }
+    .member-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 6px; border-bottom: 1px solid #f2f2f2; border-left: 3px solid transparent; }
     .member-item:last-child { border-bottom: none; }
+    .member-item[data-state="discontinue"] { background: #fdecea; border-left-color: #d93025; }
+    .member-name { flex: 1; font-size: 14px; }
+    .member-item[data-state="discontinue"] .member-name { color: #d93025; }
+    .segmented { display: inline-flex; border: 1px solid #ccc; border-radius: 20px; overflow: hidden; flex-shrink: 0; }
+    .segmented button { width: auto; margin-top: 0; border: none; background: #fff; padding: 6px 12px; font-size: 12.5px; font-weight: 600; color: #666; cursor: pointer; }
+    .segmented button.is-on.seg-keep { background: #e6f4ea; color: #0b8043; }
+    .segmented button.is-on.seg-discontinue { background: #d93025; color: #fff; }
+    .discontinue-confirm { border: 1px solid #d93025; background: #fdecea; border-radius: 6px; padding: 12px; margin-top: 14px; }
+    .discontinue-confirm p { margin: 8px 0 0; font-size: 13.5px; color: #444; }
+    .discontinue-confirm .actions { display: flex; gap: 10px; margin-top: 12px; }
+    .discontinue-confirm .actions button { width: auto; flex: 1; margin-top: 0; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-weight: 600; }
+    .discontinue-confirm .btn-confirm { background: #d93025; color: #fff; border-color: #d93025; }
     .hidden { display: none; }
     #statusMsg { margin-top: 12px; font-weight: 600; color: #d93025; }
     #statusMsg.success { color: #0b8043; }
@@ -103,8 +116,9 @@
   </div>
 
   <div class="row members" id="membersBox">
-    <label data-i18n="confirmMemberParticipation">Confirm Active Members</label>
-    <div class="helper-text" data-i18n="confirmMemberParticipationHelper">Tick members who are attending regularly. This is NOT a weekly attendance, but to know which members are continuing to attend the sessions. Inactive members will be deregistered.</div>
+    <label data-i18n="confirmMemberParticipation">Members</label>
+    <div class="helper-text" data-i18n="confirmMemberParticipationHelper">Every member opens as Keep. Switch someone to Discontinue if they should be removed from the group — you'll review the list once more before it's submitted.</div>
+    <div class="members-note" data-i18n="membersOnlyOthersNote">You're active by default while the group is Active — only other members are listed here.</div>
     <div id="membersList"></div>
   </div>
 
@@ -114,6 +128,15 @@
   <input type="text" name="honey" id="honey" class="hidden" autocomplete="off" />
 
   <div id="statusMsg"></div>
+
+  <div class="discontinue-confirm hidden" id="discontinueConfirm">
+    <strong data-i18n="discontinueConfirmTitle">Confirm before submitting</strong>
+    <p id="discontinueConfirmBody"></p>
+    <div class="actions">
+      <button type="button" id="discontinueGoBack" data-i18n="goBack">Go back</button>
+      <button type="button" class="btn-confirm" id="discontinueConfirmBtn" data-i18n="confirmAndSubmit">Confirm & submit</button>
+    </div>
+  </div>
 
   <button type="button" id="submitBtn">Submit Update</button>
 
