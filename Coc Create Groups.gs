@@ -632,6 +632,148 @@ function weeklyLifecycleProcessingByLanguage_(language) {
   }
 }
 
+/************************************************
+ * DISCONTINUE INDIVIDUALLY-INACTIVE MEMBERS
+ * - The coordinator status update form lets a coordinator mark a single
+ *   member IsActive=false without changing their group's status. Until
+ *   now nothing ever turned that into an actual discontinue - it only
+ *   happened in bulk when the whole group went Inactive -> Terminated.
+ * - This job finds Assigned, IsActive=false participants whose group is
+ *   still Active, sets AssignmentStatus=Discontinued, emails the
+ *   participant with their coordinator CC'd, and sends the language
+ *   admin a summary after every run.
+ * - Groups that are Inactive/Terminated/Completed/Closed are left alone
+ *   here since weeklyLifecycleProcessingByLanguage_ already handles their
+ *   members in bulk; processing them here too would double-email people.
+ *
+ * Use language-specific functions for triggers so each language can be
+ * processed independently:
+ * - discontinueInactiveMembersEnglish
+ * - discontinueInactiveMembersTamil
+ * - discontinueInactiveMembersHindi
+ * - discontinueInactiveMembersKannada
+ * - discontinueInactiveMembersTelugu
+ ************************************************/
+function discontinueInactiveMembers() {
+  Logger.log("discontinueInactiveMembers() runs all languages. Prefer per-language trigger functions.");
+  ["English", "Tamil", "Hindi", "Kannada", "Telugu"].forEach(lang => {
+    discontinueInactiveMembersByLanguage_(lang);
+  });
+}
+
+function discontinueInactiveMembersEnglish() { discontinueInactiveMembersByLanguage_("English"); }
+function discontinueInactiveMembersTamil() { discontinueInactiveMembersByLanguage_("Tamil"); }
+function discontinueInactiveMembersHindi() { discontinueInactiveMembersByLanguage_("Hindi"); }
+function discontinueInactiveMembersKannada() { discontinueInactiveMembersByLanguage_("Kannada"); }
+function discontinueInactiveMembersTelugu() { discontinueInactiveMembersByLanguage_("Telugu"); }
+
+function discontinueInactiveMembersByLanguage_(language) {
+  const pSheet = getSheet("Participants");
+  const gSheet = getSheet("Groups");
+
+  const pData = pSheet.getDataRange().getValues();
+  const gData = gSheet.getDataRange().getValues();
+  const pHeaders = pData.shift();
+  const gHeaders = gData.shift();
+  const pIdx = indexMap(pHeaders);
+  const gIdx = indexMap(gHeaders);
+
+  if (pIdx.Language === undefined || pIdx.AssignmentStatus === undefined || pIdx.IsActive === undefined || pIdx.AssignedGroup === undefined) {
+    Logger.log(`[${language}] Participants sheet missing required columns; skipping discontinueInactiveMembersByLanguage_.`);
+    return;
+  }
+
+  // Only groups still Active are in scope - Inactive/Terminated/Completed/
+  // Closed groups are handled in bulk by weeklyLifecycleProcessingByLanguage_.
+  const activeGroupsByName = {};
+  gData.forEach(r => {
+    if (gIdx.GroupName === undefined) return;
+    const status = gIdx.Status !== undefined ? String(r[gIdx.Status] || "").trim() : "";
+    if (status !== "Active") return;
+    const name = String(r[gIdx.GroupName] || "").trim();
+    if (!name) return;
+    activeGroupsByName[name.toLowerCase()] = {
+      groupName: name,
+      coordinatorName: gIdx.CoordinatorName !== undefined ? String(r[gIdx.CoordinatorName] || "").trim() : "",
+      coordinatorEmail: gIdx.CoordinatorEmail !== undefined ? String(r[gIdx.CoordinatorEmail] || "").trim() : ""
+    };
+  });
+
+  const discontinued = []; // [{name, email, groupName, coordinatorName}]
+  const emailFailures = [];
+
+  pData.forEach((pRow, pi) => {
+    if (String(pRow[pIdx.Language] || "").trim() !== language) return;
+    if (String(pRow[pIdx.AssignmentStatus] || "").trim() !== "Assigned") return;
+    if (toBool(pRow[pIdx.IsActive])) return;
+    if (pIdx.IsGroupCoordinator !== undefined && toBool(pRow[pIdx.IsGroupCoordinator])) return; // never auto-discontinue a coordinator
+
+    const groupName = String(pRow[pIdx.AssignedGroup] || "").trim();
+    const group = activeGroupsByName[groupName.toLowerCase()];
+    if (!group) return; // group isn't Active (already handled elsewhere) or not found
+
+    const email = pIdx.Email !== undefined ? String(pRow[pIdx.Email] || "").trim() : "";
+    const name = pIdx.Name !== undefined ? String(pRow[pIdx.Name] || "").trim() : "";
+
+    pRow[pIdx.AssignmentStatus] = "Discontinued";
+    pData[pi] = pRow;
+
+    try {
+      sendDiscontinuedEmail(email, name, group.groupName, language, group.coordinatorEmail);
+    } catch (err) {
+      emailFailures.push({ name, email, groupName: group.groupName, reason: err.message });
+    }
+
+    discontinued.push({
+      name,
+      email,
+      groupName: group.groupName,
+      coordinatorName: group.coordinatorName || "(no coordinator on file)"
+    });
+  });
+
+  if (discontinued.length) {
+    pSheet.getRange(2, 1, pData.length, pHeaders.length).setValues(pData);
+    updateAdminDashboard();
+  }
+
+  // Admin summary is sent after every run, even when nothing changed, so a
+  // missed or broken trigger is noticeable rather than silent.
+  const adminEmailMap = getAdminEmailMapFromMaster();
+  const adminEmail = adminEmailMap[language] || getAdminEmailForLanguage(language);
+  if (adminEmail) {
+    const subject = `CoC Weekly Inactive Member Discontinuation - ${language}`;
+    const lines = [];
+    lines.push(`Weekly inactive-member discontinuation run for ${language}.`);
+    lines.push(`Members discontinued this run: ${discontinued.length}`);
+    lines.push("");
+    if (discontinued.length) {
+      lines.push("Details (name | group | coordinator):");
+      discontinued.forEach(d => {
+        lines.push(`- ${d.name || "(no name)"} | ${d.groupName} | ${d.coordinatorName}`);
+      });
+    } else {
+      lines.push("No members met the discontinue criteria this run.");
+    }
+    if (emailFailures.length) {
+      lines.push("");
+      lines.push("Participant email delivery issues:");
+      emailFailures.forEach(f => {
+        lines.push(`- ${f.name || "(no name)"} | ${f.email || "(no email)"} | ${f.groupName} - ${f.reason}`);
+      });
+    }
+    try {
+      MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: adminEmail, subject, body: lines.join("\n") }, language));
+    } catch (err) {
+      Logger.log(`Failed to send discontinue summary email for ${language}: ${err.message}`);
+    }
+  } else {
+    Logger.log(`[${language}] No admin email configured; skipping discontinue summary email.`);
+  }
+
+  Logger.log(`[${language}] discontinueInactiveMembersByLanguage_: ${discontinued.length} discontinued, ${emailFailures.length} participant email failures.`);
+}
+
 function buildLifecycleSummaryIntroLines_(language, closedCount, terminatedCount, discontinuedCount) {
   const templates = {
     English: [
