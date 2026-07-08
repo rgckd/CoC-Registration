@@ -30,9 +30,33 @@ function suggestGroupsTelugu() { suggestGroupsForLanguage("Telugu"); }
 function acceptGroupSuggestionsNoEmail() { acceptGroupSuggestions(false); }
 
 /************************************************
+ * SCRIPT LOCK
+ * Serializes admin mutations against Participants/Groups so a menu action
+ * (suggest/accept/populate) can't interleave with a concurrent trigger run
+ * (weekly lifecycle, discontinue-inactive) or with another admin's click.
+ ************************************************/
+function withScriptLock_(fn, timeoutMs) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(timeoutMs || 30000);
+  } catch (err) {
+    throw new Error("Another CoC admin operation is in progress. Please try again in a moment.");
+  }
+  try {
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/************************************************
  * POPULATE PARTICIPANTS FROM CustomForm
  ************************************************/
 function populateParticipantsFromCustomForm() {
+  return withScriptLock_(populateParticipantsFromCustomForm_impl_);
+}
+
+function populateParticipantsFromCustomForm_impl_() {
   const ss = SpreadsheetApp.getActive();
   const src = ss.getSheetByName("CustomForm");
   const tgt = ss.getSheetByName("Participants");
@@ -360,6 +384,10 @@ function weeklyLifecycleProcessingKannada() { weeklyLifecycleProcessingByLanguag
 function weeklyLifecycleProcessingTelugu() { weeklyLifecycleProcessingByLanguage_("Telugu"); }
 
 function weeklyLifecycleProcessingByLanguage_(language) {
+  return withScriptLock_(() => weeklyLifecycleProcessingByLanguage_impl_(language));
+}
+
+function weeklyLifecycleProcessingByLanguage_impl_(language) {
   const ss = SpreadsheetApp.getActive();
   const pSheet = ss.getSheetByName("Participants");
   const gSheet = ss.getSheetByName("Groups");
@@ -668,6 +696,10 @@ function discontinueInactiveMembersKannada() { discontinueInactiveMembersByLangu
 function discontinueInactiveMembersTelugu() { discontinueInactiveMembersByLanguage_("Telugu"); }
 
 function discontinueInactiveMembersByLanguage_(language) {
+  return withScriptLock_(() => discontinueInactiveMembersByLanguage_impl_(language));
+}
+
+function discontinueInactiveMembersByLanguage_impl_(language) {
   const pSheet = getSheet("Participants");
   const gSheet = getSheet("Groups");
 
@@ -923,6 +955,10 @@ function sendAdminAlertEmail(email, language, participants, pIdx) {
  * 4. Fixed Split Logic: Handles 1-4 remaining participants properly
  ************************************************/
 function suggestGroupsForLanguage(language) {
+  return withScriptLock_(() => suggestGroupsForLanguage_impl_(language));
+}
+
+function suggestGroupsForLanguage_impl_(language) {
   const MIN_GROUP_SIZE = 4;
   const MAX_GROUP_SIZE = 8;
   const TWO_GROUP_THRESHOLD = MAX_GROUP_SIZE + MIN_GROUP_SIZE; // e.g., 8 + 4 = 12
@@ -941,6 +977,22 @@ function suggestGroupsForLanguage(language) {
   const gIdx = indexMap(gHeaders);
 
   ensureGroupIds(gSheet, gData, gIdx);
+
+  // Batch Suggestions-column writes: mutate in memory, flush once at the end
+  // instead of one getRange()/setValue()/setBackground() call per participant.
+  const suggestionsCol = pIdx.Suggestions + 1;
+  const suggestionsRange = pData.length
+    ? pSheet.getRange(2, suggestionsCol, pData.length, 1)
+    : null;
+  const suggestionsValues = suggestionsRange ? suggestionsRange.getValues() : [];
+  const suggestionsBackgrounds = suggestionsRange ? suggestionsRange.getBackgrounds() : [];
+  let suggestionsDirty = false;
+  const setSuggestionCell = (row, value, background) => {
+    const i = row - 2;
+    suggestionsValues[i] = [value];
+    suggestionsBackgrounds[i] = [background];
+    suggestionsDirty = true;
+  };
 
   const participants = pData
     .map((r, i) => ({ row: i + 2, data: r }))
@@ -1015,10 +1067,8 @@ function suggestGroupsForLanguage(language) {
       );
       
       if (matchingGroup) {
-        const cell = pSheet.getRange(p.row, pIdx.Suggestions + 1);
-        cell.setValue(matchingGroup.name);
-        cell.setBackground("#FFF2CC");
-        
+        setSuggestionCell(p.row, matchingGroup.name, "#FFF2CC");
+
         suggestedExistingCount++;
         matchingGroup.capacity--;
         matchingGroup.memberCount++;
@@ -1144,9 +1194,7 @@ function suggestGroupsForLanguage(language) {
             // Can't merge, mark as unsuggested for manual review
             const uns = members.slice(index);
             uns.forEach(p => {
-              const cell = pSheet.getRange(p.row, pIdx.Suggestions + 1);
-              cell.setValue(`⚠️ NEEDS_MANUAL_REVIEW (${slot} - insufficient participants)`);
-              cell.setBackground("#FFE6E6");
+              setSuggestionCell(p.row, `⚠️ NEEDS_MANUAL_REVIEW (${slot} - insufficient participants)`, "#FFE6E6");
             });
             unsuggestedCount += uns.length;
           }
@@ -1175,9 +1223,7 @@ function suggestGroupsForLanguage(language) {
     // CRITICAL: Mark unsuggested participants for admin visibility
     invalidSubgroups.forEach(sg => {
       sg.forEach(p => {
-        const cell = pSheet.getRange(p.row, pIdx.Suggestions + 1);
-        cell.setValue(`⚠️ NEEDS_MANUAL_REVIEW (${slot} - insufficient participants)`);
-        cell.setBackground("#FFE6E6"); // Light red to highlight manual review needed
+        setSuggestionCell(p.row, `⚠️ NEEDS_MANUAL_REVIEW (${slot} - insufficient participants)`, "#FFE6E6");
         unsuggestedCount++;
       });
     });
@@ -1186,15 +1232,19 @@ function suggestGroupsForLanguage(language) {
     validSubgroups.forEach(subgroup => {
       const groupName = `NEW → CoC-${language}-${String(seq).padStart(3, "0")} (${slot})`;
       subgroup.forEach(p => {
-        const cell = pSheet.getRange(p.row, pIdx.Suggestions + 1);
-        cell.setValue(groupName);
-        cell.setBackground("#FFF2CC"); // light yellow highlight for suggested cells
+        setSuggestionCell(p.row, groupName, "#FFF2CC"); // light yellow highlight for suggested cells
       });
       // Count suggestions to new groups
       suggestedNewCount += subgroup.length;
       seq++; // Increment for next group
     });
   });
+
+  // Flush all Suggestions-column changes in one write instead of per-row calls
+  if (suggestionsDirty && suggestionsRange) {
+    suggestionsRange.setValues(suggestionsValues);
+    suggestionsRange.setBackgrounds(suggestionsBackgrounds);
+  }
 
   // Show summary confirmation
   const totalSuggested = suggestedExistingCount + suggestedNewCount;
@@ -1231,6 +1281,10 @@ function suggestGroupsForLanguage(language) {
  * - Computes member count & coordinator
  ************************************************/
 function acceptGroupSuggestions(sendEmails = true) {
+  return withScriptLock_(() => acceptGroupSuggestions_impl_(sendEmails));
+}
+
+function acceptGroupSuggestions_impl_(sendEmails = true) {
   const ss = SpreadsheetApp.getActive();
   const pSheet = ss.getSheetByName("Participants");
   const gSheet = ss.getSheetByName("Groups");
@@ -1243,6 +1297,15 @@ function acceptGroupSuggestions(sendEmails = true) {
 
   const pIdx = indexMap(pHeaders);
   const gIdx = indexMap(gHeaders);
+
+  // Batch the Suggestions-column background clears below into one write
+  // instead of one getRange()/setBackground() call per accepted row.
+  const suggestionsCol = pIdx.Suggestions + 1;
+  const suggestionsBgRange = pData.length
+    ? pSheet.getRange(2, suggestionsCol, pData.length, 1)
+    : null;
+  const suggestionsBackgrounds = suggestionsBgRange ? suggestionsBgRange.getBackgrounds() : [];
+  let suggestionsBgDirty = false;
 
   const processedParticipantIDs = [];
   const discontinuedCompletedParticipantIDs = [];
@@ -1386,8 +1449,8 @@ function acceptGroupSuggestions(sendEmails = true) {
       row[pIdx.AssignmentStatus] = "Assigned";
       row[pIdx.Suggestions] = "";
       // Clear highlight on Suggestions cell after acceptance
-      const suggestedCell = pSheet.getRange(i + 2, pIdx.Suggestions + 1);
-      suggestedCell.setBackground(null);
+      suggestionsBackgrounds[i] = [null];
+      suggestionsBgDirty = true;
     }
     // Always clear the AcceptSuggestion checkbox after processing
     row[pIdx.AcceptSuggestion] = false;
@@ -1396,6 +1459,11 @@ function acceptGroupSuggestions(sendEmails = true) {
     // Track ParticipantID for Pass 2 (email sending)
     processedParticipantIDs.push(row[pIdx.ParticipantID]);
   });
+
+  // Flush batched Suggestions-column background clears in one write
+  if (suggestionsBgDirty && suggestionsBgRange) {
+    suggestionsBgRange.setBackgrounds(suggestionsBackgrounds);
+  }
 
   // Write participant updates to sheet
   pSheet.getRange(2, 1, pData.length, pHeaders.length).setValues(pData);
