@@ -3,6 +3,9 @@
  **************************************/
 const SHEET_NAME = "CustomForm";
 const MIN_SCORE = 0.5;
+const COORDINATOR_CACHE_TTL_SECONDS = 90;
+const GROUPS_CACHE_KEY = "coordinatorGroupsData_v1";
+const PARTICIPANTS_MEMBERS_CACHE_KEY = "coordinatorParticipantsMembersData_v1";
 
 /**************************************
  * SECRET ACCESS
@@ -419,7 +422,94 @@ function indexMap(h) {
   return m;
 }
 
-function ensureGroupIds(gSheet, gData, gIdx) {
+/**************************************
+ * COORDINATOR PAGE: SHORT-LIVED READ CACHE
+ * Groups/Participants change rarely between coordinator page loads,
+ * so cache the raw sheet reads to avoid re-hitting Sheets on every request.
+ **************************************/
+function getCachedGroupsData_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(GROUPS_CACHE_KEY);
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (err) {
+      // fall through to a fresh read
+    }
+  }
+
+  const gSheet = getSheet("Groups");
+  const gData = gSheet.getDataRange().getValues();
+  const gHeaders = gData.shift();
+  const payload = { headers: gHeaders, rows: gData };
+
+  try {
+    cache.put(GROUPS_CACHE_KEY, JSON.stringify(payload), COORDINATOR_CACHE_TTL_SECONDS);
+  } catch (err) {
+    Logger.log("Groups cache put failed: " + (err && err.message ? err.message : err));
+  }
+
+  return payload;
+}
+
+function invalidateGroupsCache_() {
+  CacheService.getScriptCache().remove(GROUPS_CACHE_KEY);
+}
+
+function getCachedParticipantsMembersData_() {
+  const cache = CacheService.getScriptCache();
+  const cached = cache.get(PARTICIPANTS_MEMBERS_CACHE_KEY);
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch (err) {
+      // fall through to a fresh read
+    }
+  }
+
+  const pSheet = getSheet("Participants");
+  const lastRow = pSheet.getLastRow();
+  const lastCol = pSheet.getLastColumn();
+  if (lastRow < 2) {
+    return { headers: [], rows: [] };
+  }
+
+  const fullHeaders = pSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  const idxFull = indexMap(fullHeaders);
+  const required = ["AssignedGroup", "ParticipantID", "Name"];
+  for (const k of required) {
+    if (idxFull[k] === undefined) {
+      throw new Error("Participants sheet missing required columns");
+    }
+  }
+
+  const optional = ["Center", "IsActive", "AssignmentStatus"];
+  const colsNeeded = required.concat(optional)
+    .map(k => idxFull[k])
+    .filter(v => v !== undefined);
+
+  const minCol = Math.min.apply(null, colsNeeded) + 1; // 1-based
+  const maxCol = Math.max.apply(null, colsNeeded) + 1;
+  const width = maxCol - minCol + 1;
+
+  const headers = fullHeaders.slice(minCol - 1, minCol - 1 + width);
+  const rows = pSheet.getRange(2, minCol, lastRow - 1, width).getValues();
+  const payload = { headers, rows };
+
+  try {
+    cache.put(PARTICIPANTS_MEMBERS_CACHE_KEY, JSON.stringify(payload), COORDINATOR_CACHE_TTL_SECONDS);
+  } catch (err) {
+    Logger.log("Participants cache put failed: " + (err && err.message ? err.message : err));
+  }
+
+  return payload;
+}
+
+function invalidateParticipantsMembersCache_() {
+  CacheService.getScriptCache().remove(PARTICIPANTS_MEMBERS_CACHE_KEY);
+}
+
+function ensureGroupIdsFromRows_(gSheet, gData, gIdx) {
   if (gIdx.GroupID === undefined) return null;
 
   let maxId = 0;

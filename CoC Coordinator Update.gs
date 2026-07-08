@@ -11,17 +11,14 @@ function handleQueryCoordinatorGroups(e) {
     return reject("Invalid language");
   }
 
-  const gSheet = getSheet("Groups");
-  const gData = gSheet.getDataRange().getValues();
-  const gHeaders = gData.shift();
+  const { headers: gHeaders, rows: gData } = getCachedGroupsData_();
   const gIdx = indexMap(gHeaders);
 
   if (gIdx.GroupID === undefined || gIdx.GroupName === undefined || gIdx.Language === undefined) {
     return reject("Groups sheet missing required columns");
   }
 
-  const ensured = ensureGroupIds(gSheet, gData, gIdx);
-  const rows = ensured || gData;
+  const rows = backfillMissingGroupIds_(gData, gIdx) || gData;
 
   const payload = rows
     .filter(r => r[gIdx.Language] === language && r[gIdx.Status] !== "Closed" && r[gIdx.Status] !== "Terminated")
@@ -40,6 +37,19 @@ function handleQueryCoordinatorGroups(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// Only touches the Groups sheet (and only writes) when a row is actually
+// missing a GroupID; on the steady-state path this is a pure in-memory no-op.
+function backfillMissingGroupIds_(gData, gIdx) {
+  if (gIdx.GroupID === undefined) return null;
+  const hasMissing = gData.some(r => !r[gIdx.GroupID]);
+  if (!hasMissing) return null;
+
+  const gSheet = getSheet("Groups");
+  const ensured = ensureGroupIdsFromRows_(gSheet, gData, gIdx);
+  if (ensured) invalidateGroupsCache_();
+  return ensured;
+}
+
 /**************************************
  * COORDINATOR: GET MEMBERS
  **************************************/
@@ -49,36 +59,21 @@ function handleGetGroupMembers(e) {
   const groupName = (e.parameter.GroupName || "").trim();
   if (!groupName) return reject("GroupName is required");
 
-  const pSheet = getSheet("Participants");
-  const lastRow = pSheet.getLastRow();
-  const lastCol = pSheet.getLastColumn();
-  if (lastRow < 2) {
+  let cached;
+  try {
+    cached = getCachedParticipantsMembersData_();
+  } catch (err) {
+    return reject(err && err.message ? err.message : "Failed to read Participants sheet");
+  }
+
+  const { headers, rows: data } = cached;
+  if (!headers.length) {
     return ContentService
       .createTextOutput(JSON.stringify({ result: "success", members: [] }))
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  // Read headers once, then fetch only the column slice we need
-  const fullHeaders = pSheet.getRange(1, 1, 1, lastCol).getValues()[0];
-  const idxFull = indexMap(fullHeaders);
-  const required = ["AssignedGroup", "ParticipantID", "Name"];
-  for (const k of required) {
-    if (idxFull[k] === undefined) return reject("Participants sheet missing required columns");
-  }
-
-  const optional = ["Center", "IsActive", "AssignmentStatus"];
-  const colsNeeded = required.concat(optional)
-    .map(k => idxFull[k])
-    .filter(v => v !== undefined);
-
-  const minCol = Math.min.apply(null, colsNeeded) + 1; // 1-based
-  const maxCol = Math.max.apply(null, colsNeeded) + 1;
-  const width = maxCol - minCol + 1;
-
-  const headers = fullHeaders.slice(minCol - 1, minCol - 1 + width);
   const pIdx = indexMap(headers);
-
-  const data = pSheet.getRange(2, minCol, lastRow - 1, width).getValues();
 
   const members = data
     .filter(r => String(r[pIdx.AssignedGroup] || "").trim().toLowerCase() === groupName.trim().toLowerCase() && (pIdx.AssignmentStatus === undefined || String(r[pIdx.AssignmentStatus] || "").trim() !== "Discontinued"))
@@ -134,25 +129,25 @@ function handleUpdateGroupStatus(e) {
     }
   }
 
-  const ss = SpreadsheetApp.getActive();
   const gSheet = getSheet("Groups");
-  const gData = gSheet.getDataRange().getValues();
-  const gHeaders = gData.shift();
+  const gLastRow = gSheet.getLastRow();
+  const gLastCol = gSheet.getLastColumn();
+  const gHeaders = gLastRow > 0 ? gSheet.getRange(1, 1, 1, gLastCol).getValues()[0] : [];
   const gIdx = indexMap(gHeaders);
 
   if (gIdx.GroupID === undefined || gIdx.GroupName === undefined) {
     return reject("Groups sheet missing required columns");
   }
 
-  const pSheet = getSheet("Participants");
-  const pData = pSheet.getDataRange().getValues();
-  const pHeaders = pData.shift();
-  const pIdx = indexMap(pHeaders);
+  // Only scan the GroupID column to locate the row, instead of reading the whole sheet.
+  const groupIdColValues = gLastRow > 1
+    ? gSheet.getRange(2, gIdx.GroupID + 1, gLastRow - 1, 1).getValues()
+    : [];
+  const groupRowOffset = groupIdColValues.findIndex(r => r[0] === groupID);
+  if (groupRowOffset === -1) return reject("Invalid GroupID");
+  const groupRowNumber = groupRowOffset + 2;
 
-  const groupRowIndex = gData.findIndex(r => r[gIdx.GroupID] === groupID);
-  if (groupRowIndex === -1) return reject("Invalid GroupID");
-
-  const groupRow = gData[groupRowIndex];
+  const groupRow = gSheet.getRange(groupRowNumber, 1, 1, gLastCol).getValues()[0];
   if (groupRow[gIdx.GroupName] !== groupName) return reject("GroupName mismatch");
   if (coordinatorName && groupRow[gIdx.CoordinatorName]) {
     const storedCoord = String(groupRow[gIdx.CoordinatorName] || "").trim().toLowerCase();
@@ -162,7 +157,7 @@ function handleUpdateGroupStatus(e) {
     }
   }
 
-  // Update groups row
+  // Update groups row (in memory; written back to just this row below)
   groupRow[gIdx.Status] = status;
   if (gIdx.WeeksCompleted !== undefined) groupRow[gIdx.WeeksCompleted] = weeksCompleted;
   if (gIdx.Day !== undefined) groupRow[gIdx.Day] = day;
@@ -175,45 +170,67 @@ function handleUpdateGroupStatus(e) {
   if (gIdx.LastUpdated !== undefined) {
     groupRow[gIdx.LastUpdated] = updateDate;
   }
-  gData[groupRowIndex] = groupRow;
 
-  // Update participant activity
+  const pSheet = getSheet("Participants");
+  const pLastRow = pSheet.getLastRow();
+  const pLastCol = pSheet.getLastColumn();
+  const pHeaders = pLastRow > 0 ? pSheet.getRange(1, 1, 1, pLastCol).getValues()[0] : [];
+  const pIdx = indexMap(pHeaders);
+
   if (pIdx.AssignedGroup === undefined || pIdx.ParticipantID === undefined) {
     return reject("Participants sheet missing required columns");
   }
 
   let participantsChanged = false;
-  pData.forEach((row, i) => {
-    if (row[pIdx.AssignedGroup] !== groupName) return;
-    const pid = row[pIdx.ParticipantID];
-    if (membersUpdate.hasOwnProperty(pid)) {
-      row[pIdx.IsActive] = toBool(membersUpdate[pid]);
-      pData[i] = row;
-      participantsChanged = true;
-    }
-  });
+  let coordinatorPhone = gIdx.CoordinatorWhatsApp !== undefined
+    ? String(groupRow[gIdx.CoordinatorWhatsApp] || "").trim()
+    : "";
+  const needCoordinatorLookup = !coordinatorPhone && pIdx.IsGroupCoordinator !== undefined && pIdx.WhatsApp !== undefined;
 
-  gSheet.getRange(2, 1, gData.length, gHeaders.length).setValues(gData);
-  if (participantsChanged) {
-    pSheet.getRange(2, 1, pData.length, pHeaders.length).setValues(pData);
-  }
+  // Read only the columns we need, for all participant rows, and patch just the
+  // cells that actually change instead of rewriting the whole Participants sheet.
+  if (pLastRow >= 2) {
+    const neededCols = [pIdx.AssignedGroup, pIdx.ParticipantID];
+    if (pIdx.IsActive !== undefined) neededCols.push(pIdx.IsActive);
+    if (needCoordinatorLookup) neededCols.push(pIdx.IsGroupCoordinator, pIdx.WhatsApp);
 
-  try {
-    let coordinatorPhone = gIdx.CoordinatorWhatsApp !== undefined
-      ? String(groupRow[gIdx.CoordinatorWhatsApp] || "").trim()
-      : "";
+    const minCol = Math.min.apply(null, neededCols) + 1; // 1-based
+    const maxCol = Math.max.apply(null, neededCols) + 1;
+    const width = maxCol - minCol + 1;
+    const sliceHeaders = pHeaders.slice(minCol - 1, minCol - 1 + width);
+    const sliceIdx = indexMap(sliceHeaders);
+    const slice = pSheet.getRange(2, minCol, pLastRow - 1, width).getValues();
 
-    // Fallback: derive coordinator phone from group participants if group row does not have it.
-    if (!coordinatorPhone && pIdx.IsGroupCoordinator !== undefined && pIdx.WhatsApp !== undefined) {
-      const coordinatorMember = pData.find(row => {
-        const assigned = String(row[pIdx.AssignedGroup] || "").trim().toLowerCase();
-        return assigned === groupName.trim().toLowerCase() && toBool(row[pIdx.IsGroupCoordinator]);
-      });
-      if (coordinatorMember) {
-        coordinatorPhone = String(coordinatorMember[pIdx.WhatsApp] || "").trim();
+    const memberUpdates = [];
+    for (let i = 0; i < slice.length; i++) {
+      const row = slice[i];
+      const assignedExact = row[sliceIdx.AssignedGroup];
+
+      if (assignedExact === groupName) {
+        const pid = row[sliceIdx.ParticipantID];
+        if (membersUpdate.hasOwnProperty(pid) && sliceIdx.IsActive !== undefined) {
+          memberUpdates.push({ rowNumber: i + 2, col: minCol + sliceIdx.IsActive, value: toBool(membersUpdate[pid]) });
+          participantsChanged = true;
+        }
+      }
+
+      // Fallback: derive coordinator phone from group participants if group row does not have it.
+      if (needCoordinatorLookup && !coordinatorPhone) {
+        const assignedTrim = String(assignedExact || "").trim().toLowerCase();
+        if (assignedTrim === groupName.trim().toLowerCase() && toBool(row[sliceIdx.IsGroupCoordinator])) {
+          coordinatorPhone = String(row[sliceIdx.WhatsApp] || "").trim();
+        }
       }
     }
 
+    memberUpdates.forEach(u => pSheet.getRange(u.rowNumber, u.col).setValue(u.value));
+  }
+
+  gSheet.getRange(groupRowNumber, 1, 1, gLastCol).setValues([groupRow]);
+  invalidateGroupsCache_();
+  if (participantsChanged) invalidateParticipantsMembersCache_();
+
+  try {
     sendCoordinatorUpdateNotification_({
       groupID: groupID,
       groupName: groupName,
