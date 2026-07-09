@@ -811,11 +811,13 @@ function discontinueInactiveMembersByLanguage_impl_(language) {
  * - Scans Active groups per language and flags any whose Groups.LastUpdated
  *   (falling back to GroupCreationDate if a group has never been updated)
  *   is older than STALE_GROUP_THRESHOLD_DAYS.
- * - Emails the coordinator, in the group's language, asking them to submit
- *   a status update via the coordinator form, and warns that continued
- *   inactivity may lead to closure in the future.
+ * - Direct coordinator emails are currently OFF
+ *   (NOTIFY_STALE_GROUP_COORDINATORS_DIRECTLY = false); the language admin
+ *   summary email includes a copy-pasteable WhatsApp message instead, so
+ *   the admin can notify coordinators manually for now. Flip that constant
+ *   to true to have coordinators emailed directly again.
  * - This job does NOT change any group's Status or close/terminate
- *   anything - it only sends a reminder. Closing stale groups automatically
+ *   anything - it only flags/notifies. Closing stale groups automatically
  *   is a possible future enhancement, not implemented here.
  *
  * Use language-specific functions for triggers so each language can be
@@ -828,6 +830,9 @@ function discontinueInactiveMembersByLanguage_impl_(language) {
  ************************************************/
 const STALE_GROUP_THRESHOLD_DAYS = 30;
 const COORDINATOR_UPDATE_FORM_LINK = "https://www.hcessentials.org/coc-coordinator-update";
+// Temporarily suppressed - admin shares the WhatsApp message from the summary
+// email manually for now instead of coordinators being emailed directly.
+const NOTIFY_STALE_GROUP_COORDINATORS_DIRECTLY = false;
 
 function staleGroupCheck() {
   Logger.log("staleGroupCheck() runs all languages. Prefer per-language trigger functions.");
@@ -893,18 +898,20 @@ function staleGroupCheckByLanguage_impl_(language) {
       return;
     }
 
-    const labels = getStaleGroupCheckEmailLabels(language);
-    const subject = labels.subject.replace('{groupName}', groupName);
-    const body = labels.body
-      .replace('{coordinatorName}', coordinatorName || labels.fallbackCoordinatorName)
-      .replace(/\{groupName\}/g, groupName)
-      .replace('{lastUpdatedText}', lastUpdatedText)
-      .replace('{formLink}', COORDINATOR_UPDATE_FORM_LINK);
+    if (NOTIFY_STALE_GROUP_COORDINATORS_DIRECTLY) {
+      const labels = getStaleGroupCheckEmailLabels(language);
+      const subject = labels.subject.replace('{groupName}', groupName);
+      const body = labels.body
+        .replace('{coordinatorName}', coordinatorName || labels.fallbackCoordinatorName)
+        .replace(/\{groupName\}/g, groupName)
+        .replace('{lastUpdatedText}', lastUpdatedText)
+        .replace('{formLink}', COORDINATOR_UPDATE_FORM_LINK);
 
-    try {
-      MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: coordinatorEmail, subject, body }, language));
-    } catch (err) {
-      emailFailures.push({ groupName, coordinatorEmail, reason: err.message });
+      try {
+        MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: coordinatorEmail, subject, body }, language));
+      } catch (err) {
+        emailFailures.push({ groupName, coordinatorEmail, reason: err.message });
+      }
     }
 
     flagged.push({ groupName, coordinatorName, coordinatorEmail, lastUpdatedText });
