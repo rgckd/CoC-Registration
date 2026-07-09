@@ -806,6 +806,188 @@ function discontinueInactiveMembersByLanguage_impl_(language) {
   Logger.log(`[${language}] discontinueInactiveMembersByLanguage_: ${discontinued.length} discontinued, ${emailFailures.length} participant email failures.`);
 }
 
+/************************************************
+ * BIWEEKLY STALE GROUP CHECK
+ * - Scans Active groups per language and flags any whose Groups.LastUpdated
+ *   (falling back to GroupCreationDate if a group has never been updated)
+ *   is older than STALE_GROUP_THRESHOLD_DAYS.
+ * - Emails the coordinator, in the group's language, asking them to submit
+ *   a status update via the coordinator form, and warns that continued
+ *   inactivity may lead to closure in the future.
+ * - This job does NOT change any group's Status or close/terminate
+ *   anything - it only sends a reminder. Closing stale groups automatically
+ *   is a possible future enhancement, not implemented here.
+ *
+ * Use language-specific functions for triggers so each language can be
+ * processed independently:
+ * - staleGroupCheckEnglish
+ * - staleGroupCheckTamil
+ * - staleGroupCheckHindi
+ * - staleGroupCheckKannada
+ * - staleGroupCheckTelugu
+ ************************************************/
+const STALE_GROUP_THRESHOLD_DAYS = 30;
+const COORDINATOR_UPDATE_FORM_LINK = "https://www.hcessentials.org/coc-coordinator-update";
+
+function staleGroupCheck() {
+  Logger.log("staleGroupCheck() runs all languages. Prefer per-language trigger functions.");
+  ["English", "Tamil", "Hindi", "Kannada", "Telugu"].forEach(lang => {
+    staleGroupCheckByLanguage_(lang);
+  });
+}
+
+function staleGroupCheckEnglish() { staleGroupCheckByLanguage_("English"); }
+function staleGroupCheckTamil() { staleGroupCheckByLanguage_("Tamil"); }
+function staleGroupCheckHindi() { staleGroupCheckByLanguage_("Hindi"); }
+function staleGroupCheckKannada() { staleGroupCheckByLanguage_("Kannada"); }
+function staleGroupCheckTelugu() { staleGroupCheckByLanguage_("Telugu"); }
+
+function staleGroupCheckByLanguage_(language) {
+  return withScriptLock_(() => staleGroupCheckByLanguage_impl_(language));
+}
+
+function staleGroupCheckByLanguage_impl_(language) {
+  const gSheet = getSheet("Groups");
+  const gData = gSheet.getDataRange().getValues();
+  const gHeaders = gData.shift();
+  const gIdx = indexMap(gHeaders);
+
+  if (gIdx.Language === undefined || gIdx.Status === undefined || gIdx.GroupName === undefined || gIdx.LastUpdated === undefined) {
+    Logger.log(`[${language}] Groups sheet missing required columns; skipping staleGroupCheckByLanguage_.`);
+    return;
+  }
+
+  const scriptTz = Session.getScriptTimeZone();
+  const now = new Date();
+  const thresholdMs = STALE_GROUP_THRESHOLD_DAYS * 24 * 60 * 60 * 1000;
+
+  const flagged = []; // [{groupName, coordinatorName, coordinatorEmail, lastUpdatedText}]
+  const emailFailures = [];
+  const skippedNoEmail = []; // [{groupName, coordinatorName, lastUpdatedText}] - stale but no CoordinatorEmail on file
+
+  gData.forEach(r => {
+    if (String(r[gIdx.Language] || "").trim() !== language) return;
+    // Only groups still Active can go stale; Inactive/Terminated/Completed/
+    // Closed groups are out of scope for this reminder.
+    if (String(r[gIdx.Status] || "").trim() !== "Active") return;
+
+    const lastUpdatedRaw = r[gIdx.LastUpdated];
+    const creationRaw = gIdx.GroupCreationDate !== undefined ? r[gIdx.GroupCreationDate] : null;
+    const anchorRaw = lastUpdatedRaw || creationRaw;
+    const anchorDate = anchorRaw instanceof Date ? anchorRaw : (anchorRaw ? new Date(anchorRaw) : null);
+    const isStale = !anchorDate || Number.isNaN(anchorDate.getTime()) || (now.getTime() - anchorDate.getTime()) >= thresholdMs;
+    if (!isStale) return;
+
+    const groupName = String(r[gIdx.GroupName] || "").trim();
+    if (!groupName) return; // nothing to reference in the notification
+
+    const coordinatorName = gIdx.CoordinatorName !== undefined ? String(r[gIdx.CoordinatorName] || "").trim() : "";
+    const coordinatorEmail = gIdx.CoordinatorEmail !== undefined ? String(r[gIdx.CoordinatorEmail] || "").trim() : "";
+
+    const lastUpdatedText = anchorDate && !Number.isNaN(anchorDate.getTime())
+      ? Utilities.formatDate(anchorDate, scriptTz, "yyyy-MM-dd")
+      : "N/A";
+
+    if (!coordinatorEmail) {
+      skippedNoEmail.push({ groupName, coordinatorName, lastUpdatedText });
+      return;
+    }
+
+    const labels = getStaleGroupCheckEmailLabels(language);
+    const subject = labels.subject.replace('{groupName}', groupName);
+    const body = labels.body
+      .replace('{coordinatorName}', coordinatorName || labels.fallbackCoordinatorName)
+      .replace(/\{groupName\}/g, groupName)
+      .replace('{lastUpdatedText}', lastUpdatedText)
+      .replace('{formLink}', COORDINATOR_UPDATE_FORM_LINK);
+
+    try {
+      MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: coordinatorEmail, subject, body }, language));
+    } catch (err) {
+      emailFailures.push({ groupName, coordinatorEmail, reason: err.message });
+    }
+
+    flagged.push({ groupName, coordinatorName, coordinatorEmail, lastUpdatedText });
+  });
+
+  // Admin summary is sent after every run, even when nothing changed, so a
+  // missed or broken trigger is noticeable rather than silent.
+  const adminEmail = getAdminEmailForLanguage(language);
+  if (adminEmail) {
+    const subject = `CoC Biweekly Stale Group Check - ${language}`;
+    const lines = [];
+    lines.push(`Biweekly stale-group check for ${language}: groups with no update in ${STALE_GROUP_THRESHOLD_DAYS}+ days.`);
+    lines.push(`Groups flagged and emailed this run: ${flagged.length}`);
+    lines.push("");
+    if (flagged.length) {
+      lines.push("Details (group | coordinator | last updated):");
+      flagged.forEach(f => {
+        lines.push(`- ${f.groupName} | ${f.coordinatorName || "(no coordinator name)"} | ${f.lastUpdatedText}`);
+      });
+      lines.push("");
+      lines.push("WhatsApp message for coordinators:");
+      lines.push(buildStaleGroupCheckWhatsAppMessage_(language, flagged));
+    } else {
+      lines.push("No groups met the stale criteria this run.");
+    }
+    if (emailFailures.length) {
+      lines.push("");
+      lines.push("Coordinator email delivery issues:");
+      emailFailures.forEach(f => {
+        lines.push(`- ${f.groupName} | ${f.coordinatorEmail || "(no email)"} - ${f.reason}`);
+      });
+    }
+    if (skippedNoEmail.length) {
+      lines.push("");
+      lines.push("Stale but skipped - no CoordinatorEmail on file (please add one so these can be reminded):");
+      skippedNoEmail.forEach(s => {
+        lines.push(`- ${s.groupName} | ${s.coordinatorName || "(no coordinator name)"} | ${s.lastUpdatedText}`);
+      });
+    }
+    try {
+      MailApp.sendEmail(applyLanguageAdminReplyTo_({ to: adminEmail, subject, body: lines.join("\n") }, language));
+    } catch (err) {
+      Logger.log(`Failed to send stale-group-check summary email for ${language}: ${err.message}`);
+    }
+  } else {
+    Logger.log(`[${language}] No admin email configured; skipping stale-group-check summary email.`);
+  }
+
+  Logger.log(`[${language}] staleGroupCheckByLanguage_: ${flagged.length} flagged, ${emailFailures.length} coordinator email failures, ${skippedNoEmail.length} skipped (no coordinator email).`);
+}
+
+function getStaleGroupCheckEmailLabels(language) {
+  const allLabels = {
+    English: {
+      subject: "Action Needed: Weekly Status Update for {groupName}",
+      fallbackCoordinatorName: "Coordinator",
+      body: "Dear {coordinatorName},\n\nWe have not received a status update for your CoC group ({groupName}) since {lastUpdatedText}. Please submit your group's weekly status using this form:\n\n{formLink}\n\nWe are not closing any groups at this time, but groups that continue to go without a status update may be closed in the future. Please take a moment to submit an update so we know your group ({groupName}) is still active.\n\nWith best wishes,\nCoC Admin Team"
+    },
+    Tamil: {
+      subject: "செயல் தேவை: {groupName} க்கான வாராந்திர நிலை புதுப்பிப்பு",
+      fallbackCoordinatorName: "ஒருங்கிணைப்பாளர்",
+      body: "அன்புள்ள {coordinatorName},\n\nஉங்கள் CoC குழுவிற்கான ({groupName}) நிலை புதுப்பிப்பை {lastUpdatedText} முதல் நாங்கள் பெறவில்லை. தயவுசெய்து கீழே உள்ள படிவத்தின் மூலம் உங்கள் குழுவின் வாராந்திர நிலையை சமர்ப்பிக்கவும்:\n\n{formLink}\n\nதற்போது நாங்கள் எந்த குழுவையும் மூடவில்லை, ஆனால் தொடர்ந்து நிலை புதுப்பிப்பு இல்லாத குழுக்கள் எதிர்காலத்தில் மூடப்படக்கூடும். உங்கள் குழு ({groupName}) இன்னும் செயலில் உள்ளது என்பதை எங்களுக்குத் தெரிவிக்க தயவுசெய்து புதுப்பிப்பை சமர்ப்பிக்கவும்.\n\nநல்வாழ்த்துகளுடன்,\nCoC நிர்வாகக் குழு"
+    },
+    Hindi: {
+      subject: "कार्रवाई आवश्यक: {groupName} के लिए साप्ताहिक स्थिति अपडेट",
+      fallbackCoordinatorName: "समन्वयक",
+      body: "प्रिय {coordinatorName},\n\nहमें आपके CoC समूह ({groupName}) के लिए {lastUpdatedText} से कोई स्थिति अपडेट प्राप्त नहीं हुआ है। कृपया नीचे दिए गए फॉर्म के माध्यम से अपने समूह की साप्ताहिक स्थिति सबमिट करें:\n\n{formLink}\n\nहम फिलहाल किसी भी समूह को बंद नहीं कर रहे हैं, लेकिन जो समूह लगातार स्थिति अपडेट के बिना रहते हैं उन्हें भविष्य में बंद किया जा सकता है। कृपया अपडेट सबमिट करें ताकि हमें पता चले कि आपका समूह ({groupName}) अभी भी सक्रिय है।\n\nशुभकामनाओं के साथ,\nCoC प्रशासन टीम"
+    },
+    Kannada: {
+      subject: "ಕ್ರಮ ಅಗತ್ಯವಿದೆ: {groupName} ಗಾಗಿ ವಾರದ ಸ್ಥಿತಿ ನವೀಕರಣ",
+      fallbackCoordinatorName: "ಸಂಯೋಜಕರು",
+      body: "ಆತ್ಮೀಯ {coordinatorName},\n\nನಿಮ್ಮ CoC ಗುಂಪಿಗೆ ({groupName}) {lastUpdatedText} ರಿಂದ ಯಾವುದೇ ಸ್ಥಿತಿ ನವೀಕರಣ ನಮಗೆ ಸಿಕ್ಕಿಲ್ಲ. ದಯವಿಟ್ಟು ಕೆಳಗಿನ ಫಾರ್ಮ್ ಮೂಲಕ ನಿಮ್ಮ ಗುಂಪಿನ ವಾರದ ಸ್ಥಿತಿಯನ್ನು ಸಲ್ಲಿಸಿ:\n\n{formLink}\n\nಪ್ರಸ್ತುತ ನಾವು ಯಾವುದೇ ಗುಂಪನ್ನು ಮುಚ್ಚುತ್ತಿಲ್ಲ, ಆದರೆ ಸ್ಥಿತಿ ನವೀಕರಣ ಇಲ್ಲದೆ ಮುಂದುವರಿಯುವ ಗುಂಪುಗಳನ್ನು ಭವಿಷ್ಯದಲ್ಲಿ ಮುಚ್ಚಬಹುದು. ನಿಮ್ಮ ಗುಂಪು ({groupName}) ಇನ್ನೂ ಸಕ್ರಿಯವಾಗಿದೆ ಎಂದು ನಮಗೆ ತಿಳಿಸಲು ದಯವಿಟ್ಟು ನವೀಕರಣವನ್ನು ಸಲ್ಲಿಸಿ.\n\nಶುಭಾಶಯಗಳೊಂದಿಗೆ,\nCoC ನಿರ್ವಹಣಾ ತಂಡ"
+    },
+    Telugu: {
+      subject: "చర్య అవసరం: {groupName} కోసం వారపు స్థితి నవీకరణ",
+      fallbackCoordinatorName: "సమన్వయకర్త",
+      body: "ప్రియమైన {coordinatorName},\n\nమీ CoC గ్రూప్ ({groupName}) కోసం {lastUpdatedText} నుండి మాకు స్థితి నవీకరణ అందలేదు. దయచేసి క్రింది ఫారమ్ ద్వారా మీ గ్రూప్ యొక్క వారపు స్థితిని సమర్పించండి:\n\n{formLink}\n\nప్రస్తుతం మేము ఏ గ్రూప్‌ను మూసివేయడం లేదు, కానీ నిరంతరం స్థితి నవీకరణ లేని గ్రూప్‌లు భవిష్యత్తులో మూసివేయబడవచ్చు. మీ గ్రూప్ ({groupName}) ఇప్పటికీ యాక్టివ్‌గా ఉందని మాకు తెలియజేయడానికి దయచేసి నవీకరణను సమర్పించండి.\n\nశుభాకాంక్షలతో,\nCoC నిర్వహణ బృందం"
+    }
+  };
+
+  return allLabels[language] || allLabels.English;
+}
+
 function buildLifecycleSummaryIntroLines_(language, closedCount, terminatedCount, discontinuedCount) {
   const templates = {
     English: [
@@ -892,6 +1074,43 @@ function buildLifecycleWhatsAppMessage_(language, closedGroups, terminatedGroups
 
   lines.push("");
   lines.push(t.correction);
+
+  return lines.join("\n");
+}
+
+function buildStaleGroupCheckWhatsAppMessage_(language, flaggedGroups) {
+  const groupLines = flaggedGroups.map(g => `- ${g.groupName}${g.coordinatorName ? ` (${g.coordinatorName})` : ""}`);
+
+  const templates = {
+    English: {
+      intro: `Dear Coordinators, the following groups have not submitted a status update in over ${STALE_GROUP_THRESHOLD_DAYS} days. Please submit your status here: ${COORDINATOR_UPDATE_FORM_LINK}`,
+      listTitle: "Groups needing a status update:",
+      outro: "We are not closing any groups right now, but groups that continue without an update may be closed in the future. If any correction is needed, please contact me directly or message in this group."
+    },
+    Tamil: {
+      intro: `அன்புடையீர் ஒருங்கிணைப்பாளர்களே, பின்வரும் குழுக்கள் ${STALE_GROUP_THRESHOLD_DAYS} நாட்களுக்கும் மேலாக நிலை புதுப்பிப்பை சமர்ப்பிக்கவில்லை. தயவுசெய்து உங்கள் நிலையை இங்கே சமர்ப்பிக்கவும்: ${COORDINATOR_UPDATE_FORM_LINK}`,
+      listTitle: "நிலை புதுப்பிப்பு தேவைப்படும் குழுக்கள்:",
+      outro: "தற்போது நாங்கள் எந்த குழுவையும் மூடவில்லை, ஆனால் தொடர்ந்து புதுப்பிப்பு இல்லாத குழுக்கள் எதிர்காலத்தில் மூடப்படக்கூடும். ஏதேனும் திருத்தம் வேண்டுமெனில், எனக்கு நேரடியாக தொடர்பு கொள்ளவும் அல்லது இந்த குழுவில் செய்தி இடவும்."
+    },
+    Hindi: {
+      intro: `प्रिय समन्वयकों, निम्नलिखित समूहों ने ${STALE_GROUP_THRESHOLD_DAYS} दिनों से अधिक समय से कोई स्थिति अपडेट सबमिट नहीं किया है। कृपया यहां अपनी स्थिति सबमिट करें: ${COORDINATOR_UPDATE_FORM_LINK}`,
+      listTitle: "स्थिति अपडेट की आवश्यकता वाले समूह:",
+      outro: "हम फिलहाल किसी भी समूह को बंद नहीं कर रहे हैं, लेकिन जो समूह लगातार अपडेट के बिना रहते हैं उन्हें भविष्य में बंद किया जा सकता है। यदि कोई सुधार चाहिए, तो कृपया मुझसे सीधे संपर्क करें या इस समूह में संदेश करें।"
+    },
+    Kannada: {
+      intro: `ಪ್ರಿಯ ಸಂಯೋಜಕರೇ, ಈ ಕೆಳಗಿನ ಗುಂಪುಗಳು ${STALE_GROUP_THRESHOLD_DAYS} ದಿನಗಳಿಗಿಂತ ಹೆಚ್ಚು ಕಾಲದಿಂದ ಯಾವುದೇ ಸ್ಥಿತಿ ನವೀಕರಣವನ್ನು ಸಲ್ಲಿಸಿಲ್ಲ. ದಯವಿಟ್ಟು ಇಲ್ಲಿ ನಿಮ್ಮ ಸ್ಥಿತಿಯನ್ನು ಸಲ್ಲಿಸಿ: ${COORDINATOR_UPDATE_FORM_LINK}`,
+      listTitle: "ಸ್ಥಿತಿ ನವೀಕರಣ ಅಗತ್ಯವಿರುವ ಗುಂಪುಗಳು:",
+      outro: "ಪ್ರಸ್ತುತ ನಾವು ಯಾವುದೇ ಗುಂಪನ್ನು ಮುಚ್ಚುತ್ತಿಲ್ಲ, ಆದರೆ ನವೀಕರಣವಿಲ್ಲದೆ ಮುಂದುವರಿಯುವ ಗುಂಪುಗಳನ್ನು ಭವಿಷ್ಯದಲ್ಲಿ ಮುಚ್ಚಬಹುದು. ಯಾವುದೇ ತಿದ್ದುಪಡಿ ಬೇಕಿದ್ದರೆ, ದಯವಿಟ್ಟು ನನಗೆ ನೇರವಾಗಿ ಸಂಪರ್ಕಿಸಿ ಅಥವಾ ಈ ಗುಂಪಿನಲ್ಲಿ ಸಂದೇಶಿಸಿ."
+    },
+    Telugu: {
+      intro: `ప్రియమైన సమన్వయకర్తలారా, కింది గ్రూపులు ${STALE_GROUP_THRESHOLD_DAYS} రోజులకు పైగా ఎలాంటి స్థితి నవీకరణను సమర్పించలేదు. దయచేసి ఇక్కడ మీ స్థితిని సమర్పించండి: ${COORDINATOR_UPDATE_FORM_LINK}`,
+      listTitle: "స్థితి నవీకరణ అవసరమైన గ్రూపులు:",
+      outro: "ప్రస్తుతం మేము ఏ గ్రూప్‌ను మూసివేయడం లేదు, కానీ నవీకరణ లేకుండా కొనసాగే గ్రూపులు భవిష్యత్తులో మూసివేయబడవచ్చు. ఏదైనా సరిదిద్దాల్సి ఉంటే, దయచేసి నన్ను నేరుగా సంప్రదించండి లేదా ఈ గ్రూప్‌లో మెసేజ్ చేయండి."
+    }
+  };
+
+  const t = templates[language] || templates.English;
+  const lines = [t.intro, "", t.listTitle, ...groupLines, "", t.outro];
 
   return lines.join("\n");
 }
