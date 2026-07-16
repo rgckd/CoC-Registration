@@ -295,18 +295,22 @@ function dailyParticipantProcessingWithAlerts() {
   Logger.log("=== Daily Batch Processing Summary ===");
   Logger.log(`Total new participants processed: ${newParticipantsCount}`);
   
-  // If no new participants, exit
-  if (newParticipantsCount <= 0) {
-    Logger.log("No new participants to process");
-    return;
-  }
-  
-  // Get the newly added participants (last N rows)
   const pData = tgt.getDataRange().getValues();
   const pHeaders = pData.shift();
   const pIdx = indexMap(pHeaders);
-  
-  const newParticipants = pData.slice(-newParticipantsCount);
+  const duplicateReportByLanguage = buildDuplicateReportByLanguage_(pData, pIdx);
+  const hasDuplicateReport = Object.keys(duplicateReportByLanguage).some(language => {
+    const report = duplicateReportByLanguage[language] || { reportable: [], informational: [] };
+    return (report.reportable && report.reportable.length > 0) || (report.informational && report.informational.length > 0);
+  });
+
+  // If nothing changed and there are no duplicates to report, there is no email to send.
+  if (newParticipantsCount <= 0 && !hasDuplicateReport) {
+    Logger.log("No new participants and no duplicate cases to report");
+    return;
+  }
+
+  const newParticipants = newParticipantsCount > 0 ? pData.slice(-newParticipantsCount) : [];
   
   // Group new participants by language
   const participantsByLanguage = {};
@@ -327,6 +331,10 @@ function dailyParticipantProcessingWithAlerts() {
     const count = participantsByLanguage[lang].length;
     Logger.log(`  ${lang}: ${count}`);
   });
+
+  if (newParticipantsCount <= 0) {
+    Logger.log("No new participants today; duplicate-only emails may still be sent where applicable");
+  }
   
   // Send emails to language admins
   let emailsSent = 0;
@@ -334,7 +342,9 @@ function dailyParticipantProcessingWithAlerts() {
   
   languages.forEach(lang => {
     const participants = participantsByLanguage[lang];
-    if (participants.length === 0) return;
+    const duplicateReport = duplicateReportByLanguage[lang] || { reportable: [], informational: [] };
+    const hasLanguageDuplicates = (duplicateReport.reportable && duplicateReport.reportable.length > 0) || (duplicateReport.informational && duplicateReport.informational.length > 0);
+    if (participants.length === 0 && !hasLanguageDuplicates) return;
     
     const adminEmail = adminEmailMap[lang] || getAdminEmailForLanguage(lang);
     if (!adminEmail) {
@@ -343,7 +353,7 @@ function dailyParticipantProcessingWithAlerts() {
     }
     
     try {
-      sendAdminAlertEmail(adminEmail, lang, participants, pIdx);
+      sendAdminAlertEmail(adminEmail, lang, participants, duplicateReport, pIdx);
       Logger.log(`Alert sent to ${lang} admin: ${adminEmail}`);
       emailsSent++;
     } catch (error) {
@@ -354,6 +364,301 @@ function dailyParticipantProcessingWithAlerts() {
   
   Logger.log(`Emails sent: ${emailsSent}, Emails failed: ${emailsFailed}`);
   Logger.log("=== Batch Processing Complete ===");
+}
+
+function buildDuplicateReportByLanguage_(rows, pIdx) {
+  const languages = ["English", "Tamil", "Hindi", "Kannada", "Telugu"];
+  const report = {};
+
+  languages.forEach(language => {
+    const languageRows = rows.filter(row => String(row[pIdx.Language] || "").trim() === language);
+    report[language] = buildDuplicateReportForRows_(languageRows, pIdx);
+  });
+
+  return report;
+}
+
+function buildDuplicateReportForRows_(rows, pIdx) {
+  const byEmail = {};
+  const byPhone = {};
+
+  rows.forEach(row => {
+    const entry = {
+      participantID: String(row[pIdx.ParticipantID] || "").trim(),
+      participantName: String(row[pIdx.Name] || "").trim(),
+      email: String(row[pIdx.Email] || "").trim(),
+      phone: String(row[pIdx.WhatsApp] || "").trim(),
+      assignedGroup: String(row[pIdx.AssignedGroup] || "").trim()
+    };
+
+    const emailKey = normalizeDuplicateEmail_(entry.email);
+    const phoneKey = normalizeDuplicatePhone_(entry.phone);
+
+    if (emailKey) {
+      if (!byEmail[emailKey]) byEmail[emailKey] = [];
+      byEmail[emailKey].push(entry);
+    }
+
+    if (phoneKey) {
+      if (!byPhone[phoneKey]) byPhone[phoneKey] = [];
+      byPhone[phoneKey].push(entry);
+    }
+  });
+
+  const result = { reportable: [], informational: [] };
+
+  Object.keys(byEmail).forEach(key => {
+    if (byEmail[key].length > 1) {
+      classifyDuplicateGroup_(result, "Email", key, byEmail[key]);
+    }
+  });
+
+  Object.keys(byPhone).forEach(key => {
+    if (byPhone[key].length > 1) {
+      classifyDuplicateGroup_(result, "WhatsApp", key, byPhone[key]);
+    }
+  });
+
+  return result;
+}
+
+function classifyDuplicateGroup_(result, duplicateType, duplicateKey, entries) {
+  const distinctGroups = uniqueValues_(entries.map(entry => entry.assignedGroup).filter(Boolean));
+  const hasUnassigned = entries.some(entry => !entry.assignedGroup);
+  const informational = distinctGroups.length >= 2 && !hasUnassigned;
+
+  const item = {
+    duplicateType: duplicateType,
+    duplicateKey: duplicateKey,
+    entries: entries,
+    distinctGroups: distinctGroups,
+    hasUnassigned: hasUnassigned
+  };
+
+  if (informational) {
+    result.informational.push(item);
+  } else {
+    result.reportable.push(item);
+  }
+}
+
+function normalizeDuplicateEmail_(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function normalizeDuplicatePhone_(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function uniqueValues_(values) {
+  return values.filter((value, index, array) => array.indexOf(value) === index);
+}
+
+function getDailyAdminEmailStrings_(language) {
+  const copy = {
+    English: {
+      subject: `CoC Daily Registration Report - ${language}`,
+      greeting: `Dear ${language} Admin,`,
+      intro: `Here is today's CoC registration summary for ${language}.`,
+      newParticipants: "New participants added",
+      reportableDuplicates: "Reportable duplicate cases",
+      informationalDuplicates: "Likely genuine multi-group duplicates",
+      duplicateLogicTitle: "Duplicate review logic",
+      duplicateLogicLine1: "If the same phone number or email appears in different assigned groups, it is likely a genuine multi-group participant and is listed separately as informational.",
+      duplicateLogicLine2: "If the same phone number or email appears in the same group, or is unassigned, it is listed as reportable for follow-up.",
+      tableHeaders: ["Participant ID", "Name", "Email", "WhatsApp", "Assigned Group", "Duplicate Type", "Matched With"],
+      participantTableHeaders: ["Participant ID", "Name", "Email", "WhatsApp", "Preferred Slots", "Willing to Coordinate"],
+      reasonSameGroup: "Same group or unassigned",
+      reasonDifferentGroups: "Different groups",
+      none: "None",
+      noNewParticipants: "No new registrations were added today; the duplicate report below is based on existing participant data.",
+      action: "Please review the reportable duplicate cases and confirm whether any need correction or follow-up.",
+      registrationLinkText: "You can view all registrations here:",
+      registrationListLabel: "CoC Registrations List",
+      yes: "Yes",
+      no: "No",
+      closing: "Best regards,"
+    },
+    Tamil: {
+      subject: `CoC தினசரி பதிவறிக்கை - ${language}`,
+      greeting: `அன்புள்ள ${language} நிர்வாகி,`,
+      intro: `இன்றைய ${language} CoC பதிவுச்சுருக்கம் கீழே உள்ளது.`,
+      newParticipants: "சேர்க்கப்பட்ட புதிய பங்கேற்பாளர்கள்",
+      reportableDuplicates: "அறிக்கையிட வேண்டிய நகல் பதிவுகள்",
+      informationalDuplicates: "சாத்தியமான பல-குழு பங்கேற்பு நகல்கள்",
+      duplicateLogicTitle: "நகல் சரிபார்ப்பு விதி",
+      duplicateLogicLine1: "அதே தொலைபேசி எண் அல்லது மின்னஞ்சல் வெவ்வேறு ஒதுக்கப்பட்ட குழுக்களில் தோன்றினால், அது பல குழுக்களில் பங்கேற்கும் உண்மையான நபராக இருக்கலாம்; அதனால் அது தகவலுக்காக தனியாகக் காட்டப்படுகிறது.",
+      duplicateLogicLine2: "அதே தொலைபேசி எண் அல்லது மின்னஞ்சல் அதே குழுவில் தோன்றினால், அல்லது ஒதுக்கப்படவில்லை என்றால், அது தொடர்ந்து சரிபார்க்க வேண்டியதாக அறிக்கையிடப்படுகிறது.",
+      tableHeaders: ["பங்கேற்பாளர் ID", "பெயர்", "மின்னஞ்சல்", "வாட்ஸ்அப்", "ஒதுக்கப்பட்ட குழு", "நகல் வகை", "பொருந்தியது"],
+      participantTableHeaders: ["பங்கேற்பாளர் ID", "பெயர்", "மின்னஞ்சல்", "வாட்ஸ்அப்", "விருப்பமான நேரங்கள்", "ஒருங்கிணைக்க விருப்பம்"],
+      reasonSameGroup: "அதே குழு அல்லது ஒதுக்கப்படவில்லை",
+      reasonDifferentGroups: "வேறு குழுக்கள்",
+      none: "எதுவும் இல்லை",
+      noNewParticipants: "இன்று புதிய பதிவுகள் சேர்க்கப்படவில்லை; கீழே உள்ள நகல் அறிக்கை ஏற்கனவே உள்ள பங்கேற்பாளர் தரவின் அடிப்படையில் உள்ளது.",
+      action: "தயவுசெய்து அறிக்கையிடப்பட்ட நகல் பதிவுகளை பரிசீலித்து, திருத்தம் அல்லது தொடர்ந்த நடவடிக்கை தேவைப்படுகிறதா என்பதை உறுதிப்படுத்தவும்.",
+      registrationLinkText: "அனைத்து பதிவுகளையும் இங்கே பார்க்கலாம்:",
+      registrationListLabel: "CoC பதிவுகள் பட்டியல்",
+      yes: "ஆம்",
+      no: "இல்லை",
+      closing: "நன்றி,"
+    },
+    Hindi: {
+      subject: `CoC दैनिक पंजीकरण रिपोर्ट - ${language}`,
+      greeting: `प्रिय ${language} प्रशासनिक अधिकारी,`,
+      intro: `आज की ${language} CoC पंजीकरण सारांश नीचे दिया गया है।`,
+      newParticipants: "जोड़े गए नए प्रतिभागी",
+      reportableDuplicates: "रिपोर्ट करने योग्य डुप्लिकेट मामले",
+      informationalDuplicates: "संभावित वैध बहु-समूह डुप्लिकेट",
+      duplicateLogicTitle: "डुप्लिकेट समीक्षा नियम",
+      duplicateLogicLine1: "यदि वही फोन नंबर या ईमेल अलग-अलग आवंटित समूहों में दिखाई देता है, तो यह संभवतः एक वास्तविक बहु-समूह प्रतिभागी है और इसे अलग से सूचनात्मक रूप में दिखाया गया है।",
+      duplicateLogicLine2: "यदि वही फोन नंबर या ईमेल उसी समूह में दिखाई देता है, या असाइन नहीं है, तो इसे अनुवर्ती कार्रवाई के लिए रिपोर्ट किया गया है।",
+      tableHeaders: ["प्रतिभागी ID", "नाम", "ईमेल", "व्हाट्सएप", "आवंटित समूह", "डुप्लिकेट प्रकार", "मिला हुआ"],
+      participantTableHeaders: ["प्रतिभागी ID", "नाम", "ईमेल", "व्हाट्सएप", "पसंदीदा समय", "समन्वय करने के लिए इच्छुक"],
+      reasonSameGroup: "एक ही समूह या असाइन नहीं",
+      reasonDifferentGroups: "अलग-अलग समूह",
+      none: "कोई नहीं",
+      noNewParticipants: "आज कोई नया पंजीकरण नहीं जोड़ा गया; नीचे दी गई डुप्लिकेट रिपोर्ट मौजूदा प्रतिभागी डेटा पर आधारित है।",
+      action: "कृपया रिपोर्ट किए गए डुप्लिकेट मामलों की समीक्षा करें और पुष्टि करें कि किसी सुधार या आगे की कार्रवाई की आवश्यकता है या नहीं।",
+      registrationLinkText: "आप सभी पंजीकरण यहां देख सकते हैं:",
+      registrationListLabel: "CoC पंजीकरण सूची",
+      yes: "हाँ",
+      no: "नहीं",
+      closing: "सादर,"
+    },
+    Kannada: {
+      subject: `CoC ದೈನಂದಿನ ನೋಂದಣಿ ವರದಿ - ${language}`,
+      greeting: `ಪ್ರಿಯ ${language} ನಿರ್ವಾಹಕರೇ,`,
+      intro: `ಇಂದಿನ ${language} CoC ನೋಂದಣಿ ಸಾರಾಂಶ ಕೆಳಗೆ ನೀಡಲಾಗಿದೆ.`,
+      newParticipants: "ಸೇರಿಸಲಾದ ಹೊಸ ಭಾಗವಹಿಸುವವರು",
+      reportableDuplicates: "ವರದಿ ಮಾಡಬೇಕಾದ ನಕಲಿ ಪ್ರಕರಣಗಳು",
+      informationalDuplicates: "ಬಹು-ಗುಂಪು ಭಾಗವಹಿಸುವಿಕೆಯ ಸಾಧ್ಯ ನಕಲುಗಳು",
+      duplicateLogicTitle: "ನಕಲಿ ಪರಿಶೀಲನಾ ನಿಯಮ",
+      duplicateLogicLine1: "ಅದೇ ಫೋನ್ ಸಂಖ್ಯೆ ಅಥವಾ ಇಮೇಲ್ ವಿಭಿನ್ನ ಗುಂಪುಗಳಿಗೆ ನಿಯೋಜಿತವಾಗಿದ್ದರೆ, ಅದು ಬಹು ಗುಂಪುಗಳಲ್ಲಿ ಭಾಗವಹಿಸುವ ನೈಜ ವ್ಯಕ್ತಿಯಾಗಿರುವ ಸಾಧ್ಯತೆ ಇದೆ; ಆದ್ದರಿಂದ ಅದನ್ನು ಮಾಹಿತಿ ಉದ್ದೇಶಕ್ಕಾಗಿ ಪ್ರತ್ಯೇಕವಾಗಿ ತೋರಿಸಲಾಗಿದೆ.",
+      duplicateLogicLine2: "ಅದೇ ಫೋನ್ ಸಂಖ್ಯೆ ಅಥವಾ ಇಮೇಲ್ ಅದೇ ಗುಂಪಿನಲ್ಲಿ ಕಾಣಿಸಿಕೊಂಡರೆ ಅಥವಾ ನಿಯೋಜಿಸಲ್ಪಟ್ಟಿಲ್ಲದಿದ್ದರೆ, ಅದನ್ನು ಮುಂದಿನ ಪರಿಶೀಲನೆಗಾಗಿ ವರದಿ ಮಾಡಲಾಗುತ್ತದೆ.",
+      tableHeaders: ["ಭಾಗವಹಿಸುವವರ ID", "ಹೆಸರು", "ಇಮೇಲ್", "ವಾಟ್ಸ್ಅಪ್", "ನಿಯೋಜಿತ ಗುಂಪು", "ನಕಲಿ ಪ್ರಕಾರ", "ಹೊಂದಿಕೆ"],
+      participantTableHeaders: ["ಭಾಗವಹಿಸುವವರ ID", "ಹೆಸರು", "ಇಮೇಲ್", "ವಾಟ್ಸ್ಅಪ್", "ಆದ್ಯತೆಯ ಸಮಯಗಳು", "ಸಮನ್ವಯಿಸಲು ಇಚ್ಛೆ"],
+      reasonSameGroup: "ಅದೇ ಗುಂಪು ಅಥವಾ ನಿಯೋಜಿಸಿಲ್ಲ",
+      reasonDifferentGroups: "ವಿಭಿನ್ನ ಗುಂಪುಗಳು",
+      none: "ಇಲ್ಲ",
+      noNewParticipants: "ಇಂದು ಯಾವುದೇ ಹೊಸ ನೋಂದಣಿಗಳು ಸೇರಿಸಲಿಲ್ಲ; ಕೆಳಗಿನ ನಕಲಿ ವರದಿ ಈಗಿರುವ ಭಾಗವಹಿಸುವವರ ಡೇಟಾದ ಆಧಾರದ ಮೇಲೆ ಇದೆ.",
+      action: "ದಯವಿಟ್ಟು ವರದಿ ಮಾಡಲಾದ ನಕಲಿ ಪ್ರಕರಣಗಳನ್ನು ಪರಿಶೀಲಿಸಿ, ಯಾವುದೇ ತಿದ್ದುಪಡಿ ಅಥವಾ ಮುಂದಿನ ಕ್ರಮ ಬೇಕೇ ಎಂದು ದೃಢೀಕರಿಸಿ.",
+      registrationLinkText: "ನೀವು ಎಲ್ಲಾ ನೋಂದಣಿಗಳನ್ನು ಇಲ್ಲಿ ನೋಡಬಹುದು:",
+      registrationListLabel: "CoC ನೋಂದಣಿ ಪಟ್ಟಿ",
+      yes: "ಹೌದು",
+      no: "ಇಲ್ಲ",
+      closing: "ವಂದನೆಗಳೊಂದಿಗೆ,"
+    },
+    Telugu: {
+      subject: `CoC దినసరి నమోదు నివేదిక - ${language}`,
+      greeting: `ప్రియమైన ${language} నిర్వాహకుడికి,`,
+      intro: `ఈ రోజు యొక్క ${language} CoC నమోదు సారాంశం క్రింద ఉంది.`,
+      newParticipants: "చేర్చబడిన కొత్త పాల్గొనేవారు",
+      reportableDuplicates: "నివేదించాల్సిన డూప్లికేట్ కేసులు",
+      informationalDuplicates: "సంభావ్య బహుళ-గుంపు డూప్లికేట్లు",
+      duplicateLogicTitle: "డూప్లికేట్ పరిశీలన నియమం",
+      duplicateLogicLine1: "అదే ఫోన్ నంబర్ లేదా ఇమెయిల్ వేరే కేటాయించిన గ్రూపుల్లో కనిపిస్తే, అది నిజమైన బహుళ-గ్రూప్ పాల్గొనేవారు కావచ్చు; కాబట్టి దానిని సమాచారంగా వేరుగా చూపిస్తారు.",
+      duplicateLogicLine2: "అదే ఫోన్ నంబర్ లేదా ఇమెయిల్ అదే గ్రూపులో కనిపిస్తే, లేదా కేటాయించబడకపోతే, దానిని ఫాలో-అప్ కోసం నివేదిస్తారు.",
+      tableHeaders: ["పాల్గొనేవారి ID", "పేరు", "ఈమెయిల్", "వాట్సాప్", "కేటాయించిన గ్రూప్", "డూప్లికేట్ రకం", "సరిపోలింది"],
+      participantTableHeaders: ["పాల్గొనేవారి ID", "పేరు", "ఈమెయిల్", "వాట్సాప్", "ఇష్టమైన సమయాలు", "సమన్వయం చేయడానికి సిద్ధం"],
+      reasonSameGroup: "అదే గ్రూప్ లేదా కేటాయించలేదు",
+      reasonDifferentGroups: "వేర్వేరు గ్రూపులు",
+      none: "ఏదీ లేదు",
+      noNewParticipants: "ఈ రోజు కొత్త నమోదు ఏదీ జోడించబడలేదు; దిగువ ఉన్న డూప్లికేట్ నివేదిక ఇప్పటికే ఉన్న పాల్గొనేవారి డేటాపై ఆధారపడి ఉంది.",
+      action: "దయచేసి నివేదించాల్సిన డూప్లికేట్ కేసులను సమీక్షించి, ఏవైనా సవరణలు లేదా ఫాలో-అప్ అవసరమా అని నిర్ధారించండి.",
+      registrationLinkText: "మీరు అన్ని నమోదు వివరాలను ఇక్కడ చూడవచ్చు:",
+      registrationListLabel: "CoC నమోదు జాబితా",
+      yes: "అవును",
+      no: "కాదు",
+      closing: "ఆప్యాయంగా,"
+    }
+  };
+
+  return copy[language] || copy.English;
+}
+
+function buildDuplicateRowsHtml_(items, strings, isReportable) {
+  if (!items.length) {
+    return `<tr><td colspan="${strings.tableHeaders.length}" style="padding:8px;">${escapeHtml_(strings.none)}</td></tr>`;
+  }
+
+  return items.map(item => {
+    const first = item.entries[0];
+    const matchedWith = item.entries.slice(1)
+      .map(entry => `${escapeHtml_(entry.participantID)}${entry.participantName ? ` (${escapeHtml_(entry.participantName)})` : ""}${entry.assignedGroup ? ` - ${escapeHtml_(entry.assignedGroup)}` : " - Unassigned"}`)
+      .join("<br>");
+    const reason = isReportable ? strings.reasonSameGroup : strings.reasonDifferentGroups;
+
+    return `
+      <tr>
+        <td>${escapeHtml_(first.participantID)}</td>
+        <td>${escapeHtml_(first.participantName)}</td>
+        <td>${escapeHtml_(first.email)}</td>
+        <td>${escapeHtml_(first.phone)}</td>
+        <td>${escapeHtml_(first.assignedGroup || "Unassigned")}</td>
+        <td>${escapeHtml_(item.duplicateType)}</td>
+        <td>${matchedWith}<br><em>${escapeHtml_(reason)}</em></td>
+      </tr>
+    `;
+  }).join("");
+}
+
+function buildAdminAlertEmailBody_(language, participants, duplicateReport, pIdx, masterUrl) {
+  const strings = getDailyAdminEmailStrings_(language);
+  const report = duplicateReport || { reportable: [], informational: [] };
+
+  const participantListHtml = participants.length ? participants.map(p => `
+    <tr>
+      <td>${escapeHtml_(p[pIdx.ParticipantID])}</td>
+      <td>${escapeHtml_(p[pIdx.Name])}</td>
+      <td>${escapeHtml_(p[pIdx.Email])}</td>
+      <td>${escapeHtml_(p[pIdx.WhatsApp])}</td>
+      <td>${escapeHtml_(p[pIdx.PreferredSlots])}</td>
+      <td>${escapeHtml_(p[pIdx.CoordinatorWilling] ? strings.yes : strings.no)}</td>
+    </tr>
+  `).join('') : `<tr><td colspan="6" style="padding:8px;">${escapeHtml_(strings.none)}</td></tr>`;
+
+  const reportableSection = `
+    <h4 style="margin:16px 0 8px;">${escapeHtml_(strings.reportableDuplicates)} (${report.reportable.length})</h4>
+    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+      <tr>
+        ${strings.tableHeaders.map(header => `<th>${escapeHtml_(header)}</th>`).join("")}
+      </tr>
+      ${buildDuplicateRowsHtml_(report.reportable, strings, true)}
+    </table>
+  `;
+
+  const informationalSection = `
+    <h4 style="margin:16px 0 8px;">${escapeHtml_(strings.informationalDuplicates)} (${report.informational.length})</h4>
+    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+      <tr>
+        ${strings.tableHeaders.map(header => `<th>${escapeHtml_(header)}</th>`).join("")}
+      </tr>
+      ${buildDuplicateRowsHtml_(report.informational, strings, false)}
+    </table>
+  `;
+
+  return `
+    <p>${escapeHtml_(strings.greeting)}</p>
+    <p>${escapeHtml_(strings.intro)}</p>
+    <p><strong>${escapeHtml_(strings.newParticipants)}:</strong> ${participants.length}</p>
+    <p><strong>${escapeHtml_(strings.reportableDuplicates)}:</strong> ${report.reportable.length}<br>
+    <strong>${escapeHtml_(strings.informationalDuplicates)}:</strong> ${report.informational.length}</p>
+    <h4 style="margin:16px 0 8px;">${escapeHtml_(strings.duplicateLogicTitle)}</h4>
+    <p>${escapeHtml_(strings.duplicateLogicLine1)}</p>
+    <p>${escapeHtml_(strings.duplicateLogicLine2)}</p>
+    <h4 style="margin:16px 0 8px;">${escapeHtml_(strings.newParticipants)}</h4>
+    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%;">
+      <tr>
+        ${strings.participantTableHeaders.map(header => `<th>${escapeHtml_(header)}</th>`).join("")}
+      </tr>
+      ${participantListHtml}
+    </table>
+    ${reportableSection}
+    ${informationalSection}
+    ${masterUrl ? `<p>${escapeHtml_(strings.registrationLinkText)} <a href="${escapeHtml_(masterUrl)}">${escapeHtml_(strings.registrationListLabel)}</a></p>` : ''}
+    <p>${escapeHtml_(strings.action)}</p>
+    <p>${escapeHtml_(strings.closing)}<br>CoC Admin System</p>
+  `;
 }
 
 /************************************************
@@ -1125,44 +1430,12 @@ function buildStaleGroupCheckWhatsAppMessage_(language, flaggedGroups) {
 /************************************************
  * SEND ALERT EMAIL TO LANGUAGE ADMIN
  ************************************************/
-function sendAdminAlertEmail(email, language, participants, pIdx) {
+ function sendAdminAlertEmail(email, language, participants, duplicateReport, pIdx) {
   const props = PropertiesService.getScriptProperties();
   const masterUrl = String(props.getProperty('MASTER_SHEET_URL') || '').trim();
-  const subject = `CoC New Registrations Alert - ${language}`;
-  
-  const participantListHtml = participants.map(p => `
-    <tr>
-      <td>${p[pIdx.ParticipantID]}</td>
-      <td>${p[pIdx.Name]}</td>
-      <td>${p[pIdx.Email]}</td>
-      <td>${p[pIdx.WhatsApp]}</td>
-      <td>${p[pIdx.PreferredSlots]}</td>
-      <td>${p[pIdx.CoordinatorWilling] ? 'Yes' : 'No'}</td>
-    </tr>
-  `).join('');
-  
-  const htmlBody = `
-    <p>Dear ${language} Admin,</p>
-    <p>There are <strong>${participants.length}</strong> new participant(s) registered for ${language} CoC groups who need to be assigned to groups.</p>
-    <br>
-    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse;">
-      <tr>
-        <th>Participant ID</th>
-        <th>Name</th>
-        <th>Email</th>
-        <th>WhatsApp</th>
-        <th>Preferred Slots</th>
-        <th>Willing to Coordinate</th>
-      </tr>
-      ${participantListHtml}
-    </table>
-    <br>
-    <p>Please review these registrations and assign them to appropriate groups.</p>
-    <br>
-    ${masterUrl ? `<p>You can view all registrations here: <a href="${masterUrl}">CoC Registrations List</a></p>` : ''}
-    <br>
-    <p>Best regards,<br>CoC Admin System</p>
-  `;
+  const strings = getDailyAdminEmailStrings_(language);
+  const subject = strings.subject;
+  const htmlBody = buildAdminAlertEmailBody_(language, participants, duplicateReport, pIdx, masterUrl);
   
   MailApp.sendEmail(applyLanguageAdminReplyTo_({
     to: email,
