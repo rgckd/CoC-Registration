@@ -2148,21 +2148,29 @@ function updateGroupsSheet() {
   const pIdx = indexMap(pHeaders);
   const gIdx = indexMap(gHeaders);
 
-  // Build member map (ignore discontinued so counts reflect active members)
-  // Use lowercase keys for case-insensitive matching
+  // Build member maps using lowercase keys for case-insensitive matching.
+  // `members` reflects current active membership, while `allMembers` keeps
+  // discontinued participants available for terminated-group refresh.
   const members = {};
+  const allMembers = {};
   const groupNameMap = {}; // Maps lowercase to original case
   pData.forEach(r => {
     if (!r[pIdx.AssignedGroup]) return;
+
+    const groupName = String(r[pIdx.AssignedGroup] || "").trim();
+    if (!groupName) return;
+    const groupNameKey = groupName.toLowerCase();
+
+    if (!allMembers[groupNameKey]) {
+      allMembers[groupNameKey] = [];
+      groupNameMap[groupNameKey] = groupName; // Store first occurrence's case
+    }
+    allMembers[groupNameKey].push(r);
 
     const assignmentStatus = pIdx.AssignmentStatus !== undefined
       ? String(r[pIdx.AssignmentStatus] || "").trim().toLowerCase()
       : "";
     if (assignmentStatus === "discontinued") return;
-
-    const groupName = String(r[pIdx.AssignedGroup] || "").trim();
-    if (!groupName) return;
-    const groupNameKey = groupName.toLowerCase();
     
     if (!members[groupNameKey]) {
       members[groupNameKey] = [];
@@ -2240,18 +2248,35 @@ function updateGroupsSheet() {
   // Update all groups with member count and coordinator
   gData.forEach(r => {
     const groupNameKey = String(r[gIdx.GroupName] || "").trim().toLowerCase();
+    const status = String(r[gIdx.Status] || "").trim();
     const m = members[groupNameKey] || [];
-    r[gIdx.MemberCount] = m.length;
+    const historicalMembers = allMembers[groupNameKey] || [];
+    const memberSource = status === "Terminated" ? historicalMembers : m;
+    r[gIdx.MemberCount] = memberSource.length;
 
     // Find coordinator (checkbox can be true, TRUE, or "TRUE")
-    const c = m.find(x => {
+    const c = memberSource.find(x => {
       const val = x[pIdx.IsGroupCoordinator];
       return val === true || val === "TRUE" || val === "true";
     });
-    r[gIdx.CoordinatorName] = c ? c[pIdx.Name] : "";
-    r[gIdx.CoordinatorEmail] = c ? c[pIdx.Email] : "";
+
+    if (c) {
+      r[gIdx.CoordinatorName] = c[pIdx.Name];
+      r[gIdx.CoordinatorEmail] = c[pIdx.Email];
+      if (gIdx.CoordinatorWhatsApp !== undefined) {
+        r[gIdx.CoordinatorWhatsApp] = c[pIdx.WhatsApp];
+      }
+      return;
+    }
+
+    if (status === "Terminated" && historicalMembers.length === 0) {
+      return;
+    }
+
+    r[gIdx.CoordinatorName] = "";
+    r[gIdx.CoordinatorEmail] = "";
     if (gIdx.CoordinatorWhatsApp !== undefined) {
-      r[gIdx.CoordinatorWhatsApp] = c ? c[pIdx.WhatsApp] : "";
+      r[gIdx.CoordinatorWhatsApp] = "";
     }
   });
 
